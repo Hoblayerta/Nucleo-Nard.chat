@@ -142,6 +142,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
+  
+  app.get("/api/users/top", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const topUsers = await storage.getTopUsers(limit);
+      
+      // Remove passwords from response
+      const usersWithoutPasswords = topUsers.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.status(200).json(usersWithoutPasswords);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch top users" });
+    }
+  });
 
   app.get("/api/users/:id", requireAuth, async (req, res) => {
     try {

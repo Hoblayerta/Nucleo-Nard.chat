@@ -13,6 +13,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: UpdateUser): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
+  getTopUsers(limit: number): Promise<(User & { stats: UserStats })[]>;
   
   // Post operations
   createPost(post: InsertPost): Promise<Post>;
@@ -109,6 +110,24 @@ export class MemStorage implements IStorage {
 
   async getUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+  
+  async getTopUsers(limit: number): Promise<(User & { stats: UserStats })[]> {
+    const users = Array.from(this.users.values());
+    const usersWithStats = await Promise.all(
+      users.map(async (user) => {
+        const stats = await this.getUserStats(user.id);
+        return {
+          ...user,
+          stats
+        };
+      })
+    );
+    
+    // Sort by likes received (highest first) and take the specified limit
+    return usersWithStats
+      .sort((a, b) => b.stats.likesReceived - a.stats.likesReceived)
+      .slice(0, limit);
   }
 
   // Post operations
