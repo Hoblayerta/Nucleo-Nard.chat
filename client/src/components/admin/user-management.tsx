@@ -20,7 +20,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight, UserPlus, Edit, Ban, Save, UserCheck } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, ChevronLeft, ChevronRight, UserPlus, Edit, Trash2, Save, X, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { User } from "@shared/schema";
 
@@ -31,6 +41,7 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [tempRole, setTempRole] = useState<string>("");
   const [tempMultiplier, setTempMultiplier] = useState<number>(1);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   
   const { data: allUsers = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -65,6 +76,29 @@ export default function UserManagement() {
       });
     }
   });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/users/${id}`);
+      if (!res.ok) throw new Error("Failed to delete user");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setConfirmDelete(null);
+      toast({
+        title: "User deleted",
+        description: "User has been removed from the platform."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
   
   const handleEdit = (user: User) => {
     setEditingUser(user.id);
@@ -82,6 +116,16 @@ export default function UserManagement() {
       role: tempRole,
       likeMultiplier: tempMultiplier
     });
+  };
+
+  const handleDelete = (id: number) => {
+    setConfirmDelete(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmDelete) {
+      deleteUserMutation.mutate(confirmDelete);
+    }
   };
   
   if (isLoading) {
@@ -194,7 +238,7 @@ export default function UserManagement() {
                       <span className="mr-1">x{user.likeMultiplier}</span>
                       {user.likeMultiplier > 1 && (
                         <span className="text-success text-xs flex items-center">
-                          <i className="fas fa-fire mr-1"></i>
+                          {user.likeMultiplier}x Multiplier
                         </span>
                       )}
                     </div>
@@ -241,9 +285,10 @@ export default function UserManagement() {
                       <Button 
                         variant="outline" 
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30"
+                        onClick={() => handleDelete(user.id)}
                       >
-                        <Ban className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </>
                   )}
@@ -278,6 +323,26 @@ export default function UserManagement() {
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={confirmDelete !== null} onOpenChange={() => setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this user account and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

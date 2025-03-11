@@ -1,23 +1,35 @@
 import { Link, useLocation } from "wouter";
 import { 
   Home,
-  TrendingUp,
   Trophy,
   Users,
-  Bookmark
+  Bookmark,
+  AlertCircle
 } from "lucide-react";
 import LeaderboardWidget from "./leaderboard-widget";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export default function Sidebar() {
   const [location] = useLocation();
 
   const navigation = [
     { name: "Home", icon: Home, href: "/" },
-    { name: "Popular", icon: TrendingUp, href: "/popular" },
     { name: "Leaderboard", icon: Trophy, href: "/leaderboard" },
-    { name: "Communities", icon: Users, href: "/communities" },
-    { name: "Saved", icon: Bookmark, href: "/saved" },
+    { 
+      name: "Communities", 
+      icon: Users, 
+      href: "/communities", 
+      badge: "Soon",
+      comingSoon: true
+    },
+    { 
+      name: "Saved", 
+      icon: Bookmark, 
+      href: "/saved", 
+      badge: "Soon",
+      comingSoon: true
+    },
   ];
 
   return (
@@ -31,17 +43,25 @@ export default function Sidebar() {
             return (
               <li key={item.name}>
                 <Link
-                  href={item.href}
+                  href={item.comingSoon ? "#" : item.href}
                   className={cn(
-                    "flex items-center hover:text-primary",
+                    "flex items-center justify-between hover:text-primary",
                     isActive ? "text-primary" : "text-foreground"
                   )}
+                  title={item.comingSoon ? "Coming soon!" : ""}
                 >
-                  <item.icon className={cn(
-                    "w-5 h-5 mr-2",
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  )} />
-                  <span>{item.name}</span>
+                  <div className="flex items-center">
+                    <item.icon className={cn(
+                      "w-5 h-5 mr-2",
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.badge && (
+                    <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </Link>
               </li>
             );
