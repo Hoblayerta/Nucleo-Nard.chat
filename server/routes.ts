@@ -129,20 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Routes
-  app.get("/api/users", requireAuth, async (req, res) => {
-    try {
-      const users = await storage.getUsers();
-      const usersWithoutPasswords = users.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
-      
-      res.status(200).json(usersWithoutPasswords);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-  
+  // Fixed order: specific route first, then parametrized routes
   app.get("/api/users/top", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -157,6 +144,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(usersWithoutPasswords);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch top users" });
+    }
+  });
+
+  app.get("/api/users", requireAuth, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      const usersWithoutPasswords = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.status(200).json(usersWithoutPasswords);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 
@@ -210,6 +211,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error.errors });
       }
       res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+  
+  app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Don't allow deleting own account
+      if (id === req.session.userId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(200).json({ message: "User deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 

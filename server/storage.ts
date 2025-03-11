@@ -12,6 +12,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: UpdateUser): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   getUsers(): Promise<User[]>;
   getTopUsers(limit: number): Promise<(User & { stats: UserStats })[]>;
   
@@ -106,6 +107,46 @@ export class MemStorage implements IStorage {
     
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    // Check if user exists
+    const user = await this.getUser(id);
+    if (!user) return false;
+    
+    // Delete the user
+    this.users.delete(id);
+    
+    // Clean up associated data
+    
+    // 1. Remove user's posts
+    const userPosts = Array.from(this.posts.values())
+      .filter(post => post.userId === id)
+      .map(post => post.id);
+      
+    userPosts.forEach(postId => {
+      this.posts.delete(postId);
+    });
+    
+    // 2. Remove user's comments
+    const userComments = Array.from(this.comments.values())
+      .filter(comment => comment.userId === id)
+      .map(comment => comment.id);
+      
+    userComments.forEach(commentId => {
+      this.comments.delete(commentId);
+    });
+    
+    // 3. Remove user's likes
+    const userLikes = Array.from(this.likes.values())
+      .filter(like => like.userId === id)
+      .map(like => like.id);
+      
+    userLikes.forEach(likeId => {
+      this.likes.delete(likeId);
+    });
+    
+    return true;
   }
 
   async getUsers(): Promise<User[]> {
