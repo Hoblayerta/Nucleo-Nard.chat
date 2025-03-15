@@ -6,7 +6,7 @@ import {
   loginUserSchema, 
   insertPostSchema, 
   insertCommentSchema, 
-  insertVoteSchema, 
+  insertLikeSchema, 
   updateUserSchema 
 } from "@shared/schema";
 import session from "express-session";
@@ -272,15 +272,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid post ID" });
       }
       
-      // Use getPostByPermalink which provides all the details we need
-      const permalink = `/post/${id}`;
-      const postDetails = await storage.getPostByPermalink(permalink);
-      
-      if (!postDetails) {
+      const post = await storage.getPost(id);
+      if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
       
-      res.status(200).json(postDetails);
+      const user = await storage.getUser(post.userId);
+      
+      // Count likes
+      const likes = Array.from((await storage.getLikesByUserId(post.userId)).values())
+        .filter(like => like.postId === post.id)
+        .length;
+      
+      res.status(200).json({
+        ...post,
+        user: {
+          id: user?.id || 0,
+          username: user?.username || "unknown",
+          role: user?.role || "user",
+        },
+        likes
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch post" });
     }
@@ -298,29 +310,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comment = await storage.createComment(data);
       const user = await storage.getUser(userId);
       
-      // Calculate path for proper comment hierarchy
-      // This will be a root comment, so its position will be its ID
-      const path = `${comment.id}`;
-      
-      // Generate a permalink for this comment
-      const permalink = await storage.generatePermalink('comment', comment.id, path);
-      
       res.status(201).json({
         ...comment,
-        path,
         user: {
           id: user?.id || 0,
           username: user?.username || "unknown",
           role: user?.role || "user",
-          likeMultiplier: user?.likeMultiplier || 1,
-          downvoteMultiplier: user?.downvoteMultiplier || 1,
+          likeMultiplier: user?.likeMultiplier || 1
         },
-        upvotes: 0,
-        downvotes: 0,
-        score: 0,
-        level: 0,
-        position: comment.id,
-        permalink,
+        likes: 0,
         replies: []
       });
     } catch (error) {
@@ -345,48 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Vote Routes
-  app.post("/api/votes", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const { commentId, postId, value } = req.body;
-      
-      if (!commentId && !postId) {
-        return res.status(400).json({ message: "Either commentId or postId is required" });
-      }
-      
-      if (value !== 1 && value !== -1) {
-        return res.status(400).json({ message: "Vote value must be 1 (upvote) or -1 (downvote)" });
-      }
-      
-      // Process vote
-      const existingVote = await storage.checkVoteExists(userId, commentId, postId);
-      
-      // If vote exists with same value, it will be removed (toggle behavior)
-      const result = await storage.updateVote(userId, value, commentId, postId);
-      
-      const action = existingVote && existingVote.value === value 
-        ? "removed" 
-        : existingVote 
-          ? "changed" 
-          : "added";
-      
-      const voteType = value === 1 ? "upvote" : "downvote";
-      
-      res.status(200).json({ 
-        message: `Vote ${action} successfully`, 
-        action, 
-        voteType
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      res.status(500).json({ message: "Failed to process vote" });
-    }
-  });
-  
-  // For compatibility with existing client code
+  // Like Routes
   app.post("/api/likes", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
@@ -396,30 +353,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Either commentId or postId is required" });
       }
       
-      // Value = 1 for upvote (like)
-      const value = 1;
+      // Check if already liked
+      const alreadyLiked = await storage.checkLikeExists(userId, commentId, postId);
+      if (alreadyLiked) {
+        await storage.removeLike(userId, commentId, postId);
+        return res.status(200).json({ message: "Like removed", action: "removed" });
+      }
       
-      // Process vote as an upvote
-      const existingVote = await storage.checkVoteExists(userId, commentId, postId);
-      
-      // If vote exists with same value, it will be removed (toggle behavior)
-      const result = await storage.updateVote(userId, value, commentId, postId);
-      
-      const action = existingVote && existingVote.value === value 
-        ? "removed" 
-        : existingVote 
-          ? "changed" 
-          : "added";
-      
-      res.status(200).json({ 
-        message: `Like ${action} successfully`, 
-        action,
+      const data = insertLikeSchema.parse({
+        userId,
+        commentId,
+        postId
       });
+      
+      await storage.createLike(data);
+      res.status(201).json({ message: "Liked successfully", action: "added" });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
-      res.status(500).json({ message: "Failed to process like" });
+      res.status(500).json({ message: "Failed to like" });
     }
   });
 

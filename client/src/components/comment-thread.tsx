@@ -28,46 +28,39 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyOpen, setReplyOpen] = useState(false);
-  const [userVote, setUserVote] = useState<1 | -1 | null>(null);
+  const [liked, setLiked] = useState(false);
   
-  const voteMutation = useMutation({
-    mutationFn: async (voteValue: 1 | -1) => {
-      const res = await apiRequest("POST", "/api/votes", {
-        commentId: comment.id,
-        value: voteValue
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/likes", {
+        commentId: comment.id
       });
       return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-      if (data.action === "added") {
-        setUserVote(data.voteType === "upvote" ? 1 : -1);
-      } else if (data.action === "removed") {
-        setUserVote(null);
-      } else if (data.action === "changed") {
-        setUserVote(data.voteType === "upvote" ? 1 : -1);
-      }
+      setLiked(data.action === "added");
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to process vote. Please try again.",
+        description: "Failed to like comment. Please try again.",
         variant: "destructive",
       });
     }
   });
 
-  const handleVote = (value: 1 | -1) => {
+  const handleLike = () => {
     if (!user) {
       toast({
         title: "Authentication required",
-        description: "Please log in to vote on comments",
+        description: "Please log in to like comments",
         variant: "destructive",
       });
       return;
     }
     
-    voteMutation.mutate(value);
+    likeMutation.mutate();
   };
 
   const timeAgo = (date: Date) => {
@@ -123,13 +116,9 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               </Badge>
             )}
             
-            <span className="text-xs text-success flex items-center mr-1">
-              <ArrowUp className="h-3 w-3 mr-1" />
+            <span className="text-xs text-success flex items-center">
+              <Flame className="h-3 w-3 mr-1" />
               x{comment.user.likeMultiplier}
-            </span>
-            <span className="text-xs text-destructive flex items-center">
-              <ArrowDown className="h-3 w-3 mr-1" />
-              x{comment.user.downvoteMultiplier}
             </span>
             
             <span className="text-xs text-muted-foreground">•</span>
@@ -146,24 +135,19 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`px-1 py-0 h-auto ${userVote === 1 ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
-                onClick={() => handleVote(1)}
-                disabled={voteMutation.isPending}
+                className={`px-1 py-0 h-auto ${liked ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
+                onClick={handleLike}
               >
                 <ArrowUp className="h-4 w-4 mr-1" />
               </Button>
-              <span>{comment.upvotes}</span>
+              <span>{comment.likes}</span>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`px-1 py-0 h-auto ${userVote === -1 ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
-                onClick={() => handleVote(-1)}
-                disabled={voteMutation.isPending}
+                className="px-1 py-0 h-auto hover:text-destructive"
               >
                 <ArrowDown className="h-4 w-4 ml-1" />
               </Button>
-              <span>{comment.downvotes}</span>
-              <span className="ml-2">Score: {comment.score}</span>
             </div>
             
             <Button 
