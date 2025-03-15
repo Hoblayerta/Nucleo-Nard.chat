@@ -143,7 +143,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           </div>
           
           <div className="relative">
-            {/* Versión móvil con expand/collapse */}
+            {/* Mobile version with expand/collapse */}
             <div className="md:hidden">
               {expanded ? (
                 <>
@@ -155,7 +155,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                     className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center px-1 py-0 h-auto"
                   >
                     <ChevronUp className="h-3 w-3 mr-1" />
-                    Colapsar
+                    Collapse
                   </Button>
                 </>
               ) : (
@@ -171,14 +171,14 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                       className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center px-1 py-0 h-auto"
                     >
                       <ChevronDown className="h-3 w-3 mr-1" />
-                      Leer más
+                      Read more
                     </Button>
                   )}
                 </>
               )}
             </div>
             
-            {/* Versión desktop con scroll horizontal */}
+            {/* Desktop version with horizontal scroll */}
             <div className="hidden md:block overflow-x-auto horizontal-scroll custom-scrollbar">
               <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
             </div>
@@ -245,12 +245,12 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                 {repliesVisible ? (
                   <>
                     <ChevronUp className="h-3 w-3 mr-1" />
-                    Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                    Hide {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-3 w-3 mr-1" />
-                    Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                    View {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
                   </>
                 )}
               </Button>
