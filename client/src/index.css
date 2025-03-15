@@ -10,4 +10,47 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* Mejoras para texto que desborda */
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+  }
+}
+
+@layer utilities {
+  /* Grids responsivos */
+  .responsive-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* Scrollbar personalizada para mejor estética */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-background/50 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/20 rounded-full hover:bg-primary/30 transition-colors;
+  }
+
+  /* Soporte para scroll horizontal en contenedores */
+  .horizontal-scroll {
+    @apply overflow-x-auto whitespace-nowrap pb-2;
+  }
+  
+  /* Contenedor flexible para dispositivos pequeños */
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row;
+  }
+
+  /* Breakpoint personalizado para dispositivos muy pequeños */
+  @media (min-width: 480px) {
+    .xs\:grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
 }

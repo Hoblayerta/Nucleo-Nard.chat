@@ -131,8 +131,8 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
             </span>
           </div>
           
-          <div className="overflow-x-auto">
-            <p className="text-sm mb-2 break-words">{comment.content}</p>
+          <div className="overflow-x-auto horizontal-scroll custom-scrollbar">
+            <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
           </div>
           
           <div className="flex flex-wrap items-center text-xs text-muted-foreground gap-2">

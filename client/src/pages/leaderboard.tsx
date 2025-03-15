@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowUp, Trophy, Flame, MessageSquare, User, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CommentWithUser, User as UserType, UserStats } from "@shared/schema";
@@ -105,8 +106,8 @@ export default function Leaderboard() {
                           </div>
                         </div>
                         
-                        <ScrollArea className="max-w-full">
-                          <p className="text-sm mb-3 break-words">{comment.content}</p>
+                        <ScrollArea className="max-w-full custom-scrollbar">
+                          <p className="text-sm mb-3 break-words overflow-wrap-anywhere">{comment.content}</p>
                         </ScrollArea>
                         
                         <div className="flex items-center text-xs text-muted-foreground overflow-hidden">
@@ -137,7 +138,7 @@ export default function Leaderboard() {
                 <p className="mt-4 text-muted-foreground">Loading users leaderboard...</p>
               </div>
             ) : topUsers.length > 0 ? (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="responsive-grid">
                 {topUsers.map((user, index) => (
                   <Card key={user.id} className="bg-card hover:bg-card/90 transition-colors">
                     <CardContent className="p-4 flex items-center gap-3">
