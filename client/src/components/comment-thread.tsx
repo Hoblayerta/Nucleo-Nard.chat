@@ -45,9 +45,11 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyFormOpen, setReplyFormOpen] = useState(false);
-  const [repliesVisible, setRepliesVisible] = useState(false);
+  const [repliesVisible, setRepliesVisible] = useState(level < 2);
   const [liked, setLiked] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // Estado para el modal de respuesta
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -248,68 +250,119 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setRepliesVisible(!repliesVisible)}
-                className="text-xs text-muted-foreground hover:text-primary flex items-center px-2 py-1 h-auto mb-2"
-              >
-                {repliesVisible ? (
-                  <>
-                    <ChevronUp className="h-3 w-3 mr-1" />
-                    Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3 mr-1" />
-                    Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
-                  </>
-                )}
-              </Button>
-
-              {repliesVisible && level < 3 && (
-                <div className="replies-container custom-scrollbar">
-                  <div 
-                    className={`space-y-4 nested-reply-level-${Math.min(level + 1, 6)}`}
-                    style={{ 
-                      marginLeft: 0,
-                      paddingRight: 0
-                    }}
+              {/* Estilo de Facebook/Instagram: Solo un nivel visible directamente */}
+              {level < 2 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRepliesVisible(!repliesVisible)}
+                    className="text-xs text-primary hover:text-primary/80 flex items-center px-0 py-1 h-auto mb-2"
                   >
-                    {comment.replies.map((reply) => (
-                      <CommentItem 
-                        key={reply.id} 
-                        comment={reply} 
-                        postId={postId}
-                        level={level + 1}
-                      />
-                    ))}
-                  </div>
-                </div>
+                    {repliesVisible ? (
+                      <>
+                        <ChevronUp className="h-3 w-3 mr-1" />
+                        Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3 mr-1" />
+                        Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                      </>
+                    )}
+                  </Button>
+
+                  {repliesVisible && (
+                    <div className="replies-container custom-scrollbar">
+                      <div className="space-y-4 nested-reply-level-1 pl-3">
+                        {comment.replies.map((reply) => (
+                          <CommentItem 
+                            key={reply.id} 
+                            comment={reply} 
+                            postId={postId}
+                            level={level + 1}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               
-              {/* Visualización alternativa para comentarios muy anidados */}
-              {repliesVisible && level >= 3 && (
+              {/* Nivel 2+ - Usar un enfoque tipo Facebook con botón especial */}
+              {level >= 2 && (
                 <div className="mt-2">
-                  <Dialog>
+                  <Dialog open={replyModalOpen} onOpenChange={setReplyModalOpen}>
                     <DialogTrigger asChild>
                       <Button 
-                        variant="outline" 
-                        className="flex items-center justify-center gap-1 text-sm w-full"
+                        variant="link" 
+                        className="flex items-center p-0 text-primary hover:text-primary/80 h-6 text-xs"
                       >
-                        <ExternalLink className="h-3 w-3" />
-                        Ver respuestas en ventana completa
+                        <ChevronDown className="h-3 w-3 mr-1" />
+                        Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'} más
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-lg font-medium">
-                          Respuestas ({comment.replies.length})
+                          Respuestas a {comment.user.username}
                         </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Aquí puedes ver y responder a todos los comentarios de esta conversación
+                        </p>
                       </DialogHeader>
-                      <div className="space-y-4 mt-4">
+
+                      {/* Comentario original como contexto */}
+                      <div className="border-b pb-4 mb-4">
+                        <div className="flex gap-3">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/20 text-primary">
+                              {comment.user.username.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
+                              <span className="font-medium text-primary">
+                                {comment.user.username}
+                              </span>
+                              
+                              {comment.user.role === "admin" && (
+                                <Badge variant="outline" className="bg-success/20 text-success border-success/30">
+                                  <Shield className="h-3 w-3 mr-1" /> Admin
+                                </Badge>
+                              )}
+                              
+                              <span className="text-xs text-success flex items-center">
+                                <Flame className="h-3 w-3 mr-1" />
+                                x{comment.user.likeMultiplier}
+                              </span>
+                              
+                              <span className="text-xs text-muted-foreground">
+                                {timeAgo(new Date(comment.createdAt))}
+                              </span>
+                            </div>
+                            
+                            <p className="text-sm mb-2">{comment.content}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Formulario de respuesta */}
+                      <div className="mb-4">
+                        <CommentForm 
+                          postId={postId} 
+                          parentId={comment.id}
+                          onSuccess={() => {
+                            queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Respuestas */}
+                      <div className="space-y-4">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                          <div key={reply.id} className="group transition-all duration-200 hover:bg-card/50 rounded-md p-2 -mx-2">
                             <div className="flex gap-3">
                               <Avatar className="h-8 w-8 flex-shrink-0">
                                 <AvatarFallback className="bg-primary/20 text-primary">
@@ -343,25 +396,131 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                                 
                                 <div className="flex items-center text-xs text-muted-foreground gap-2">
                                   <div className="flex items-center">
-                                    <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-success">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="px-1 py-0 h-auto hover:text-success"
+                                    >
                                       <ArrowUp className="h-4 w-4 mr-1" />
                                     </Button>
                                     <span>{reply.likes}</span>
-                                    <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-destructive">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="px-1 py-0 h-auto hover:text-destructive"
+                                    >
                                       <ArrowDown className="h-4 w-4 ml-1" />
                                     </Button>
                                   </div>
+                                  
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="px-1 py-0 h-auto hover:text-primary"
+                                    onClick={() => {
+                                      setReplyModalOpen(false);
+                                      setTimeout(() => {
+                                        // Necesitamos cerrar esta modal y abrir una nueva para la respuesta
+                                        const replyDialog = document.createElement('button');
+                                        document.body.appendChild(replyDialog);
+                                        replyDialog.click();
+                                        document.body.removeChild(replyDialog);
+                                      }, 100);
+                                    }}
+                                  >
+                                    <MessageSquare className="h-4 w-4 mr-1" />
+                                    Responder
+                                  </Button>
                                 </div>
                                 
                                 {reply.replies && reply.replies.length > 0 && (
-                                  <div className="mt-3 ml-4 pl-4 border-l-2 border-primary/20">
-                                    <Button
-                                      variant="link"
-                                      size="sm"
-                                      className="p-0 h-auto mb-2 text-primary"
-                                    >
-                                      Ver {reply.replies.length} respuestas más
-                                    </Button>
+                                  <div className="mt-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button 
+                                          variant="link" 
+                                          className="flex items-center p-0 text-primary hover:text-primary/80 h-6 text-xs"
+                                        >
+                                          <ChevronDown className="h-3 w-3 mr-1" />
+                                          Ver {reply.replies.length} {reply.replies.length === 1 ? 'respuesta' : 'respuestas'} más
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                                        <DialogHeader>
+                                          <DialogTitle className="text-lg font-medium">
+                                            Respuestas a {reply.user.username}
+                                          </DialogTitle>
+                                          <p className="text-sm text-muted-foreground">
+                                            Continúa la conversación respondiendo a estos comentarios
+                                          </p>
+                                        </DialogHeader>
+                                        
+                                        {/* Comentario contexto */}
+                                        <div className="border-b pb-4 mb-4">
+                                          <div className="flex gap-3">
+                                            <Avatar className="h-8 w-8 flex-shrink-0">
+                                              <AvatarFallback className="bg-primary/20 text-primary">
+                                                {reply.user.username.substring(0, 2).toUpperCase()}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                              <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
+                                                <span className="font-medium text-primary">
+                                                  {reply.user.username}
+                                                </span>
+                                              </div>
+                                              <p className="text-sm mb-2">{reply.content}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Formulario de respuesta */}
+                                        <CommentForm 
+                                          postId={postId} 
+                                          parentId={reply.id}
+                                          onSuccess={() => {
+                                            queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+                                          }}
+                                        />
+                                        
+                                        <div className="space-y-4 mt-4">
+                                          {reply.replies.map((r) => (
+                                            <div key={r.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                                              <div className="flex gap-3">
+                                                <Avatar className="h-8 w-8 flex-shrink-0">
+                                                  <AvatarFallback className="bg-primary/20 text-primary">
+                                                    {r.user.username.substring(0, 2).toUpperCase()}
+                                                  </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1">
+                                                  <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
+                                                    <span className="font-medium text-primary">
+                                                      {r.user.username}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                      {timeAgo(new Date(r.createdAt))}
+                                                    </span>
+                                                  </div>
+                                                  <p className="text-sm mb-2">{r.content}</p>
+                                                  <div className="flex items-center text-xs text-muted-foreground gap-2">
+                                                    <div className="flex items-center">
+                                                      <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-success">
+                                                        <ArrowUp className="h-4 w-4 mr-1" />
+                                                      </Button>
+                                                      <span>{r.likes}</span>
+                                                    </div>
+                                                    <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-primary">
+                                                      <MessageSquare className="h-4 w-4 mr-1" />
+                                                      Responder
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
                                   </div>
                                 )}
                               </div>
