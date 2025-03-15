@@ -134,15 +134,43 @@
   
   .branch-node::before {
     content: "";
-    @apply absolute left-[-16px] top-0 w-[1px] h-full bg-primary/20;
+    @apply absolute left-[-16px] top-0 w-[2px] h-full bg-primary/20;
+    transition: background-color 0.3s ease;
   }
   
   .branch-node:last-child::before {
     @apply h-4;
   }
   
+  /* Colores para diferentes ramas del árbol (máximo 5 colores) */
+  .branch-node:nth-child(5n+1)::before {
+    @apply bg-blue-400/30;
+  }
+  
+  .branch-node:nth-child(5n+2)::before {
+    @apply bg-green-400/30;
+  }
+  
+  .branch-node:nth-child(5n+3)::before {
+    @apply bg-purple-400/30;
+  }
+  
+  .branch-node:nth-child(5n+4)::before {
+    @apply bg-amber-400/30;
+  }
+  
+  .branch-node:nth-child(5n+5)::before {
+    @apply bg-rose-400/30;
+  }
+  
   /* Estilo para resaltar la ruta activa al hacer hover */
-  .branch-node:hover .branch-connector {
+  .branch-node:hover::before {
     @apply bg-primary;
+  }
+  
+  /* Efecto en la tarjeta al pasar el ratón */
+  .branch-node:hover > div {
+    @apply border-primary shadow-md;
+    transform: translateX(2px);
   }
 }
