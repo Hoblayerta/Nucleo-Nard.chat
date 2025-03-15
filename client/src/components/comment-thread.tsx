@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowUp, ArrowDown, MessageSquare, Flag, Shield, Flame } from "lucide-react";
+import { 
+  ArrowUp, 
+  ArrowDown, 
+  MessageSquare, 
+  Flag, 
+  Shield, 
+  Flame,
+  ChevronDown,
+  ChevronUp
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,8 +36,10 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyFormOpen, setReplyFormOpen] = useState(false);
+  const [repliesVisible, setRepliesVisible] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -131,8 +142,46 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
             </span>
           </div>
           
-          <div className="overflow-x-auto horizontal-scroll custom-scrollbar">
-            <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
+          <div className="relative">
+            {/* Versión móvil con expand/collapse */}
+            <div className="md:hidden">
+              {expanded ? (
+                <>
+                  <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpanded(false)}
+                    className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center px-1 py-0 h-auto"
+                  >
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Colapsar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm mb-2 break-words overflow-wrap-anywhere line-clamp-2">
+                    {comment.content}
+                  </p>
+                  {comment.content.length > 100 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setExpanded(true)}
+                      className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center px-1 py-0 h-auto"
+                    >
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Leer más
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+            
+            {/* Versión desktop con scroll horizontal */}
+            <div className="hidden md:block overflow-x-auto horizontal-scroll custom-scrollbar">
+              <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
+            </div>
           </div>
           
           <div className="flex flex-wrap items-center text-xs text-muted-foreground gap-2">
@@ -159,7 +208,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               variant="ghost" 
               size="sm" 
               className="px-1 py-0 h-auto hover:text-primary"
-              onClick={() => setReplyOpen(!replyOpen)}
+              onClick={() => setReplyFormOpen(!replyFormOpen)}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
               Reply
@@ -175,29 +224,52 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
             </Button>
           </div>
           
-          {replyOpen && (
+          {replyFormOpen && (
             <div className="mt-3">
               <CommentForm 
                 postId={postId} 
                 parentId={comment.id} 
-                onSuccess={() => setReplyOpen(false)}
+                onSuccess={() => setReplyFormOpen(false)}
               />
             </div>
           )}
           
           {comment.replies && comment.replies.length > 0 && (
-            <div 
-              className="mt-4 space-y-4 pl-2 sm:pl-4 border-l-2 border-border"
-              style={{ marginLeft: level > 3 ? '0.25rem' : '0' }}
-            >
-              {comment.replies.map((reply) => (
-                <CommentItem 
-                  key={reply.id} 
-                  comment={reply} 
-                  postId={postId}
-                  level={level + 1}
-                />
-              ))}
+            <div className="mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRepliesVisible(!repliesVisible)}
+                className="text-xs text-muted-foreground hover:text-primary flex items-center px-2 py-1 h-auto mb-2"
+              >
+                {repliesVisible ? (
+                  <>
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3 mr-1" />
+                    Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                  </>
+                )}
+              </Button>
+
+              {repliesVisible && (
+                <div 
+                  className="space-y-4 pl-2 sm:pl-4 border-l-2 border-border"
+                  style={{ marginLeft: level > 3 ? '0.25rem' : '0' }}
+                >
+                  {comment.replies.map((reply) => (
+                    <CommentItem 
+                      key={reply.id} 
+                      comment={reply} 
+                      postId={postId}
+                      level={level + 1}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
