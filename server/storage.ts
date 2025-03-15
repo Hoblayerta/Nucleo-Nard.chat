@@ -327,6 +327,9 @@ export class MemStorage implements IStorage {
         // Position is useful for enumeration in the UI
         const position = parseInt(path.split('.').pop() || '0');
         
+        // Generate permalink for the comment
+        const permalink = await this.generatePermalink('comment', comment.id, path);
+        
         return {
           ...comment,
           path,
@@ -342,6 +345,7 @@ export class MemStorage implements IStorage {
           score: upvotes - downvotes,
           level: path.split('.').length - 1,
           position,
+          permalink,
           replies: [],
         };
       });
@@ -354,7 +358,8 @@ export class MemStorage implements IStorage {
 
     // First pass: Create a map of all comments by ID
     comments.forEach(comment => {
-      commentMap.set(comment.id, {...comment, replies: []});
+      // Need to preserve the permalink which is required in the CommentWithUser type
+      commentMap.set(comment.id, {...comment, replies: [], permalink: comment.permalink});
     });
 
     // Second pass: Arrange comments into a tree structure with proper ordering
@@ -727,9 +732,7 @@ export class MemStorage implements IStorage {
       content: comment.content.length > 100 ? comment.content.substring(0, 97) + '...' : comment.content,
       username: comment.user.username,
       score: comment.score,
-      permalink: comment.path 
-        ? `/post/${comment.postId}/comment/${comment.id}` 
-        : `/post/${comment.postId}`
+      permalink: comment.permalink
     }));
     
     // Combine and sort by score

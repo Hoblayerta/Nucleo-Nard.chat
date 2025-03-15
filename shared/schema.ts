@@ -114,6 +114,7 @@ export type CommentWithUser = Comment & {
   replies?: CommentWithUser[];
   level: number; // Nesting level for UI
   position: number; // Position in the comment thread for enumeration
+  permalink: string; // URL for sharing this comment
 };
 
 export type PostWithDetails = Post & {
