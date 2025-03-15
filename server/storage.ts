@@ -40,7 +40,7 @@ export interface IStorage {
   getTopComments(limit: number): Promise<CommentWithUser[]>;
   getUserStats(userId: number): Promise<UserStats>;
   getScoreboard(limit: number): Promise<ScoreboardItem[]>;
-  generatePermalink(type: 'post' | 'comment', id: number, path?: string): string;
+  generatePermalink(type: 'post' | 'comment', id: number, path?: string): Promise<string>;
 }
 
 export class MemStorage implements IStorage {
@@ -78,11 +78,11 @@ export class MemStorage implements IStorage {
   }
   
   // Helper method to generate permalink
-  async generatePermalink(type: 'post' | 'comment', id: number, path?: string): string {
+  async generatePermalink(type: 'post' | 'comment', id: number, path?: string): Promise<string> {
     if (type === 'post') {
-      return `/post/${id}`;
+      return Promise.resolve(`/post/${id}`);
     } else {
-      return `/post/${path?.split('.')[0] || ''}/comment/${id}`;
+      return Promise.resolve(`/post/${path?.split('.')[0] || ''}/comment/${id}`);
     }
   }
 
@@ -120,6 +120,7 @@ export class MemStorage implements IStorage {
       ...user,
       ...(data.role ? { role: data.role } : {}),
       ...(data.likeMultiplier !== undefined ? { likeMultiplier: data.likeMultiplier } : {}),
+      ...(data.downvoteMultiplier !== undefined ? { downvoteMultiplier: data.downvoteMultiplier } : {}),
     };
     
     this.users.set(id, updatedUser);
@@ -182,9 +183,9 @@ export class MemStorage implements IStorage {
       })
     );
     
-    // Sort by likes received (highest first) and take the specified limit
+    // Sort by total score (highest first) and take the specified limit
     return usersWithStats
-      .sort((a, b) => b.stats.likesReceived - a.stats.likesReceived)
+      .sort((a, b) => b.stats.totalScore - a.stats.totalScore)
       .slice(0, limit);
   }
 
@@ -192,7 +193,13 @@ export class MemStorage implements IStorage {
   async createPost(insertPost: InsertPost): Promise<Post> {
     const id = this.currentIds.post++;
     const now = new Date();
-    const post: Post = { ...insertPost, id, createdAt: now };
+    const post: Post = { 
+      ...insertPost, 
+      id, 
+      createdAt: now,
+      imageUrl: insertPost.imageUrl || null,
+      linkUrl: insertPost.linkUrl || null
+    };
     this.posts.set(id, post);
     return post;
   }
@@ -493,7 +500,7 @@ export class MemStorage implements IStorage {
       downvotes,
       score: upvotes - downvotes,
       comments: commentCount,
-      permalink: `/post/${post.id}`
+      permalink: await this.generatePermalink('post', post.id)
     };
   }
   
@@ -525,6 +532,9 @@ export class MemStorage implements IStorage {
         return total + (voteUser?.downvoteMultiplier || 1);
       }, 0);
     
+    // Generate permalink for the comment
+    const permalink = await this.generatePermalink('comment', comment.id, path);
+    
     return {
       ...comment,
       user: {
@@ -538,7 +548,8 @@ export class MemStorage implements IStorage {
       downvotes,
       score: upvotes - downvotes,
       level: path.split('.').length - 1,
-      position: parseInt(path.split('.').pop() || '0')
+      position: parseInt(path.split('.').pop() || '0'),
+      permalink
     };
   }
 
@@ -572,6 +583,9 @@ export class MemStorage implements IStorage {
         const path = comment.path || `${comment.id}`;
         const position = parseInt(path.split('.').pop() || '0');
         
+        // Generate permalink for the comment
+        const permalink = await this.generatePermalink('comment', comment.id, path);
+        
         return {
           ...comment,
           path,
@@ -587,6 +601,7 @@ export class MemStorage implements IStorage {
           score: upvotes - downvotes,
           level: path.split('.').length - 1,
           position,
+          permalink,
           replies: [],
         };
       })
