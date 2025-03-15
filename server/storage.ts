@@ -1,8 +1,9 @@
 import { 
-  users, posts, comments, likes, 
+  users, posts, comments, votes, 
   type User, type InsertUser, type Post, type InsertPost,
-  type Comment, type InsertComment, type Like, type InsertLike,
-  type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats
+  type Comment, type InsertComment, type Vote, type InsertVote,
+  type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats,
+  type ScoreboardItem
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -20,45 +21,50 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: number): Promise<Post | undefined>;
   getPosts(): Promise<PostWithDetails[]>;
+  getPostByPermalink(permalink: string): Promise<PostWithDetails | undefined>;
   
   // Comment operations
   createComment(comment: InsertComment): Promise<Comment>;
   getComment(id: number): Promise<Comment | undefined>;
   getCommentsByPostId(postId: number): Promise<CommentWithUser[]>;
+  getCommentByPath(postId: number, path: string): Promise<CommentWithUser | undefined>;
   
-  // Like operations
-  createLike(like: InsertLike): Promise<Like>;
-  removeLike(userId: number, commentId?: number, postId?: number): Promise<boolean>;
-  getLikesByUserId(userId: number): Promise<Like[]>;
-  checkLikeExists(userId: number, commentId?: number, postId?: number): Promise<boolean>;
+  // Vote operations
+  createVote(vote: InsertVote): Promise<Vote>;
+  updateVote(userId: number, value: number, commentId?: number, postId?: number): Promise<boolean>;
+  removeVote(userId: number, commentId?: number, postId?: number): Promise<boolean>;
+  getVotesByUserId(userId: number): Promise<Vote[]>;
+  checkVoteExists(userId: number, commentId?: number, postId?: number): Promise<Vote | undefined>;
   
   // Combined operations
   getTopComments(limit: number): Promise<CommentWithUser[]>;
   getUserStats(userId: number): Promise<UserStats>;
+  getScoreboard(limit: number): Promise<ScoreboardItem[]>;
+  generatePermalink(type: 'post' | 'comment', id: number, path?: string): string;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private posts: Map<number, Post>;
   private comments: Map<number, Comment>;
-  private likes: Map<number, Like>;
+  private votes: Map<number, Vote>;
   private currentIds: {
     user: number;
     post: number;
     comment: number;
-    like: number;
+    vote: number;
   };
 
   constructor() {
     this.users = new Map();
     this.posts = new Map();
     this.comments = new Map();
-    this.likes = new Map();
+    this.votes = new Map();
     this.currentIds = {
       user: 1,
       post: 1,
       comment: 1,
-      like: 1,
+      vote: 1,
     };
     
     // Create an initial admin user
@@ -66,8 +72,18 @@ export class MemStorage implements IStorage {
       username: "admin",
       password: "admin123",
       role: "admin",
-      likeMultiplier: 10
+      likeMultiplier: 10,
+      downvoteMultiplier: 5
     });
+  }
+  
+  // Helper method to generate permalink
+  async generatePermalink(type: 'post' | 'comment', id: number, path?: string): string {
+    if (type === 'post') {
+      return `/post/${id}`;
+    } else {
+      return `/post/${path?.split('.')[0] || ''}/comment/${id}`;
+    }
   }
 
   // User operations
@@ -89,6 +105,7 @@ export class MemStorage implements IStorage {
       id, 
       role: insertUser.role || "user",
       likeMultiplier: insertUser.likeMultiplier || 1,
+      downvoteMultiplier: insertUser.downvoteMultiplier || 1,
       createdAt: now
     };
     this.users.set(id, user);
@@ -137,13 +154,13 @@ export class MemStorage implements IStorage {
       this.comments.delete(commentId);
     });
     
-    // 3. Remove user's likes
-    const userLikes = Array.from(this.likes.values())
-      .filter(like => like.userId === id)
-      .map(like => like.id);
+    // 3. Remove user's votes
+    const userVotes = Array.from(this.votes.values())
+      .filter(vote => vote.userId === id)
+      .map(vote => vote.id);
       
-    userLikes.forEach(likeId => {
-      this.likes.delete(likeId);
+    userVotes.forEach(voteId => {
+      this.votes.delete(voteId);
     });
     
     return true;
@@ -189,12 +206,28 @@ export class MemStorage implements IStorage {
     
     return Promise.all(posts.map(async (post) => {
       const user = await this.getUser(post.userId);
-      const postLikes = Array.from(this.likes.values()).filter(
-        (like) => like.postId === post.id
-      ).length;
-      const postComments = Array.from(this.comments.values()).filter(
-        (comment) => comment.postId === post.id
-      ).length;
+      
+      // Calculate votes
+      const postVotes = Array.from(this.votes.values())
+        .filter(vote => vote.postId === post.id);
+      
+      const upvotes = postVotes
+        .filter(vote => vote.value === 1)
+        .reduce((total, vote) => {
+          const voteUser = this.users.get(vote.userId);
+          return total + (voteUser?.likeMultiplier || 1);
+        }, 0);
+        
+      const downvotes = postVotes
+        .filter(vote => vote.value === -1)
+        .reduce((total, vote) => {
+          const voteUser = this.users.get(vote.userId);
+          return total + (voteUser?.downvoteMultiplier || 1);
+        }, 0);
+      
+      const postComments = Array.from(this.comments.values())
+        .filter(comment => comment.postId === post.id)
+        .length;
       
       return {
         ...post,
@@ -203,8 +236,11 @@ export class MemStorage implements IStorage {
           username: user?.username || "unknown",
           role: user?.role || "user",
         },
-        likes: postLikes,
+        upvotes,
+        downvotes,
+        score: upvotes - downvotes,
         comments: postComments,
+        permalink: await this.generatePermalink('post', post.id),
       };
     }));
   }
@@ -213,12 +249,36 @@ export class MemStorage implements IStorage {
   async createComment(insertComment: InsertComment): Promise<Comment> {
     const id = this.currentIds.comment++;
     const now = new Date();
+    
+    // Calculate path for hierarchical structure
+    let path = `${id}`; // Default path (root level comment)
+    
+    if (insertComment.parentId) {
+      // If this is a reply, find the parent and append to its path
+      const parent = await this.getComment(insertComment.parentId);
+      if (parent) {
+        // If parent has a path, use it as prefix
+        if (parent.path) {
+          // Get current children count for this parent to determine position
+          const siblings = Array.from(this.comments.values())
+            .filter(c => c.parentId === insertComment.parentId).length;
+          
+          path = `${parent.path}.${siblings + 1}`;
+        } else {
+          // If parent doesn't have a path (legacy data), create a new one
+          path = `${parent.id}.${id}`;
+        }
+      }
+    }
+    
     const comment: Comment = { 
       ...insertComment, 
       id, 
       createdAt: now,
-      parentId: insertComment.parentId ?? null 
+      parentId: insertComment.parentId ?? null,
+      path
     };
+    
     this.comments.set(id, comment);
     return comment;
   }
@@ -228,26 +288,53 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentsByPostId(postId: number): Promise<CommentWithUser[]> {
+    // Get all comments for the post
     const allComments = Array.from(this.comments.values())
       .filter((comment) => comment.postId === postId)
-      .map(async (comment) => {
+      .map(async (comment, index) => {
         const user = await this.getUser(comment.userId);
-        const commentLikes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id)
-          .reduce((total, like) => {
-            const likeUser = this.users.get(like.userId);
-            return total + (likeUser?.likeMultiplier || 1);
+        
+        // Calculate votes
+        const commentVotes = Array.from(this.votes.values())
+          .filter((vote) => vote.commentId === comment.id);
+        
+        const upvotes = commentVotes
+          .filter(vote => vote.value === 1)
+          .reduce((total, vote) => {
+            const voteUser = this.users.get(vote.userId);
+            return total + (voteUser?.likeMultiplier || 1);
           }, 0);
+          
+        const downvotes = commentVotes
+          .filter(vote => vote.value === -1)
+          .reduce((total, vote) => {
+            const voteUser = this.users.get(vote.userId);
+            return total + (voteUser?.downvoteMultiplier || 1);
+          }, 0);
+        
+        // Calculate path for improved tree and enumeration
+        const path = comment.path || (comment.parentId ? 
+          `${comment.parentId}.${index + 1}` : 
+          `${index + 1}`);
+        
+        // Position is useful for enumeration in the UI
+        const position = parseInt(path.split('.').pop() || '0');
         
         return {
           ...comment,
+          path,
           user: {
             id: user?.id || 0,
             username: user?.username || "unknown",
             role: user?.role || "user",
             likeMultiplier: user?.likeMultiplier || 1,
+            downvoteMultiplier: user?.downvoteMultiplier || 1,
           },
-          likes: commentLikes,
+          upvotes,
+          downvotes,
+          score: upvotes - downvotes,
+          level: path.split('.').length - 1,
+          position,
           replies: [],
         };
       });
@@ -263,13 +350,15 @@ export class MemStorage implements IStorage {
       commentMap.set(comment.id, {...comment, replies: []});
     });
 
-    // Second pass: Arrange comments into a tree structure
+    // Second pass: Arrange comments into a tree structure with proper ordering
     commentMap.forEach(comment => {
       if (comment.parentId) {
         const parent = commentMap.get(comment.parentId);
         if (parent) {
           parent.replies = parent.replies || [];
           parent.replies.push(comment);
+          // Sort replies by position for consistent enumeration
+          parent.replies.sort((a, b) => a.position - b.position);
         } else {
           rootComments.push(comment);
         }
@@ -277,54 +366,180 @@ export class MemStorage implements IStorage {
         rootComments.push(comment);
       }
     });
+    
+    // Sort root comments by position
+    rootComments.sort((a, b) => a.position - b.position);
 
     return rootComments;
   }
 
-  // Like operations
-  async createLike(insertLike: InsertLike): Promise<Like> {
-    const id = this.currentIds.like++;
+  // Vote operations
+  async createVote(insertVote: InsertVote): Promise<Vote> {
+    const id = this.currentIds.vote++;
     const now = new Date();
-    const like: Like = { 
-      ...insertLike, 
+    const vote: Vote = { 
+      ...insertVote, 
       id, 
       createdAt: now,
-      postId: insertLike.postId ?? null,
-      commentId: insertLike.commentId ?? null
+      postId: insertVote.postId ?? null,
+      commentId: insertVote.commentId ?? null
     };
-    this.likes.set(id, like);
-    return like;
+    this.votes.set(id, vote);
+    return vote;
+  }
+  
+  async updateVote(userId: number, value: number, commentId?: number, postId?: number): Promise<boolean> {
+    const existingVote = await this.checkVoteExists(userId, commentId, postId);
+    if (existingVote) {
+      // If the vote value is the same, remove it (toggle behavior)
+      if (existingVote.value === value) {
+        return this.removeVote(userId, commentId, postId);
+      }
+      
+      // Otherwise, update the value
+      const updatedVote = {
+        ...existingVote,
+        value
+      };
+      this.votes.set(existingVote.id, updatedVote);
+      return true;
+    }
+    
+    // If no vote exists, create a new one
+    await this.createVote({
+      userId,
+      value: value as 1 | -1,
+      commentId: commentId ?? undefined,
+      postId: postId ?? undefined
+    });
+    
+    return true;
   }
 
-  async removeLike(userId: number, commentId?: number, postId?: number): Promise<boolean> {
-    const likeToRemove = Array.from(this.likes.values()).find(
-      (like) => 
-        like.userId === userId && 
-        ((commentId && like.commentId === commentId) || 
-         (postId && like.postId === postId))
+  async removeVote(userId: number, commentId?: number, postId?: number): Promise<boolean> {
+    const voteToRemove = Array.from(this.votes.values()).find(
+      (vote) => 
+        vote.userId === userId && 
+        ((commentId && vote.commentId === commentId) || 
+         (postId && vote.postId === postId))
     );
     
-    if (likeToRemove) {
-      this.likes.delete(likeToRemove.id);
+    if (voteToRemove) {
+      this.votes.delete(voteToRemove.id);
       return true;
     }
     
     return false;
   }
 
-  async getLikesByUserId(userId: number): Promise<Like[]> {
-    return Array.from(this.likes.values()).filter(
-      (like) => like.userId === userId
+  async getVotesByUserId(userId: number): Promise<Vote[]> {
+    return Array.from(this.votes.values()).filter(
+      (vote) => vote.userId === userId
     );
   }
 
-  async checkLikeExists(userId: number, commentId?: number, postId?: number): Promise<boolean> {
-    return Array.from(this.likes.values()).some(
-      (like) => 
-        like.userId === userId && 
-        ((commentId && like.commentId === commentId) || 
-         (postId && like.postId === postId))
+  async checkVoteExists(userId: number, commentId?: number, postId?: number): Promise<Vote | undefined> {
+    return Array.from(this.votes.values()).find(
+      (vote) => 
+        vote.userId === userId && 
+        ((commentId && vote.commentId === commentId) || 
+         (postId && vote.postId === postId))
     );
+  }
+  
+  // Implementation for getPostByPermalink
+  async getPostByPermalink(permalink: string): Promise<PostWithDetails | undefined> {
+    const postIdMatch = permalink.match(/\/post\/(\d+)/);
+    if (!postIdMatch) return undefined;
+    
+    const postId = parseInt(postIdMatch[1]);
+    if (isNaN(postId)) return undefined;
+    
+    const post = await this.getPost(postId);
+    if (!post) return undefined;
+    
+    const user = await this.getUser(post.userId);
+    
+    // Calculate votes
+    const votes = Array.from(this.votes.values())
+      .filter(vote => vote.postId === post.id);
+      
+    const upvotes = votes
+      .filter(vote => vote.value === 1)
+      .reduce((total, vote) => {
+        const voteUser = this.users.get(vote.userId);
+        return total + (voteUser?.likeMultiplier || 1);
+      }, 0);
+      
+    const downvotes = votes
+      .filter(vote => vote.value === -1)
+      .reduce((total, vote) => {
+        const voteUser = this.users.get(vote.userId);
+        return total + (voteUser?.downvoteMultiplier || 1);
+      }, 0);
+    
+    const commentCount = Array.from(this.comments.values())
+      .filter(comment => comment.postId === post.id)
+      .length;
+    
+    return {
+      ...post,
+      user: {
+        id: user?.id || 0,
+        username: user?.username || "unknown",
+        role: user?.role || "user",
+      },
+      upvotes,
+      downvotes,
+      score: upvotes - downvotes,
+      comments: commentCount,
+      permalink: `/post/${post.id}`
+    };
+  }
+  
+  // Implementation for getCommentByPath
+  async getCommentByPath(postId: number, path: string): Promise<CommentWithUser | undefined> {
+    const comments = Array.from(this.comments.values())
+      .filter(comment => comment.postId === postId && comment.path === path);
+      
+    if (comments.length === 0) return undefined;
+    
+    const comment = comments[0];
+    const user = await this.getUser(comment.userId);
+    
+    // Calculate votes
+    const votes = Array.from(this.votes.values())
+      .filter(vote => vote.commentId === comment.id);
+      
+    const upvotes = votes
+      .filter(vote => vote.value === 1)
+      .reduce((total, vote) => {
+        const voteUser = this.users.get(vote.userId);
+        return total + (voteUser?.likeMultiplier || 1);
+      }, 0);
+      
+    const downvotes = votes
+      .filter(vote => vote.value === -1)
+      .reduce((total, vote) => {
+        const voteUser = this.users.get(vote.userId);
+        return total + (voteUser?.downvoteMultiplier || 1);
+      }, 0);
+    
+    return {
+      ...comment,
+      user: {
+        id: user?.id || 0,
+        username: user?.username || "unknown",
+        role: user?.role || "user",
+        likeMultiplier: user?.likeMultiplier || 1,
+        downvoteMultiplier: user?.downvoteMultiplier || 1,
+      },
+      upvotes,
+      downvotes,
+      score: upvotes - downvotes,
+      level: path.split('.').length - 1,
+      position: parseInt(path.split('.').pop() || '0')
+    };
   }
 
   // Combined operations
@@ -332,33 +547,54 @@ export class MemStorage implements IStorage {
     const comments = Array.from(this.comments.values());
     
     const commentsWithDetails = await Promise.all(
-      comments.map(async (comment) => {
+      comments.map(async (comment, index) => {
         const user = await this.getUser(comment.userId);
         
-        // Calculate likes with multipliers
-        const commentLikes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id)
-          .reduce((total, like) => {
-            const likeUser = this.users.get(like.userId);
-            return total + (likeUser?.likeMultiplier || 1);
+        // Calculate votes with multipliers
+        const votes = Array.from(this.votes.values())
+          .filter((vote) => vote.commentId === comment.id);
+        
+        const upvotes = votes
+          .filter(vote => vote.value === 1)
+          .reduce((total, vote) => {
+            const voteUser = this.users.get(vote.userId);
+            return total + (voteUser?.likeMultiplier || 1);
           }, 0);
+        
+        const downvotes = votes
+          .filter(vote => vote.value === -1)
+          .reduce((total, vote) => {
+            const voteUser = this.users.get(vote.userId);
+            return total + (voteUser?.downvoteMultiplier || 1);
+          }, 0);
+        
+        // Calculate path and position
+        const path = comment.path || `${comment.id}`;
+        const position = parseInt(path.split('.').pop() || '0');
         
         return {
           ...comment,
+          path,
           user: {
             id: user?.id || 0,
             username: user?.username || "unknown",
             role: user?.role || "user",
             likeMultiplier: user?.likeMultiplier || 1,
+            downvoteMultiplier: user?.downvoteMultiplier || 1,
           },
-          likes: commentLikes,
+          upvotes,
+          downvotes,
+          score: upvotes - downvotes,
+          level: path.split('.').length - 1,
+          position,
+          replies: [],
         };
       })
     );
     
-    // Sort by likes (highest first) and take the specified limit
+    // Sort by score (highest first) and take the specified limit
     return commentsWithDetails
-      .sort((a, b) => b.likes - a.likes)
+      .sort((a, b) => b.score - a.score)
       .slice(0, limit);
   }
 
@@ -371,42 +607,122 @@ export class MemStorage implements IStorage {
       (comment) => comment.userId === userId
     ).length;
     
-    // Calculate total likes received on user's posts and comments
-    let likesReceived = 0;
+    // Calculate votes received on user's posts and comments
+    let upvotesReceived = 0;
+    let downvotesReceived = 0;
     
-    // Count likes on posts
+    // Count votes on posts
     const userPosts = Array.from(this.posts.values()).filter(
       (post) => post.userId === userId
     );
     
     userPosts.forEach(post => {
-      likesReceived += Array.from(this.likes.values())
-        .filter(like => like.postId === post.id)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
+      const postVotes = Array.from(this.votes.values())
+        .filter(vote => vote.postId === post.id);
+      
+      // Count upvotes with multipliers
+      upvotesReceived += postVotes
+        .filter(vote => vote.value === 1)
+        .reduce((total, vote) => {
+          const voteUser = this.users.get(vote.userId);
+          return total + (voteUser?.likeMultiplier || 1);
+        }, 0);
+      
+      // Count downvotes with multipliers
+      downvotesReceived += postVotes
+        .filter(vote => vote.value === -1)
+        .reduce((total, vote) => {
+          const voteUser = this.users.get(vote.userId);
+          return total + (voteUser?.downvoteMultiplier || 1);
         }, 0);
     });
     
-    // Count likes on comments
+    // Count votes on comments
     const userComments = Array.from(this.comments.values()).filter(
       (comment) => comment.userId === userId
     );
     
     userComments.forEach(comment => {
-      likesReceived += Array.from(this.likes.values())
-        .filter(like => like.commentId === comment.id)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
+      const commentVotes = Array.from(this.votes.values())
+        .filter(vote => vote.commentId === comment.id);
+      
+      // Count upvotes with multipliers
+      upvotesReceived += commentVotes
+        .filter(vote => vote.value === 1)
+        .reduce((total, vote) => {
+          const voteUser = this.users.get(vote.userId);
+          return total + (voteUser?.likeMultiplier || 1);
+        }, 0);
+      
+      // Count downvotes with multipliers
+      downvotesReceived += commentVotes
+        .filter(vote => vote.value === -1)
+        .reduce((total, vote) => {
+          const voteUser = this.users.get(vote.userId);
+          return total + (voteUser?.downvoteMultiplier || 1);
         }, 0);
     });
     
     return {
       postCount,
       commentCount,
-      likesReceived,
+      upvotesReceived,
+      downvotesReceived,
+      totalScore: upvotesReceived - downvotesReceived
     };
+  }
+  
+  // Implementation for getScoreboard
+  async getScoreboard(limit: number): Promise<ScoreboardItem[]> {
+    // Get top voted posts and comments
+    const posts = await this.getPosts();
+    const allComments = await Promise.all(
+      Array.from(this.posts.values()).map(post => 
+        this.getCommentsByPostId(post.id)
+      )
+    );
+    
+    // Flatten all comments
+    const flattenComments: CommentWithUser[] = [];
+    allComments.forEach(comments => {
+      const addComment = (comment: CommentWithUser) => {
+        flattenComments.push(comment);
+        if (comment.replies && comment.replies.length > 0) {
+          comment.replies.forEach(addComment);
+        }
+      };
+      comments.forEach(addComment);
+    });
+    
+    // Convert posts to scoreboard items
+    const postItems: ScoreboardItem[] = posts.map(post => ({
+      id: post.id,
+      type: 'post',
+      title: post.title,
+      content: post.content.length > 100 ? post.content.substring(0, 97) + '...' : post.content,
+      username: post.user.username,
+      score: post.score,
+      permalink: post.permalink
+    }));
+    
+    // Convert comments to scoreboard items
+    const commentItems: ScoreboardItem[] = flattenComments.map(comment => ({
+      id: comment.id,
+      type: 'comment',
+      content: comment.content.length > 100 ? comment.content.substring(0, 97) + '...' : comment.content,
+      username: comment.user.username,
+      score: comment.score,
+      permalink: comment.path 
+        ? `/post/${comment.postId}/comment/${comment.id}` 
+        : `/post/${comment.postId}`
+    }));
+    
+    // Combine and sort by score
+    const allItems = [...postItems, ...commentItems]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+      
+    return allItems;
   }
 }
 
