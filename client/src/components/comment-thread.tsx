@@ -147,7 +147,9 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
             <div className="md:hidden">
               {expanded ? (
                 <>
-                  <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
+                  <div className="custom-scrollbar horizontal-scroll">
+                    <p className="text-sm mb-2 break-words overflow-wrap-anywhere">{comment.content}</p>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -155,14 +157,16 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                     className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center px-1 py-0 h-auto"
                   >
                     <ChevronUp className="h-3 w-3 mr-1" />
-                    Collapse
+                    Colapsar
                   </Button>
                 </>
               ) : (
                 <>
-                  <p className="text-sm mb-2 break-words overflow-wrap-anywhere line-clamp-2">
-                    {comment.content}
-                  </p>
+                  <div className="custom-scrollbar horizontal-scroll">
+                    <p className="text-sm mb-2 break-words overflow-wrap-anywhere line-clamp-2">
+                      {comment.content}
+                    </p>
+                  </div>
                   {comment.content.length > 100 && (
                     <Button
                       variant="ghost"
@@ -171,7 +175,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                       className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center px-1 py-0 h-auto"
                     >
                       <ChevronDown className="h-3 w-3 mr-1" />
-                      Read more
+                      Ver más
                     </Button>
                   )}
                 </>
@@ -211,7 +215,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               onClick={() => setReplyFormOpen(!replyFormOpen)}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
-              Reply
+              Responder
             </Button>
             
             <Button 
@@ -220,7 +224,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               className="px-1 py-0 h-auto hover:text-primary"
             >
               <Flag className="h-4 w-4 mr-1" />
-              Report
+              Reportar
             </Button>
           </div>
           
@@ -245,29 +249,34 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                 {repliesVisible ? (
                   <>
                     <ChevronUp className="h-3 w-3 mr-1" />
-                    Hide {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+                    Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-3 w-3 mr-1" />
-                    View {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+                    Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
                   </>
                 )}
               </Button>
 
               {repliesVisible && (
-                <div 
-                  className="space-y-4 pl-2 sm:pl-4 border-l-2 border-border"
-                  style={{ marginLeft: level > 3 ? '0.25rem' : '0' }}
-                >
-                  {comment.replies.map((reply) => (
-                    <CommentItem 
-                      key={reply.id} 
-                      comment={reply} 
-                      postId={postId}
-                      level={level + 1}
-                    />
-                  ))}
+                <div className="replies-container custom-scrollbar">
+                  <div 
+                    className={`space-y-4 pl-2 sm:pl-4 nested-reply-level-${Math.min(level + 1, 6)}`}
+                    style={{ 
+                      marginLeft: level > 0 ? '0.25rem' : '0',
+                      paddingRight: level > 2 ? '0.5rem' : '0'
+                    }}
+                  >
+                    {comment.replies.map((reply) => (
+                      <CommentItem 
+                        key={reply.id} 
+                        comment={reply} 
+                        postId={postId}
+                        level={level + 1}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -287,7 +296,7 @@ export default function CommentThread({ postId }: CommentThreadProps) {
     return (
       <div className="text-center py-4">
         <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-        <p className="mt-2 text-sm text-muted-foreground">Loading comments...</p>
+        <p className="mt-2 text-sm text-muted-foreground">Cargando comentarios...</p>
       </div>
     );
   }
@@ -295,7 +304,7 @@ export default function CommentThread({ postId }: CommentThreadProps) {
   if (comments.length === 0) {
     return (
       <div className="text-center py-4">
-        <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
+        <p className="text-muted-foreground">Aún no hay comentarios. ¡Sé el primero en comentar!</p>
       </div>
     );
   }
@@ -309,9 +318,10 @@ export default function CommentThread({ postId }: CommentThreadProps) {
       {comments.length > 5 && (
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full flex items-center justify-center gap-1"
         >
-          Show more comments
+          <ChevronDown className="h-4 w-4" />
+          Ver más comentarios
         </Button>
       )}
     </div>

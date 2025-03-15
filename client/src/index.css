@@ -26,7 +26,7 @@
   /* Scrollbar personalizada para mejor estética */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
-    height: 6px;
+    height: 8px; /* Aumentamos altura para mejor usabilidad en móviles */
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -40,6 +40,8 @@
   /* Soporte para scroll horizontal en contenedores */
   .horizontal-scroll {
     @apply overflow-x-auto whitespace-nowrap pb-2;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch; /* Mejor desplazamiento en iOS */
   }
   
   /* Contenedor flexible para dispositivos pequeños */
@@ -52,5 +54,20 @@
     .xs\:grid-cols-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
+  
+  /* Clases para niveles de anidamiento de comentarios */
+  .nested-reply-level-1 { @apply border-l-2 border-primary/70; }
+  .nested-reply-level-2 { @apply border-l-2 border-success/70; }
+  .nested-reply-level-3 { @apply border-l-2 border-blue-400/70; }
+  .nested-reply-level-4 { @apply border-l-2 border-purple-400/70; }
+  .nested-reply-level-5 { @apply border-l-2 border-amber-400/70; }
+  .nested-reply-level-6 { @apply border-l-2 border-indigo-400/70; }
+  
+  /* Contenedor desplazable para respuestas anidadas */
+  .replies-container {
+    @apply max-w-full overflow-x-auto overflow-y-visible pb-2;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(to right, transparent, black 5px, black 95%, transparent);
   }
 }
