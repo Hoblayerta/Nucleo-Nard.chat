@@ -9,7 +9,8 @@ import {
   Shield, 
   Flame,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ExternalLink
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,6 +20,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import CommentForm from "./comment-form";
 import type { CommentWithUser } from "@shared/schema";
 
@@ -259,13 +267,13 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                 )}
               </Button>
 
-              {repliesVisible && (
+              {repliesVisible && level < 3 && (
                 <div className="replies-container custom-scrollbar">
                   <div 
-                    className={`space-y-4 pl-2 sm:pl-4 nested-reply-level-${Math.min(level + 1, 6)}`}
+                    className={`space-y-4 nested-reply-level-${Math.min(level + 1, 6)}`}
                     style={{ 
-                      marginLeft: level > 0 ? '0.25rem' : '0',
-                      paddingRight: level > 2 ? '0.5rem' : '0'
+                      marginLeft: 0,
+                      paddingRight: 0
                     }}
                   >
                     {comment.replies.map((reply) => (
@@ -277,6 +285,92 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                       />
                     ))}
                   </div>
+                </div>
+              )}
+              
+              {/* Visualización alternativa para comentarios muy anidados */}
+              {repliesVisible && level >= 3 && (
+                <div className="mt-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="flex items-center justify-center gap-1 text-sm w-full"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Ver respuestas en ventana completa
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="text-lg font-medium">
+                          Respuestas ({comment.replies.length})
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                            <div className="flex gap-3">
+                              <Avatar className="h-8 w-8 flex-shrink-0">
+                                <AvatarFallback className="bg-primary/20 text-primary">
+                                  {reply.user.username.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
+                                  <span className="font-medium text-primary">
+                                    {reply.user.username}
+                                  </span>
+                                  
+                                  {reply.user.role === "admin" && (
+                                    <Badge variant="outline" className="bg-success/20 text-success border-success/30">
+                                      <Shield className="h-3 w-3 mr-1" /> Admin
+                                    </Badge>
+                                  )}
+                                  
+                                  <span className="text-xs text-success flex items-center">
+                                    <Flame className="h-3 w-3 mr-1" />
+                                    x{reply.user.likeMultiplier}
+                                  </span>
+                                  
+                                  <span className="text-xs text-muted-foreground">
+                                    {timeAgo(new Date(reply.createdAt))}
+                                  </span>
+                                </div>
+                                
+                                <p className="text-sm mb-2">{reply.content}</p>
+                                
+                                <div className="flex items-center text-xs text-muted-foreground gap-2">
+                                  <div className="flex items-center">
+                                    <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-success">
+                                      <ArrowUp className="h-4 w-4 mr-1" />
+                                    </Button>
+                                    <span>{reply.likes}</span>
+                                    <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-destructive">
+                                      <ArrowDown className="h-4 w-4 ml-1" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                
+                                {reply.replies && reply.replies.length > 0 && (
+                                  <div className="mt-3 ml-4 pl-4 border-l-2 border-primary/20">
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      className="p-0 h-auto mb-2 text-primary"
+                                    >
+                                      Ver {reply.replies.length} respuestas más
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               )}
             </div>
