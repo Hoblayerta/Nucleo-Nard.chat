@@ -50,6 +50,127 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const [expanded, setExpanded] = useState(false);
   // Estado para el modal de respuesta
   const [replyModalOpen, setReplyModalOpen] = useState(false);
+  // Función recursiva para renderizar respuestas en modales
+  const renderNestedReplies = (r: CommentWithUser) => {
+    return (
+      <div key={r.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+        <div className="flex gap-3">
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarFallback className="bg-primary/20 text-primary">
+              {r.user.username.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
+              <span className="font-medium text-primary">
+                {r.user.username}
+              </span>
+              {r.user.role === "admin" && (
+                <Badge variant="outline" className="bg-success/20 text-success border-success/30">
+                  <Shield className="h-3 w-3 mr-1" /> Admin
+                </Badge>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {timeAgo(new Date(r.createdAt))}
+              </span>
+            </div>
+            <p className="text-sm mb-2">{r.content}</p>
+            <div className="flex items-center text-xs text-muted-foreground gap-2">
+              <div className="flex items-center">
+                <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-success">
+                  <ArrowUp className="h-4 w-4 mr-1" />
+                </Button>
+                <span>{r.likes}</span>
+              </div>
+              
+              {/* Modal anidado para responder */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-primary">
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Responder
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg font-medium">
+                      Responder a {r.user.username}
+                    </DialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Tu respuesta aparecerá en la conversación
+                    </p>
+                  </DialogHeader>
+                  
+                  {/* Comentario original */}
+                  <div className="border-b pb-4 mb-4">
+                    <div className="flex gap-3">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarFallback className="bg-primary/20 text-primary">
+                          {r.user.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm mb-2">{r.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Formulario de respuesta */}
+                  <CommentForm 
+                    postId={postId} 
+                    parentId={r.id}
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            {/* Respuestas anidadas */}
+            {r.replies && r.replies.length > 0 && (
+              <div className="mt-3 ml-4 pl-4 border-l-2 border-primary/10">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="link" 
+                      className="flex items-center p-0 text-primary hover:text-primary/80 h-6 text-xs"
+                    >
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Ver {r.replies.length} {r.replies.length === 1 ? 'respuesta' : 'respuestas'} más
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg font-medium">
+                        Conversación con {r.user.username}
+                      </DialogTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Ver todas las respuestas a este comentario
+                      </p>
+                    </DialogHeader>
+
+                    {/* Formulario de respuesta */}
+                    <CommentForm 
+                      postId={postId} 
+                      parentId={r.id}
+                      onSuccess={() => {
+                        queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+                      }}
+                    />
+                    
+                    <div className="space-y-4 mt-4">
+                      {r.replies.map(nestedReply => renderNestedReplies(nestedReply))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -359,174 +480,9 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                         />
                       </div>
                       
-                      {/* Respuestas */}
+                      {/* Respuestas - Utilizando el componente recursivo */}
                       <div className="space-y-4">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="group transition-all duration-200 hover:bg-card/50 rounded-md p-2 -mx-2">
-                            <div className="flex gap-3">
-                              <Avatar className="h-8 w-8 flex-shrink-0">
-                                <AvatarFallback className="bg-primary/20 text-primary">
-                                  {reply.user.username.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
-                                  <span className="font-medium text-primary">
-                                    {reply.user.username}
-                                  </span>
-                                  
-                                  {reply.user.role === "admin" && (
-                                    <Badge variant="outline" className="bg-success/20 text-success border-success/30">
-                                      <Shield className="h-3 w-3 mr-1" /> Admin
-                                    </Badge>
-                                  )}
-                                  
-                                  <span className="text-xs text-success flex items-center">
-                                    <Flame className="h-3 w-3 mr-1" />
-                                    x{reply.user.likeMultiplier}
-                                  </span>
-                                  
-                                  <span className="text-xs text-muted-foreground">
-                                    {timeAgo(new Date(reply.createdAt))}
-                                  </span>
-                                </div>
-                                
-                                <p className="text-sm mb-2">{reply.content}</p>
-                                
-                                <div className="flex items-center text-xs text-muted-foreground gap-2">
-                                  <div className="flex items-center">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="px-1 py-0 h-auto hover:text-success"
-                                    >
-                                      <ArrowUp className="h-4 w-4 mr-1" />
-                                    </Button>
-                                    <span>{reply.likes}</span>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="px-1 py-0 h-auto hover:text-destructive"
-                                    >
-                                      <ArrowDown className="h-4 w-4 ml-1" />
-                                    </Button>
-                                  </div>
-                                  
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="px-1 py-0 h-auto hover:text-primary"
-                                    onClick={() => {
-                                      setReplyModalOpen(false);
-                                      setTimeout(() => {
-                                        // Necesitamos cerrar esta modal y abrir una nueva para la respuesta
-                                        const replyDialog = document.createElement('button');
-                                        document.body.appendChild(replyDialog);
-                                        replyDialog.click();
-                                        document.body.removeChild(replyDialog);
-                                      }, 100);
-                                    }}
-                                  >
-                                    <MessageSquare className="h-4 w-4 mr-1" />
-                                    Responder
-                                  </Button>
-                                </div>
-                                
-                                {reply.replies && reply.replies.length > 0 && (
-                                  <div className="mt-2">
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button 
-                                          variant="link" 
-                                          className="flex items-center p-0 text-primary hover:text-primary/80 h-6 text-xs"
-                                        >
-                                          <ChevronDown className="h-3 w-3 mr-1" />
-                                          Ver {reply.replies.length} {reply.replies.length === 1 ? 'respuesta' : 'respuestas'} más
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-                                        <DialogHeader>
-                                          <DialogTitle className="text-lg font-medium">
-                                            Respuestas a {reply.user.username}
-                                          </DialogTitle>
-                                          <p className="text-sm text-muted-foreground">
-                                            Continúa la conversación respondiendo a estos comentarios
-                                          </p>
-                                        </DialogHeader>
-                                        
-                                        {/* Comentario contexto */}
-                                        <div className="border-b pb-4 mb-4">
-                                          <div className="flex gap-3">
-                                            <Avatar className="h-8 w-8 flex-shrink-0">
-                                              <AvatarFallback className="bg-primary/20 text-primary">
-                                                {reply.user.username.substring(0, 2).toUpperCase()}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1">
-                                              <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
-                                                <span className="font-medium text-primary">
-                                                  {reply.user.username}
-                                                </span>
-                                              </div>
-                                              <p className="text-sm mb-2">{reply.content}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Formulario de respuesta */}
-                                        <CommentForm 
-                                          postId={postId} 
-                                          parentId={reply.id}
-                                          onSuccess={() => {
-                                            queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-                                          }}
-                                        />
-                                        
-                                        <div className="space-y-4 mt-4">
-                                          {reply.replies.map((r) => (
-                                            <div key={r.id} className="border-b pb-4 last:border-b-0 last:pb-0">
-                                              <div className="flex gap-3">
-                                                <Avatar className="h-8 w-8 flex-shrink-0">
-                                                  <AvatarFallback className="bg-primary/20 text-primary">
-                                                    {r.user.username.substring(0, 2).toUpperCase()}
-                                                  </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1">
-                                                  <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
-                                                    <span className="font-medium text-primary">
-                                                      {r.user.username}
-                                                    </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                      {timeAgo(new Date(r.createdAt))}
-                                                    </span>
-                                                  </div>
-                                                  <p className="text-sm mb-2">{r.content}</p>
-                                                  <div className="flex items-center text-xs text-muted-foreground gap-2">
-                                                    <div className="flex items-center">
-                                                      <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-success">
-                                                        <ArrowUp className="h-4 w-4 mr-1" />
-                                                      </Button>
-                                                      <span>{r.likes}</span>
-                                                    </div>
-                                                    <Button variant="ghost" size="sm" className="px-1 py-0 h-auto hover:text-primary">
-                                                      <MessageSquare className="h-4 w-4 mr-1" />
-                                                      Responder
-                                                    </Button>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </DialogContent>
-                                    </Dialog>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                        {comment.replies.map(reply => renderNestedReplies(reply))}
                       </div>
                     </DialogContent>
                   </Dialog>
