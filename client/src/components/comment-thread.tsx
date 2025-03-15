@@ -10,7 +10,12 @@ import {
   Flame,
   ChevronDown,
   ChevronUp,
-  ExternalLink
+  ExternalLink,
+  GitBranch,
+  GitMerge,
+  BarChart3,
+  TreeDeciduous,
+  List
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,7 +31,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CommentForm from "./comment-form";
 import type { CommentWithUser } from "@shared/schema";
 
@@ -419,71 +432,225 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                         variant="link" 
                         className="flex items-center p-0 text-primary hover:text-primary/80 h-6 text-xs"
                       >
-                        <ChevronDown className="h-3 w-3 mr-1" />
-                        Ver {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'} más
+                        <TreeDeciduous className="h-3 w-3 mr-1" />
+                        Ver árbol de conversación ({comment.replies.length})
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-[800px] sm:max-h-[85vh] overflow-auto">
                       <DialogHeader>
                         <DialogTitle className="text-lg font-medium">
-                          Respuestas a {comment.user.username}
+                          Árbol de conversación: Respuestas a {comment.user.username}
                         </DialogTitle>
-                        <p className="text-sm text-muted-foreground">
-                          Aquí puedes ver y responder a todos los comentarios de esta conversación
-                        </p>
+                        <DialogDescription>
+                          Explora los diferentes hilos de la conversación y encuentra las respuestas más populares
+                        </DialogDescription>
                       </DialogHeader>
 
-                      {/* Comentario original como contexto */}
-                      <div className="border-b pb-4 mb-4">
-                        <div className="flex gap-3">
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarFallback className="bg-primary/20 text-primary">
-                              {comment.user.username.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                      {/* Tabs para diferentes visualizaciones */}
+                      <Tabs defaultValue="tree" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="tree" className="flex items-center gap-1">
+                            <TreeDeciduous className="h-4 w-4" />
+                            <span className="hidden sm:inline">Árbol</span>
+                          </TabsTrigger>
+                          <TabsTrigger value="flat" className="flex items-center gap-1">
+                            <List className="h-4 w-4" />
+                            <span className="hidden sm:inline">Lista</span>
+                          </TabsTrigger>
+                          <TabsTrigger value="popular" className="flex items-center gap-1">
+                            <BarChart3 className="h-4 w-4" />
+                            <span className="hidden sm:inline">Populares</span>
+                          </TabsTrigger>
+                        </TabsList>
+                        
+                        {/* Vista de árbol - Dibuja un árbol visual de la conversación */}
+                        <TabsContent value="tree" className="pt-4">
+                          <div className="border-b pb-4 mb-4">
+                            <div className="flex gap-3">
+                              <Avatar className="h-8 w-8 flex-shrink-0">
+                                <AvatarFallback className="bg-primary/20 text-primary">
+                                  {comment.user.username.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              
+                              <div className="flex-1">
+                                <p className="text-sm mb-2 font-medium">{comment.content}</p>
+                              </div>
+                            </div>
+                          </div>
                           
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-center mb-1 gap-x-2 gap-y-1">
-                              <span className="font-medium text-primary">
-                                {comment.user.username}
-                              </span>
+                          <div className="conversation-tree relative">
+                            <div className="pl-8 space-y-4 relative">
+                              {/* Línea vertical principal */}
+                              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-primary/20"></div>
                               
-                              {comment.user.role === "admin" && (
-                                <Badge variant="outline" className="bg-success/20 text-success border-success/30">
-                                  <Shield className="h-3 w-3 mr-1" /> Admin
-                                </Badge>
-                              )}
-                              
-                              <span className="text-xs text-success flex items-center">
-                                <Flame className="h-3 w-3 mr-1" />
-                                x{comment.user.likeMultiplier}
-                              </span>
-                              
-                              <span className="text-xs text-muted-foreground">
-                                {timeAgo(new Date(comment.createdAt))}
-                              </span>
+                              {comment.replies.map((reply, index) => (
+                                <div key={reply.id} className="relative branch-node">
+                                  {/* Línea horizontal hacia el nodo */}
+                                  <div className="absolute left-[-16px] top-4 w-4 h-0.5 bg-primary/20"></div>
+                                  
+                                  <div className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Avatar className="h-6 w-6">
+                                        <AvatarFallback className="text-xs">
+                                          {reply.user.username.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <span className="font-medium text-sm">{reply.user.username}</span>
+                                      <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-primary/5">
+                                        {reply.likes} <ArrowUp className="h-3 w-3 ml-1" />
+                                      </Badge>
+                                    </div>
+                                    
+                                    <p className="text-sm mb-2">{reply.content}</p>
+                                    
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 text-xs"
+                                        onClick={() => {
+                                          // Mostrar formulario de respuesta
+                                          const dialogElement = document.createElement('div');
+                                          document.body.appendChild(dialogElement);
+                                          
+                                          // Implementar mostrar modal para responder
+                                          document.body.removeChild(dialogElement);
+                                        }}
+                                      >
+                                        <MessageSquare className="h-3 w-3 mr-1" />
+                                        Responder
+                                      </Button>
+                                      
+                                      {reply.replies && reply.replies.length > 0 && (
+                                        <Dialog>
+                                          <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm" className="h-7 text-xs">
+                                              <GitBranch className="h-3 w-3 mr-1" />
+                                              {reply.replies.length} {reply.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                                            <DialogHeader>
+                                              <DialogTitle>Respuestas a {reply.user.username}</DialogTitle>
+                                              <DialogDescription>Continúa la conversación</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4">
+                                              {reply.replies.map(r => renderNestedReplies(r))}
+                                            </div>
+                                          </DialogContent>
+                                        </Dialog>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </TabsContent>
+                        
+                        {/* Vista plana - Lista simple de todas las respuestas */}
+                        <TabsContent value="flat" className="pt-4">
+                          <div className="space-y-4">
+                            {/* Comentario principal */}
+                            <div className="border-b pb-4 mb-4">
+                              <div className="flex gap-3">
+                                <Avatar className="h-8 w-8 flex-shrink-0">
+                                  <AvatarFallback className="bg-primary/20 text-primary">
+                                    {comment.user.username.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium">{comment.user.username}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {timeAgo(new Date(comment.createdAt))}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm mb-2">{comment.content}</p>
+                                </div>
+                              </div>
                             </div>
                             
-                            <p className="text-sm mb-2">{comment.content}</p>
+                            {/* Formulario de respuesta */}
+                            <div className="mb-4">
+                              <CommentForm 
+                                postId={postId} 
+                                parentId={comment.id}
+                                onSuccess={() => {
+                                  queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Respuestas recursivas */}
+                            {comment.replies.map(reply => renderNestedReplies(reply))}
                           </div>
-                        </div>
-                      </div>
+                        </TabsContent>
+                        
+                        {/* Vista de populares - Ordenadas por likes */}
+                        <TabsContent value="popular" className="pt-4">
+                          <div className="space-y-4">
+                            <div className="border-b pb-4 mb-4">
+                              <h3 className="font-medium text-sm mb-2">Respuestas más populares</h3>
+                              <p className="text-xs text-muted-foreground">Ordenadas por número de likes</p>
+                            </div>
 
-                      {/* Formulario de respuesta */}
-                      <div className="mb-4">
-                        <CommentForm 
-                          postId={postId} 
-                          parentId={comment.id}
-                          onSuccess={() => {
-                            queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Respuestas - Utilizando el componente recursivo */}
-                      <div className="space-y-4">
-                        {comment.replies.map(reply => renderNestedReplies(reply))}
-                      </div>
+                            {/* Respuestas ordenadas por popularidad */}
+                            {[...comment.replies]
+                              .sort((a, b) => b.likes - a.likes)
+                              .map((reply) => (
+                                <div key={reply.id} className="border p-3 rounded-md shadow-sm hover:shadow-md transition-shadow flex gap-3">
+                                  <div className="flex-shrink-0 flex flex-col items-center justify-start">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="px-1 py-0 h-auto text-green-500"
+                                    >
+                                      <ArrowUp className="h-5 w-5" />
+                                    </Button>
+                                    <span className="font-semibold text-lg">{reply.likes}</span>
+                                  </div>
+                                  
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Avatar className="h-6 w-6">
+                                        <AvatarFallback className="text-xs">
+                                          {reply.user.username.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <span className="font-medium text-sm">{reply.user.username}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {timeAgo(new Date(reply.createdAt))}
+                                      </span>
+                                    </div>
+                                    
+                                    <p className="text-sm mb-2">{reply.content}</p>
+                                    
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 text-xs"
+                                      >
+                                        <MessageSquare className="h-3 w-3 mr-1" />
+                                        Responder
+                                      </Button>
+                                      
+                                      {reply.replies && reply.replies.length > 0 && (
+                                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                                          <GitBranch className="h-3 w-3 mr-1" />
+                                          {reply.replies.length} {reply.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     </DialogContent>
                   </Dialog>
                 </div>

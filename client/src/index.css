@@ -122,4 +122,27 @@
   .reply-modal-content {
     @apply max-h-[80vh] overflow-y-auto;
   }
+  
+  /* Estilos para el árbol de conversación */
+  .conversation-tree {
+    @apply pb-4;
+  }
+  
+  .branch-node {
+    @apply transition-all duration-200;
+  }
+  
+  .branch-node::before {
+    content: "";
+    @apply absolute left-[-16px] top-0 w-[1px] h-full bg-primary/20;
+  }
+  
+  .branch-node:last-child::before {
+    @apply h-4;
+  }
+  
+  /* Estilo para resaltar la ruta activa al hacer hover */
+  .branch-node:hover .branch-connector {
+    @apply bg-primary;
+  }
 }
