@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp, Trophy, Flame, MessageSquare, User, Users, FileText } from "lucide-react";
+import { ArrowUp, ArrowDown, Trophy, Flame, MessageSquare, User, Users, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CommentWithUser, User as UserType, UserStats, PostWithDetails } from "@shared/schema";
 
@@ -62,7 +62,7 @@ export default function Leaderboard() {
                       <div className="flex flex-col items-center">
                         <div className="bg-success/20 rounded-md p-2 text-success flex items-center justify-center">
                           <ArrowUp className="h-5 w-5" />
-                          <span className="ml-1 font-bold">{comment.likes}</span>
+                          <span className="ml-1 font-bold">{comment.voteScore || 0}</span>
                         </div>
                         <span className="text-xs mt-1 text-muted-foreground">
                           {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
@@ -142,7 +142,7 @@ export default function Leaderboard() {
                       <div className="flex flex-col items-center">
                         <div className="bg-success/20 rounded-md p-2 text-success flex items-center justify-center">
                           <ArrowUp className="h-5 w-5" />
-                          <span className="ml-1 font-bold">{post.likes}</span>
+                          <span className="ml-1 font-bold">{post.voteScore || 0}</span>
                         </div>
                         <span className="text-xs mt-1 text-muted-foreground">
                           {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
@@ -256,15 +256,27 @@ export default function Leaderboard() {
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="flex items-center">
                             <ArrowUp className="h-3 w-3 mr-1 text-success" />
-                            <span>{user.stats.likesReceived} likes</span>
+                            <span>{user.stats.upvotesReceived || 0} upvotes</span>
                           </div>
+                          <div className="flex items-center">
+                            <ArrowDown className="h-3 w-3 mr-1 text-destructive" />
+                            <span>{user.stats.downvotesReceived || 0} downvotes</span>
+                          </div>
+                          
                           <div className="flex items-center">
                             <MessageSquare className="h-3 w-3 mr-1 text-primary" />
                             <span>{user.stats.commentCount} comments</span>
                           </div>
-                          <div className="flex items-center col-span-2">
-                            <Flame className="h-3 w-3 mr-1 text-success" />
-                            <span className="font-semibold">x{user.likeMultiplier} multiplier</span>
+                          <div className="flex items-center col-span-2 justify-between">
+                            <div className="flex items-center">
+                              <Flame className="h-3 w-3 mr-1 text-success" />
+                              <span className="font-semibold">x{user.likeMultiplier} vote power</span>
+                            </div>
+                            <div className="flex items-center">
+                              <ArrowUp className="h-3 w-3 mr-1 text-primary" />
+                              <ArrowDown className="h-3 w-3 mr-1 text-primary" />
+                              <span className="font-semibold">{user.stats.netScore || 0} net score</span>
+                            </div>
                           </div>
                         </div>
                       </div>

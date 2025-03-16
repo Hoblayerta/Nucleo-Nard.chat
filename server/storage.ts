@@ -166,9 +166,9 @@ export class MemStorage implements IStorage {
       })
     );
     
-    // Sort by likes received (highest first) and take the specified limit
+    // Sort by net score (upvotes - downvotes) received (highest first) and take the specified limit
     return usersWithStats
-      .sort((a, b) => b.stats.likesReceived - a.stats.likesReceived)
+      .sort((a, b) => b.stats.netScore - a.stats.netScore)
       .slice(0, limit);
   }
 
