@@ -153,7 +153,20 @@ export default function PostCard({ post }: PostCardProps) {
                   <span>Save</span>
                 </Button>
                 
-                <Button variant="ghost" size="sm" className="hover:text-primary">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:text-primary"
+                  onClick={() => {
+                    const url = `${window.location.origin}/posts/${post.id}`;
+                    navigator.clipboard.writeText(url).then(() => {
+                      toast({
+                        title: "Link copied!",
+                        description: "Post link has been copied to clipboard."
+                      });
+                    });
+                  }}
+                >
                   <Share2 className="h-4 w-4 mr-1" />
                   <span>Share</span>
                 </Button>
