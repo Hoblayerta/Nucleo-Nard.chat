@@ -91,37 +91,37 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
 
   return (
     <div className="relative">
-      <div className="flex gap-3">
-        <Avatar className="h-8 w-8">
+      <div className="flex gap-2 sm:gap-3">
+        <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarFallback className="bg-primary/20 text-primary">
             {comment.user.username.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
-        <div className="flex-1">
-          <div className="flex items-center flex-wrap mb-1 gap-2">
-            <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline">
+        <div className="flex-1 min-w-0"> {/* min-w-0 previene desbordamiento */}
+          <div className="flex items-center flex-wrap mb-1 gap-1 sm:gap-2">
+            <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline truncate max-w-[120px] sm:max-w-none">
               {comment.user.username}
             </a>
             
             {comment.user.role === "admin" && (
-              <Badge variant="outline" className="bg-success/20 text-success border-success/30">
+              <Badge variant="outline" className="bg-success/20 text-success border-success/30 text-xs py-0">
                 <Shield className="h-3 w-3 mr-1" /> Admin
               </Badge>
             )}
             
             {comment.user.role === "moderator" && (
-              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
+              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-xs py-0">
                 <Shield className="h-3 w-3 mr-1" /> Mod
               </Badge>
             )}
             
             <span className="text-xs text-success flex items-center">
-              <Flame className="h-3 w-3 mr-1" />
+              <Flame className="h-3 w-3 mr-0.5" />
               x{comment.user.likeMultiplier}
             </span>
             
-            <span className="text-xs text-muted-foreground">•</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
             
             <span className="text-xs text-muted-foreground">
               {timeAgo(new Date(comment.createdAt))}
@@ -131,42 +131,38 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           <p className="text-sm mb-2">{comment.content}</p>
           
           <div className="flex items-center text-xs text-muted-foreground">
-            <div className="flex items-center mr-3">
+            <div className="flex items-center mr-2 sm:mr-3">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className={`px-1 py-0 h-auto ${liked ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
                 onClick={handleLike}
+                title="Me gusta"
               >
-                <ArrowUp className="h-4 w-4 mr-1" />
-              </Button>
-              <span>{comment.likes}</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="px-1 py-0 h-auto hover:text-destructive"
-              >
-                <ArrowDown className="h-4 w-4 ml-1" />
+                <ArrowUp className="h-4 w-4" />
+                <span className="ml-1">{comment.likes}</span>
               </Button>
             </div>
             
             <Button 
               variant="ghost" 
               size="sm" 
-              className="px-1 py-0 h-auto hover:text-primary mr-3"
+              className="px-1 py-0 h-auto hover:text-primary mr-2 sm:mr-3"
               onClick={() => setReplyOpen(!replyOpen)}
+              title="Responder"
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Reply
+              <MessageSquare className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Reply</span>
             </Button>
             
             <Button 
               variant="ghost" 
               size="sm" 
               className="px-1 py-0 h-auto hover:text-primary"
+              title="Reportar"
             >
-              <Flag className="h-4 w-4 mr-1" />
-              Report
+              <Flag className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Report</span>
             </Button>
           </div>
           
@@ -181,19 +177,39 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           )}
           
           {comment.replies && comment.replies.length > 0 && (
-            <div 
-              className="mt-4 space-y-4 pl-4 border-l-2 border-border"
-              style={{ marginLeft: level > 3 ? '0.5rem' : '0' }}
-            >
-              {comment.replies.map((reply) => (
-                <CommentItem 
-                  key={reply.id} 
-                  comment={reply} 
-                  postId={postId}
-                  level={level + 1}
-                />
-              ))}
-            </div>
+            <>
+              {level < 4 ? (
+                <div className="mt-4 space-y-4 pl-2 sm:pl-4 border-l-2 border-border">
+                  {comment.replies.map((reply) => (
+                    <CommentItem 
+                      key={reply.id} 
+                      comment={reply} 
+                      postId={postId}
+                      level={level + 1}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <details className="ml-2 sm:ml-4">
+                    <summary className="cursor-pointer text-sm text-primary hover:underline mb-2 flex items-center">
+                      <span className="inline-block mr-1">+</span>
+                      {comment.replies.length} respuesta{comment.replies.length !== 1 ? 's' : ''}
+                    </summary>
+                    <div className="space-y-4 pl-2 sm:pl-4 border-l-2 border-border mt-2">
+                      {comment.replies.map((reply) => (
+                        <CommentItem 
+                          key={reply.id} 
+                          comment={reply} 
+                          postId={postId}
+                          level={level + 1}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
