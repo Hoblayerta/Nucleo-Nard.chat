@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Link2, Code, Save } from "lucide-react";
+import { Image, Link2 } from "lucide-react";
 
 interface CreatePostModalProps {
   open: boolean;
@@ -70,22 +70,6 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
     
     createPostMutation.mutate();
   };
-  
-  const handleDraft = () => {
-    if (title || content) {
-      toast({
-        title: "Draft saved",
-        description: "Your post has been saved as a draft."
-      });
-      onClose();
-    } else {
-      toast({
-        title: "Empty draft",
-        description: "Cannot save an empty draft.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -128,23 +112,10 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
                 <Link2 className="h-4 w-4 mr-2" />
                 Add Link
               </Button>
-              <Button type="button" variant="outline" size="sm">
-                <Code className="h-4 w-4 mr-2" />
-                Format
-              </Button>
             </div>
           </div>
           
           <DialogFooter className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleDraft}
-              disabled={createPostMutation.isPending}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save Draft
-            </Button>
             <Button
               type="submit"
               disabled={createPostMutation.isPending}
