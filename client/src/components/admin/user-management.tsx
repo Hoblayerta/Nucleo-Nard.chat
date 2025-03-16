@@ -221,7 +221,7 @@ export default function UserManagement() {
                       <Input
                         type="number"
                         min="1"
-                        max="20"
+                        max="10"
                         value={tempMultiplier}
                         onChange={(e) => setTempMultiplier(parseInt(e.target.value))}
                         className="w-16 text-center"
