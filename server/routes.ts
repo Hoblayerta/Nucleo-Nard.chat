@@ -265,6 +265,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Top Posts - IMPORTANT: This route must be defined before the dynamic :id route
+  app.get("/api/posts/top", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 5;
+      const topPosts = await storage.getTopPosts(limit);
+      res.status(200).json(topPosts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch top posts" });
+    }
+  });
+
   app.get("/api/posts/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -387,16 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Top Posts
-  app.get("/api/posts/top", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 5;
-      const topPosts = await storage.getTopPosts(limit);
-      res.status(200).json(topPosts);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch top posts" });
-    }
-  });
+
 
   const httpServer = createServer(app);
   return httpServer;
