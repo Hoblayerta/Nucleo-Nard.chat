@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,25 @@ export default function Post() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  
+  // Obtener el ID del comentario de los parámetros de consulta si existe
+  const [commentId, setCommentId] = useState<string | null>(null);
+  
+  // Analizamos los parámetros de consulta
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const comment = searchParams.get('comment');
+    if (comment) {
+      setCommentId(comment);
+      
+      // Mostrar un toast para indicar que se está navegando a un comentario específico
+      toast({
+        title: "Navegando al comentario",
+        description: "Te estamos llevando al comentario compartido...",
+        duration: 3000,
+      });
+    }
+  }, [toast]);
   
   const postId = parseInt(params.id || "0", 10);
   
@@ -86,7 +105,7 @@ export default function Post() {
       
       <section className="bg-card rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold mb-4">Comentarios ({post.comments})</h2>
-        <CommentThread postId={post.id} />
+        <CommentThread postId={post.id} highlightedCommentId={commentId} />
       </section>
     </div>
   );

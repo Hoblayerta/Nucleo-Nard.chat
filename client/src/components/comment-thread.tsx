@@ -17,6 +17,7 @@ import type { CommentWithUser } from "@shared/schema";
 
 interface CommentThreadProps {
   postId: number;
+  highlightedCommentId?: string | null;
 }
 
 interface CommentItemProps {
@@ -24,9 +25,10 @@ interface CommentItemProps {
   postId: number;
   level?: number;
   index?: string; // Índice para la enumeración del hilo, ej: "1", "1.2", "1.2.3"
+  highlightedCommentId?: string | null;
 }
 
-function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProps) {
+function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId }: CommentItemProps) {
   // Añadir una clase para identificar nivel de anidación
   const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -38,12 +40,17 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   
+  // Determina si este comentario debería estar resaltado
+  const shouldHighlight = 
+    highlightedCommentId === comment.id.toString() || 
+    (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('comment') === comment.id.toString());
+  
   // Efecto para hacer scroll al comentario si es el solicitado en la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const commentId = params.get('comment');
     
-    if (commentId && commentId === comment.id.toString() && commentRef.current) {
+    if ((commentId === comment.id.toString() || highlightedCommentId === comment.id.toString()) && commentRef.current) {
       // Si el comentario está en respuestas colapsadas, expandirlas
       if ('parentId' in comment && comment.parentId && !expanded) {
         setExpanded(true);
@@ -60,7 +67,7 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
         }, 2000);
       }, 500);
     }
-  }, [comment.id, expanded]);
+  }, [comment.id, expanded, highlightedCommentId]);
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -120,17 +127,16 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
     
     return format(date, "MMM d, yyyy");
   };
-
+    
   return (
-    <div ref={commentRef} className={`relative ${nestingClass} comment-item`}>
-      {/* Indicador de nivel en dispositivos móviles (solo para niveles > 0) */}
+    <div ref={commentRef} className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
       {isMobile && level > 0 && (
         <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
           <CornerDownRight className="h-3 w-3 mr-1" />
           <span>Nivel {level}{index ? ` - #${index}` : ''}</span>
         </div>
       )}
-    
+      
       <div className="flex gap-3">
         <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarFallback className="bg-primary/20 text-primary">
@@ -253,7 +259,6 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
           
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-4 relative comment-replies-container">
-              {/* Control para dispositivos móviles - mostrar/ocultar respuestas */}
               {isMobile && (
                 <div className="mb-2">
                   <Button
@@ -277,7 +282,6 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
                 </div>
               )}
               
-              {/* Contenedor de respuestas - colapsable en móvil */}
               {(!isMobile || expanded) && (
                 <div 
                   className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-6'}`}
@@ -293,6 +297,7 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
                       postId={postId}
                       level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
                       index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
+                      highlightedCommentId={highlightedCommentId}
                     />
                   ))}
                 </div>
@@ -305,7 +310,7 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
   );
 }
 
-export default function CommentThread({ postId }: CommentThreadProps) {
+export default function CommentThread({ postId, highlightedCommentId }: CommentThreadProps) {
   const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
   });
@@ -357,6 +362,7 @@ export default function CommentThread({ postId }: CommentThreadProps) {
               comment={comment} 
               postId={postId} 
               index={`${index + 1}`}
+              highlightedCommentId={highlightedCommentId}
             />
           ))}
           
