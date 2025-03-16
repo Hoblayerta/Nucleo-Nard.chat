@@ -36,7 +36,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyOpen, setReplyOpen] = useState(false);
-  const [liked, setLiked] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   
@@ -44,6 +43,9 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const shouldHighlight = 
     highlightedCommentId === comment.id.toString() || 
     (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('comment') === comment.id.toString());
+    
+  // Determina si el usuario ha votado en este comentario
+  const userVoteStatus = comment.userVote || null;
   
   // Efecto para hacer scroll al comentario si es el solicitado en la URL
   useEffect(() => {
@@ -69,37 +71,37 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
     }
   }, [comment.id, expanded, highlightedCommentId]);
   
-  const likeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/likes", {
-        commentId: comment.id
+  const voteMutation = useMutation({
+    mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {
+      const res = await apiRequest("POST", "/api/votes", {
+        commentId: comment.id,
+        isUpvote
       });
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-      setLiked(data.action === "added");
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to like comment. Please try again.",
+        description: "Failed to vote on comment. Please try again.",
         variant: "destructive",
       });
     }
   });
 
-  const handleLike = () => {
+  const handleVote = (isUpvote: boolean) => {
     if (!user) {
       toast({
         title: "Authentication required",
-        description: "Please log in to like comments",
+        description: "Please log in to vote on comments",
         variant: "destructive",
       });
       return;
     }
     
-    likeMutation.mutate();
+    voteMutation.mutate({ isUpvote });
   };
 
   const timeAgo = (date: Date) => {
@@ -186,16 +188,19 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`px-1 py-0 h-auto ${liked ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
-                onClick={handleLike}
+                className={`px-1 py-0 h-auto ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
+                onClick={() => handleVote(true)}
+                disabled={voteMutation.isPending}
               >
                 <ArrowUp className="h-4 w-4 mr-1" />
               </Button>
-              <span>{comment.likes}</span>
+              <span>{comment.voteScore || 0}</span>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="px-1 py-0 h-auto hover:text-destructive"
+                className={`px-1 py-0 h-auto ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
+                onClick={() => handleVote(false)}
+                disabled={voteMutation.isPending}
               >
                 <ArrowDown className="h-4 w-4 ml-1" />
               </Button>
