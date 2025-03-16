@@ -88,8 +88,8 @@ export default function Post() {
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-6 pt-4 border-t">
           <div className="flex">
             <div className="mr-4 flex items-center">
-              <span className="font-medium text-foreground">{post.likes}</span>
-              <span className="ml-1">likes</span>
+              <span className="font-medium text-foreground">{post.voteScore || 0}</span>
+              <span className="ml-1">votos</span>
             </div>
             
             <div className="flex items-center">

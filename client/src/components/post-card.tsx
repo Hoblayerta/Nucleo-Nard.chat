@@ -36,16 +36,10 @@ export default function PostCard({ post }: PostCardProps) {
   
   const voteMutation = useMutation({
     mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {
-      const res = await apiRequest(
-        `/api/votes`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            postId: post.id,
-            isUpvote
-          }),
-        }
-      );
+      const res = await apiRequest("POST", "/api/votes", {
+        postId: post.id,
+        isUpvote
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -108,16 +102,19 @@ export default function PostCard({ post }: PostCardProps) {
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className={`p-0 h-8 w-8 rounded-full ${liked ? 'text-success hover:text-success/80' : 'text-muted-foreground hover:text-success'}`} 
-                onClick={handleLike}
+                className={`p-0 h-8 w-8 rounded-full ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'text-muted-foreground hover:text-success'}`} 
+                onClick={() => handleVote(true)}
+                disabled={voteMutation.isPending}
               >
                 <ArrowUp className="h-5 w-5" />
               </Button>
-              <span className="font-medium">{post.likes}</span>
+              <span className="font-medium">{post.voteScore || 0}</span>
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="p-0 h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
+                className={`p-0 h-8 w-8 rounded-full ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
+                onClick={() => handleVote(false)}
+                disabled={voteMutation.isPending}
               >
                 <ArrowDown className="h-5 w-5" />
               </Button>
