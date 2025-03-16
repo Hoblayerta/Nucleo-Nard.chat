@@ -66,12 +66,6 @@ export default function Profile() {
                       </Badge>
                     )}
                     
-                    {user.role === "moderator" && (
-                      <Badge className="mt-1 bg-primary/20 text-primary border-primary/30">
-                        Moderator
-                      </Badge>
-                    )}
-                    
                     <div className="flex items-center mt-3 text-success">
                       <Flame className="h-5 w-5 mr-2" />
                       <span className="text-xl font-bold">x{user.likeMultiplier}</span>

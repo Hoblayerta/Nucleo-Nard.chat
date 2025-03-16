@@ -88,8 +88,6 @@ export default function Leaderboard() {
                               </Badge>
                             )}
                             
-
-                            
                             <span className="flex items-center text-xs text-success">
                               <Flame className="h-3 w-3 mr-1" />
                               <span>x{comment.user.likeMultiplier}</span>
@@ -168,8 +166,6 @@ export default function Leaderboard() {
                               </Badge>
                             )}
                             
-
-                            
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(post.createdAt), "PP")}
                             </span>
@@ -237,8 +233,6 @@ export default function Leaderboard() {
                               Admin
                             </Badge>
                           )}
-                          
-
                         </div>
                         
                         <div className="grid grid-cols-2 gap-2 text-xs">
