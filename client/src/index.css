@@ -11,3 +11,53 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar styles */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.3); /* slate-400 with opacity */
+  border-radius: 20px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.5); /* slate-400 with more opacity */
+}
+
+/* Support for deeply nested comments */
+.min-width-content {
+  min-width: fit-content;
+  width: max-content;
+  max-width: none;
+}
+
+/* Add subtle indicators for scrollable areas */
+.overflow-x-auto {
+  position: relative;
+}
+
+/* Add fade indicators for horizontal scroll when needed */
+@media (min-width: 640px) {
+  .overflow-x-auto:not(:hover)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 15px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7));
+    pointer-events: none;
+    opacity: 0.3;
+  }
+  
+  /* Dark mode support */
+  :root[class*='dark'] .overflow-x-auto:not(:hover)::after {
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.7));
+  }
+}

@@ -181,18 +181,26 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           )}
           
           {comment.replies && comment.replies.length > 0 && (
-            <div 
-              className="mt-4 space-y-4 pl-4 border-l-2 border-border"
-              style={{ marginLeft: level > 3 ? '0.5rem' : '0' }}
-            >
-              {comment.replies.map((reply) => (
-                <CommentItem 
-                  key={reply.id} 
-                  comment={reply} 
-                  postId={postId}
-                  level={level + 1}
-                />
-              ))}
+            <div className="mt-4 relative">
+              <div 
+                className="space-y-4 pl-4 border-l-2 border-border overflow-x-auto"
+                style={{ 
+                  marginLeft: level > 3 ? '0.5rem' : '0',
+                  paddingBottom: '8px', /* Space for the scrollbar */
+                  maxWidth: '100%',
+                }}
+              >
+                <div className={level > 3 ? "min-width-content pr-4" : ""}>
+                  {comment.replies.map((reply) => (
+                    <CommentItem 
+                      key={reply.id} 
+                      comment={reply} 
+                      postId={postId}
+                      level={level + 1}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
