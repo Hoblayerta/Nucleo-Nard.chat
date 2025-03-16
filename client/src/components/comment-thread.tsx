@@ -24,6 +24,8 @@ interface CommentItemProps {
 }
 
 function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
+  // Añadir una clase para identificar nivel de anidación
+  const nestingClass = `nesting-level-${level}`;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -90,15 +92,15 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${nestingClass}`}>
       <div className="flex gap-3">
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarFallback className="bg-primary/20 text-primary">
             {comment.user.username.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center flex-wrap mb-1 gap-2">
             <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline">
               {comment.user.username}
@@ -181,25 +183,21 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           )}
           
           {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-4 relative">
+            <div className="mt-4 relative comment-replies-container">
               <div 
-                className="space-y-4 pl-4 border-l-2 border-border overflow-x-auto"
+                className="space-y-4 pl-6 border-l-2 border-border nested-comment"
                 style={{ 
-                  marginLeft: level > 3 ? '0.5rem' : '0',
-                  paddingBottom: '8px', /* Space for the scrollbar */
-                  maxWidth: '100%',
+                  marginLeft: level > 0 ? '0.5rem' : '0',
                 }}
               >
-                <div className={level > 3 ? "min-width-content pr-4" : ""}>
-                  {comment.replies.map((reply) => (
-                    <CommentItem 
-                      key={reply.id} 
-                      comment={reply} 
-                      postId={postId}
-                      level={level + 1}
-                    />
-                  ))}
-                </div>
+                {comment.replies.map((reply) => (
+                  <CommentItem 
+                    key={reply.id} 
+                    comment={reply} 
+                    postId={postId}
+                    level={level + 1}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -232,19 +230,21 @@ export default function CommentThread({ postId }: CommentThreadProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} postId={postId} />
-      ))}
-      
-      {comments.length > 5 && (
-        <Button 
-          variant="outline" 
-          className="w-full"
-        >
-          Show more comments
-        </Button>
-      )}
+    <div className="space-y-6 comment-thread-container">
+      <div className="comment-thread-main">
+        {comments.map((comment) => (
+          <CommentItem key={comment.id} comment={comment} postId={postId} />
+        ))}
+        
+        {comments.length > 5 && (
+          <Button 
+            variant="outline" 
+            className="w-full"
+          >
+            Show more comments
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

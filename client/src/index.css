@@ -12,52 +12,77 @@
   }
 }
 
-/* Custom scrollbar styles */
-.overflow-x-auto::-webkit-scrollbar {
-  height: 6px;
+/* Estilos para scrollbar */
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
 }
 
-.overflow-x-auto::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 116, 139, 0.3); /* slate-400 with opacity */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.3); /* slate-400 con opacidad */
   border-radius: 20px;
 }
 
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 116, 139, 0.5); /* slate-400 with more opacity */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.5); /* slate-400 con más opacidad */
 }
 
-/* Support for deeply nested comments */
-.min-width-content {
-  min-width: fit-content;
+/* Contenedor principal de comentarios */
+.comment-thread-container {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 12px; /* espacio para scrollbar */
+  scrollbar-width: thin;
+}
+
+.comment-thread-main {
   width: max-content;
-  max-width: none;
+  min-width: 100%;
 }
 
-/* Add subtle indicators for scrollable areas */
-.overflow-x-auto {
+/* Contenedor de comentarios anidados */
+.comment-replies-container {
+  overflow-x: visible;
+  width: auto;
   position: relative;
 }
 
-/* Add fade indicators for horizontal scroll when needed */
-@media (min-width: 640px) {
-  .overflow-x-auto:not(:hover)::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 15px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7));
-    pointer-events: none;
-    opacity: 0.3;
-  }
-  
-  /* Dark mode support */
-  :root[class*='dark'] .overflow-x-auto:not(:hover)::after {
-    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.7));
-  }
+/* Comentarios anidados */
+.nested-comment {
+  position: relative;
+  border-left: 2px solid var(--border);
+  padding-left: 1.5rem;
+  min-width: fit-content;
+}
+
+/* Estilos específicos para cada nivel de anidación */
+.nesting-level-1 { margin-left: 0px; }
+.nesting-level-2 { margin-left: 0px; }
+.nesting-level-3 { margin-left: 0px; }
+.nesting-level-4 { margin-left: 0px; }
+.nesting-level-5 { margin-left: 0px; }
+.nesting-level-6 { margin-left: 0px; }
+
+/* Configurar comportamiento de scroll */
+.comment-thread-container {
+  overflow-x: auto !important;
+  margin-bottom: 1rem;
+  max-width: 100%;
+  padding-bottom: 12px; /* espacio para scrollbar */
+}
+
+.comment-thread-main {
+  width: fit-content;
+  min-width: 100%;
+}
+
+/* Asegurar que los contenedores de comentarios anidados permitan desplazamiento */
+.comment-replies-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: visible;
 }
