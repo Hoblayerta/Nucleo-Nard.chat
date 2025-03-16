@@ -163,3 +163,35 @@
 .comment-thread-container:hover::after {
   opacity: 1;
 }
+
+/* Estilos específicos para dispositivos móviles */
+@media (max-width: 768px) {
+  /* Estilo para comentarios anidados en móvil */
+  .mobile-nested-comment {
+    padding-left: 0.75rem;
+    position: relative;
+    border-left-width: 3px !important;
+  }
+  
+  /* Añadir espacio adicional para móviles */
+  .comment-thread-container {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  
+  /* Permitir que los comentarios tengan más espacio en pantallas pequeñas */
+  .comment-thread-main {
+    padding-right: 0.5rem;
+  }
+  
+  /* Reducir el espaciado entre elementos en móvil */
+  .comment-item {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Mejorar visualización de los hilos de comentarios */
+  .nested-comment {
+    position: relative;
+    margin-left: 0.25rem !important;
+  }
+}

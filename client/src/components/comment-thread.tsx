@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowUp, ArrowDown, MessageSquare, Flag, Shield, Flame } from "lucide-react";
+import { ArrowUp, ArrowDown, MessageSquare, Flag, Shield, Flame, CornerDownRight, ChevronRight, MinusSquare, PlusSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,8 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const queryClient = useQueryClient();
   const [replyOpen, setReplyOpen] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const isMobile = useIsMobile();
   
   // No usamos auto-scroll vertical por petición del usuario
   // Pero mantenemos la referencia para posibles mejoras futuras
@@ -97,6 +100,14 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
 
   return (
     <div ref={commentRef} className={`relative ${nestingClass} comment-item`}>
+      {/* Indicador de nivel en dispositivos móviles (solo para niveles > 0) */}
+      {isMobile && level > 0 && (
+        <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
+          <CornerDownRight className="h-3 w-3 mr-1" />
+          <span>Nivel {level}</span>
+        </div>
+      )}
+    
       <div className="flex gap-3">
         <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarFallback className="bg-primary/20 text-primary">
@@ -188,22 +199,49 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-4 relative comment-replies-container">
-              <div 
-                className="space-y-4 pl-6 nested-comment"
-                style={{ 
-                  marginLeft: '0.5rem', // Margen consistente para todos los niveles
-                  minWidth: 'calc(100% - 1rem)', // Asegurar que el contenido no se encoja demasiado
-                }}
-              >
-                {comment.replies.map((reply) => (
-                  <CommentItem 
-                    key={reply.id} 
-                    comment={reply} 
-                    postId={postId}
-                    level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
-                  />
-                ))}
-              </div>
+              {/* Control para dispositivos móviles - mostrar/ocultar respuestas */}
+              {isMobile && (
+                <div className="mb-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs flex items-center text-muted-foreground hover:text-primary w-full justify-start"
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? (
+                      <>
+                        <MinusSquare className="h-3.5 w-3.5 mr-1" />
+                        Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                      </>
+                    ) : (
+                      <>
+                        <PlusSquare className="h-3.5 w-3.5 mr-1" />
+                        Mostrar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              
+              {/* Contenedor de respuestas - colapsable en móvil */}
+              {(!isMobile || expanded) && (
+                <div 
+                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-6'}`}
+                  style={{ 
+                    marginLeft: '0.5rem',
+                    minWidth: 'calc(100% - 1rem)',
+                  }}
+                >
+                  {comment.replies.map((reply) => (
+                    <CommentItem 
+                      key={reply.id} 
+                      comment={reply} 
+                      postId={postId}
+                      level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -234,8 +272,21 @@ export default function CommentThread({ postId }: CommentThreadProps) {
     );
   }
 
+  // Usar el hook para detectar si estamos en móvil
+  const isMobile = useIsMobile();
+  
   return (
     <div className="relative">
+      {/* Información de navegación para móviles */}
+      {isMobile && (
+        <div className="mb-3 p-2 bg-muted/20 rounded-md">
+          <p className="text-xs text-muted-foreground">
+            <ChevronRight className="h-3 w-3 inline mr-1" />
+            Para comentarios anidados, usa el botón de mostrar/ocultar respuestas
+          </p>
+        </div>
+      )}
+      
       {/* Contenedor exterior que establece los límites */}
       <div className="space-y-6 comment-thread-container">
         {/* Contenedor interior que puede desbordarse horizontalmente */}
@@ -256,7 +307,9 @@ export default function CommentThread({ postId }: CommentThreadProps) {
       </div>
       
       {/* Indicador de desplazamiento horizontal */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-50 pointer-events-none"></div>
+      {!isMobile && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-50 pointer-events-none"></div>
+      )}
     </div>
   );
 }
