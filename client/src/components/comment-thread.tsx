@@ -33,7 +33,8 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [liked, setLiked] = useState(false);
   
-  // Quitamos el efecto de auto-scroll vertical por petición del usuario
+  // No usamos auto-scroll vertical por petición del usuario
+  // Pero mantenemos la referencia para posibles mejoras futuras
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -190,7 +191,8 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               <div 
                 className="space-y-4 pl-6 nested-comment"
                 style={{ 
-                  marginLeft: level > 0 ? '0.5rem' : '0',
+                  marginLeft: '0.5rem', // Margen consistente para todos los niveles
+                  minWidth: 'calc(100% - 1rem)', // Asegurar que el contenido no se encoja demasiado
                 }}
               >
                 {comment.replies.map((reply) => (
@@ -233,21 +235,28 @@ export default function CommentThread({ postId }: CommentThreadProps) {
   }
 
   return (
-    <div className="space-y-6 comment-thread-container">
-      <div className="comment-thread-main">
-        {comments.map((comment) => (
-          <CommentItem key={comment.id} comment={comment} postId={postId} />
-        ))}
-        
-        {comments.length > 5 && (
-          <Button 
-            variant="outline" 
-            className="w-full"
-          >
-            Show more comments
-          </Button>
-        )}
+    <div className="relative">
+      {/* Contenedor exterior que establece los límites */}
+      <div className="space-y-6 comment-thread-container">
+        {/* Contenedor interior que puede desbordarse horizontalmente */}
+        <div className="comment-thread-main">
+          {comments.map((comment) => (
+            <CommentItem key={comment.id} comment={comment} postId={postId} />
+          ))}
+          
+          {comments.length > 5 && (
+            <Button 
+              variant="outline" 
+              className="w-full"
+            >
+              Show more comments
+            </Button>
+          )}
+        </div>
       </div>
+      
+      {/* Indicador de desplazamiento horizontal */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-50 pointer-events-none"></div>
     </div>
   );
 }

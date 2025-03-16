@@ -102,6 +102,22 @@
   margin-bottom: 1rem;
   max-width: 100%;
   padding-bottom: 12px; /* espacio para scrollbar */
+  scrollbar-width: thin; /* Para Firefox */
+  scrollbar-color: #ccc transparent; /* Para Firefox */
+}
+
+/* Estilo de la scrollbar para Chrome/Safari/Edge */
+.comment-thread-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.comment-thread-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comment-thread-container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 20px;
 }
 
 .comment-thread-main {
@@ -121,4 +137,29 @@
   border-width: 3px !important; /* Línea más gruesa para mayor visibilidad */
   padding-left: 1rem;  /* Reducir padding */
   margin-top: 0.5rem;  /* Espacio superior */
+}
+
+/* Mejoras para el desplazamiento horizontal */
+@media (max-width: 768px) {
+  .comment-thread-container {
+    -webkit-overflow-scrolling: touch; /* Desplazamiento suave en dispositivos táctiles */
+  }
+}
+
+/* Añadir indicación visual de desplazamiento */
+.comment-thread-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, transparent, rgba(var(--background), 0.8));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.comment-thread-container:hover::after {
+  opacity: 1;
 }
