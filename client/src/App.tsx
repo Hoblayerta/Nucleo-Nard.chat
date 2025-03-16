@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Leaderboard from "@/pages/leaderboard";
 import Profile from "@/pages/profile";
+import Post from "@/pages/post";
 import Header from "@/components/header";
 
 // AuthRoute component to protect routes
@@ -42,6 +43,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/profile/:id" component={Profile} />
+        <Route path="/posts/:id" component={Post} />
         <Route component={NotFound} />
       </Switch>
     </div>
