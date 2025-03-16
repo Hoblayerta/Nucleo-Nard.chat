@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,20 +16,18 @@ interface CreatePostModalProps {
 export default function CreatePostModal({ open, onClose }: CreatePostModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   
   const createPostMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/posts", {
-        title,
+        title: "New Post", // Título predeterminado
         content
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      setTitle("");
       setContent("");
       onClose();
       toast({
@@ -50,15 +47,6 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) {
-      toast({
-        title: "Title required",
-        description: "Please enter a title for your post.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if (!content.trim()) {
       toast({
         title: "Content required",
@@ -71,6 +59,31 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
     createPostMutation.mutate();
   };
 
+  const insertImage = () => {
+    const imageUrl = prompt("Enter image URL:");
+    if (imageUrl) {
+      const imageMarkdown = `![Image](${imageUrl})`;
+      setContent(prev => prev + '\n' + imageMarkdown);
+      toast({
+        title: "Image added",
+        description: "Image has been added to your post."
+      });
+    }
+  };
+
+  const insertLink = () => {
+    const linkUrl = prompt("Enter link URL:");
+    const linkText = prompt("Enter link text:", "Click here");
+    if (linkUrl && linkText) {
+      const linkMarkdown = `[${linkText}](${linkUrl})`;
+      setContent(prev => prev + '\n' + linkMarkdown);
+      toast({
+        title: "Link added",
+        description: "Link has been added to your post."
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -80,18 +93,7 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="post-title">Title</Label>
-            <Input
-              id="post-title"
-              placeholder="Write an engaging title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="post-content">Content</Label>
+            <Label htmlFor="post-content">Description</Label>
             <Textarea
               id="post-content"
               placeholder="Write your post content..."
@@ -102,13 +104,22 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
           </div>
           
           <div>
-            <Label>Additional Options</Label>
             <div className="flex flex-wrap gap-2 mt-1">
-              <Button type="button" variant="outline" size="sm">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={insertImage}
+              >
                 <Image className="h-4 w-4 mr-2" />
                 Add Image
               </Button>
-              <Button type="button" variant="outline" size="sm">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={insertLink}
+              >
                 <Link2 className="h-4 w-4 mr-2" />
                 Add Link
               </Button>
