@@ -54,18 +54,39 @@
 /* Comentarios anidados */
 .nested-comment {
   position: relative;
-  border-left: 2px solid var(--border);
   padding-left: 1.5rem;
   min-width: fit-content;
 }
 
+/* Colores para las líneas de anidación siguiendo el estilo de lemmy */
+.nesting-level-0 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul */
+.nesting-level-1 .nested-comment { border-left: 2px solid #06b6d4; } /* Turquesa */
+.nesting-level-2 .nested-comment { border-left: 2px solid #10b981; } /* Verde */
+.nesting-level-3 .nested-comment { border-left: 2px solid #84cc16; } /* Verde limón */
+.nesting-level-4 .nested-comment { border-left: 2px solid #eab308; } /* Amarillo */
+.nesting-level-5 .nested-comment { border-left: 2px solid #f59e0b; } /* Amarillo naranja */
+.nesting-level-6 .nested-comment { border-left: 2px solid #f97316; } /* Naranja */
+.nesting-level-7 .nested-comment { border-left: 2px solid #ef4444; } /* Rojo */
+.nesting-level-8 .nested-comment { border-left: 2px solid #ec4899; } /* Magenta */
+.nesting-level-9 .nested-comment { border-left: 2px solid #d946ef; } /* Violeta */
+.nesting-level-10 .nested-comment { border-left: 2px solid #8b5cf6; } /* Morado */
+.nesting-level-11 .nested-comment { border-left: 2px solid #0ea5e9; } /* Azul cyan */
+.nesting-level-12 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul (repetido) */
+
 /* Estilos específicos para cada nivel de anidación */
+.nesting-level-0 { margin-left: 0px; }
 .nesting-level-1 { margin-left: 0px; }
 .nesting-level-2 { margin-left: 0px; }
 .nesting-level-3 { margin-left: 0px; }
 .nesting-level-4 { margin-left: 0px; }
 .nesting-level-5 { margin-left: 0px; }
 .nesting-level-6 { margin-left: 0px; }
+.nesting-level-7 { margin-left: 0px; }
+.nesting-level-8 { margin-left: 0px; }
+.nesting-level-9 { margin-left: 0px; }
+.nesting-level-10 { margin-left: 0px; }
+.nesting-level-11 { margin-left: 0px; }
+.nesting-level-12 { margin-left: 0px; }
 
 /* Configurar comportamiento de scroll */
 .comment-thread-container {

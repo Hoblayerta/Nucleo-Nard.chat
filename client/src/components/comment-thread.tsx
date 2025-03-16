@@ -185,7 +185,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-4 relative comment-replies-container">
               <div 
-                className="space-y-4 pl-6 border-l-2 border-border nested-comment"
+                className="space-y-4 pl-6 nested-comment"
                 style={{ 
                   marginLeft: level > 0 ? '0.5rem' : '0',
                 }}
@@ -195,7 +195,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                     key={reply.id} 
                     comment={reply} 
                     postId={postId}
-                    level={level + 1}
+                    level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
                   />
                 ))}
               </div>
