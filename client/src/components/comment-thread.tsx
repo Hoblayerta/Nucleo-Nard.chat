@@ -162,12 +162,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               </Badge>
             )}
             
-            {comment.user.role === "moderator" && (
-              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
-                <Shield className="h-3 w-3 mr-1" /> Mod
-              </Badge>
-            )}
-            
             <span className="text-xs text-success flex items-center">
               <Flame className="h-3 w-3 mr-1" />
               x{comment.user.likeMultiplier}
