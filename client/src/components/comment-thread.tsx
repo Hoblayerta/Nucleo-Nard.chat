@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowUp, ArrowDown, MessageSquare, Flag, Shield, Flame } from "lucide-react";
@@ -26,11 +26,41 @@ interface CommentItemProps {
 function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   // Añadir una clase para identificar nivel de anidación
   const nestingClass = `nesting-level-${level}`;
+  const commentRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyOpen, setReplyOpen] = useState(false);
   const [liked, setLiked] = useState(false);
+  
+  // Efecto para auto-scroll cuando el comentario no es completamente visible
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        // Si el comentario está parcialmente visible (menos del 80%)
+        if (entry.isIntersecting && entry.intersectionRatio < 0.8) {
+          // Desplazar al centro de la página con suavidad
+          entry.target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      });
+    }, {
+      root: null, // viewport
+      threshold: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] // Múltiples umbrales
+    });
+    
+    if (commentRef.current) {
+      observer.observe(commentRef.current);
+    }
+    
+    return () => {
+      if (commentRef.current) {
+        observer.unobserve(commentRef.current);
+      }
+    };
+  }, []);
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -92,7 +122,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   };
 
   return (
-    <div className={`relative ${nestingClass}`}>
+    <div ref={commentRef} className={`relative ${nestingClass} comment-item`}>
       <div className="flex gap-3">
         <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarFallback className="bg-primary/20 text-primary">

@@ -73,20 +73,29 @@
 .nesting-level-11 .nested-comment { border-left: 2px solid #0ea5e9; } /* Azul cyan */
 .nesting-level-12 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul (repetido) */
 
-/* Estilos específicos para cada nivel de anidación */
-.nesting-level-0 { margin-left: 0px; }
-.nesting-level-1 { margin-left: 0px; }
-.nesting-level-2 { margin-left: 0px; }
-.nesting-level-3 { margin-left: 0px; }
-.nesting-level-4 { margin-left: 0px; }
-.nesting-level-5 { margin-left: 0px; }
-.nesting-level-6 { margin-left: 0px; }
-.nesting-level-7 { margin-left: 0px; }
-.nesting-level-8 { margin-left: 0px; }
-.nesting-level-9 { margin-left: 0px; }
-.nesting-level-10 { margin-left: 0px; }
-.nesting-level-11 { margin-left: 0px; }
-.nesting-level-12 { margin-left: 0px; }
+/* Estilos para comentarios - mantener tamaño consistente */
+.comment-item {
+  font-size: 1rem; /* Tamaño base consistente para todos los comentarios */
+  margin-bottom: 1rem;
+  scroll-margin: 100px; /* Margen para el scroll automático */
+}
+
+/* Todos los niveles de anidación tienen el mismo margen */
+.nesting-level-0, 
+.nesting-level-1, 
+.nesting-level-2, 
+.nesting-level-3, 
+.nesting-level-4, 
+.nesting-level-5, 
+.nesting-level-6, 
+.nesting-level-7, 
+.nesting-level-8, 
+.nesting-level-9, 
+.nesting-level-10, 
+.nesting-level-11, 
+.nesting-level-12 { 
+  margin-left: 0; 
+}
 
 /* Configurar comportamiento de scroll */
 .comment-thread-container {
@@ -106,4 +115,11 @@
   width: 100%;
   max-width: 100%;
   overflow-x: visible;
+}
+
+/* Hacer que las líneas de colores sean más visibles */
+.nested-comment {
+  border-width: 3px !important; /* Línea más gruesa para mayor visibilidad */
+  padding-left: 1rem;  /* Reducir padding */
+  margin-top: 0.5rem;  /* Espacio superior */
 }
