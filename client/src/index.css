@@ -77,7 +77,6 @@
 .comment-item {
   font-size: 1rem; /* Tamaño base consistente para todos los comentarios */
   margin-bottom: 1rem;
-  scroll-margin: 100px; /* Margen para el scroll automático */
 }
 
 /* Todos los niveles de anidación tienen el mismo margen */

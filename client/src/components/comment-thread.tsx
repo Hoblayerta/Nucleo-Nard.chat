@@ -33,34 +33,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [liked, setLiked] = useState(false);
   
-  // Efecto para auto-scroll cuando el comentario no es completamente visible
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        // Si el comentario está parcialmente visible (menos del 80%)
-        if (entry.isIntersecting && entry.intersectionRatio < 0.8) {
-          // Desplazar al centro de la página con suavidad
-          entry.target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }
-      });
-    }, {
-      root: null, // viewport
-      threshold: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] // Múltiples umbrales
-    });
-    
-    if (commentRef.current) {
-      observer.observe(commentRef.current);
-    }
-    
-    return () => {
-      if (commentRef.current) {
-        observer.unobserve(commentRef.current);
-      }
-    };
-  }, []);
+  // Quitamos el efecto de auto-scroll vertical por petición del usuario
   
   const likeMutation = useMutation({
     mutationFn: async () => {
