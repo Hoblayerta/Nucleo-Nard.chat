@@ -44,6 +44,11 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
     const commentId = params.get('comment');
     
     if (commentId && commentId === comment.id.toString() && commentRef.current) {
+      // Si el comentario está en respuestas colapsadas, expandirlas
+      if ('parentId' in comment && comment.parentId && !expanded) {
+        setExpanded(true);
+      }
+      
       // Añadir un pequeño delay para asegurar que el DOM está listo
       setTimeout(() => {
         commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -55,7 +60,7 @@ function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProp
         }, 2000);
       }, 500);
     }
-  }, [comment.id]);
+  }, [comment.id, expanded]);
   
   const likeMutation = useMutation({
     mutationFn: async () => {

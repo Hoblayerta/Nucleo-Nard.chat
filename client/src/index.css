@@ -120,6 +120,19 @@
   border-radius: 20px;
 }
 
+/* Estilo para comentario resaltado cuando se accede desde un enlace compartido */
+.highlight-comment {
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% { background-color: transparent; }
+  25% { background-color: rgba(59, 130, 246, 0.15); } /* Azul con baja opacidad */
+  50% { background-color: rgba(59, 130, 246, 0.2); }
+  75% { background-color: rgba(59, 130, 246, 0.15); }
+  100% { background-color: transparent; }
+}
+
 .comment-thread-main {
   width: fit-content;
   min-width: 100%;
