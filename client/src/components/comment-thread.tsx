@@ -254,6 +254,10 @@ export default function CommentThread({ postId }: CommentThreadProps) {
   const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
   });
+  
+  // Importante: declarar los hooks ANTES de cualquier condicional
+  // para evitar errores con las reglas de hooks
+  const isMobile = useIsMobile();
 
   if (isLoading) {
     return (
@@ -271,9 +275,6 @@ export default function CommentThread({ postId }: CommentThreadProps) {
       </div>
     );
   }
-
-  // Usar el hook para detectar si estamos en móvil
-  const isMobile = useIsMobile();
   
   return (
     <div className="relative">
