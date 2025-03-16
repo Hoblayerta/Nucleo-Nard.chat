@@ -386,6 +386,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch leaderboard" });
     }
   });
+  
+  // Top Posts
+  app.get("/api/posts/top", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 5;
+      const topPosts = await storage.getTopPosts(limit);
+      res.status(200).json(topPosts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch top posts" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

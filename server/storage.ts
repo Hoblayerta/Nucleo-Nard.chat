@@ -20,6 +20,7 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: number): Promise<Post | undefined>;
   getPosts(): Promise<PostWithDetails[]>;
+  getTopPosts(limit: number): Promise<PostWithDetails[]>;
   
   // Comment operations
   createComment(comment: InsertComment): Promise<Comment>;
@@ -189,9 +190,13 @@ export class MemStorage implements IStorage {
     
     return Promise.all(posts.map(async (post) => {
       const user = await this.getUser(post.userId);
-      const postLikes = Array.from(this.likes.values()).filter(
-        (like) => like.postId === post.id
-      ).length;
+      // Calculate likes with multipliers
+      const postLikes = Array.from(this.likes.values())
+        .filter((like) => like.postId === post.id)
+        .reduce((total, like) => {
+          const likeUser = this.users.get(like.userId);
+          return total + (likeUser?.likeMultiplier || 1);
+        }, 0);
       const postComments = Array.from(this.comments.values()).filter(
         (comment) => comment.postId === post.id
       ).length;
@@ -207,6 +212,15 @@ export class MemStorage implements IStorage {
         comments: postComments,
       };
     }));
+  }
+  
+  async getTopPosts(limit: number): Promise<PostWithDetails[]> {
+    const posts = await this.getPosts();
+    
+    // Sort by likes (highest first) and take the specified limit
+    return posts
+      .sort((a, b) => b.likes - a.likes)
+      .slice(0, limit);
   }
 
   // Comment operations

@@ -5,9 +5,9 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp, Trophy, Flame, MessageSquare, User, Users } from "lucide-react";
+import { ArrowUp, Trophy, Flame, MessageSquare, User, Users, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CommentWithUser, User as UserType, UserStats } from "@shared/schema";
+import type { CommentWithUser, User as UserType, UserStats, PostWithDetails } from "@shared/schema";
 
 interface UserWithStats extends UserType {
   stats: UserStats;
@@ -20,6 +20,10 @@ export default function Leaderboard() {
   
   const { data: topUsers = [], isLoading: isLoadingUsers } = useQuery<UserWithStats[]>({
     queryKey: ["/api/users/top"],
+  });
+  
+  const { data: topPosts = [], isLoading: isLoadingPosts } = useQuery<PostWithDetails[]>({
+    queryKey: ["/api/posts/top"],
   });
 
   return (
@@ -38,8 +42,9 @@ export default function Leaderboard() {
         </div>
         
         <Tabs defaultValue="comments" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="comments">Top Comments</TabsTrigger>
+            <TabsTrigger value="posts">Top Posts</TabsTrigger>
             <TabsTrigger value="users">Top Users</TabsTrigger>
           </TabsList>
           
@@ -117,6 +122,89 @@ export default function Leaderboard() {
                   <h3 className="text-xl font-medium mb-2">No comments yet</h3>
                   <p className="text-muted-foreground">
                     Be the first to comment on posts and earn your place on the leaderboard!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="posts" className="space-y-6">
+            {isLoadingPosts ? (
+              <div className="text-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                <p className="mt-4 text-muted-foreground">Loading top posts...</p>
+              </div>
+            ) : topPosts.length > 0 ? (
+              topPosts.map((post, index) => (
+                <Card key={post.id} className="bg-card">
+                  <CardContent className="p-6">
+                    <div className="flex gap-4 items-start">
+                      <div className="flex flex-col items-center">
+                        <div className="bg-success/20 rounded-md p-2 text-success flex items-center justify-center">
+                          <ArrowUp className="h-5 w-5" />
+                          <span className="ml-1 font-bold">{post.likes}</span>
+                        </div>
+                        <span className="text-xs mt-1 text-muted-foreground">
+                          {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
+                        </span>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <Link href={`/posts/${post.id}`} className="block">
+                          <h3 className="text-xl font-bold mb-2 hover:text-primary">{post.title}</h3>
+                        </Link>
+                        
+                        <div className="flex items-center mb-3">
+                          <Avatar className="h-6 w-6 mr-2">
+                            <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                              {post.user.username.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link href={`/profile/${post.user.id}`} className="font-medium text-sm text-primary hover:underline">
+                              {post.user.username}
+                            </Link>
+                            
+                            {post.user.role === "admin" && (
+                              <Badge variant="outline" className="bg-success/20 text-success border-success/30 text-xs">
+                                Admin
+                              </Badge>
+                            )}
+                            
+                            {post.user.role === "moderator" && (
+                              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-xs">
+                                Mod
+                              </Badge>
+                            )}
+                            
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(post.createdAt), "PP")}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                          <div className="flex items-center">
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            <span>{post.comments} {post.comments === 1 ? 'comment' : 'comments'}</span>
+                          </div>
+                          <Link href={`/posts/${post.id}`} className="text-primary hover:underline flex items-center">
+                            <FileText className="h-4 w-4 mr-1" />
+                            View post
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card className="bg-card">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-xl font-medium mb-2">No posts yet</h3>
+                  <p className="text-muted-foreground">
+                    Be the first to create posts and earn your place on the leaderboard!
                   </p>
                 </CardContent>
               </Card>
