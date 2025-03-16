@@ -97,11 +97,20 @@ export default function ProfileModal({ userId, open, onClose }: ProfileModalProp
                 
                 <div className="bg-background p-4 rounded-md">
                   <h4 className="text-sm text-muted-foreground mb-1">
-                    Likes Received
+                    Vote Score
                   </h4>
-                  <div className="flex items-center">
-                    <ArrowUp className="h-5 w-5 mr-2 text-success" />
-                    <span className="text-2xl font-bold">{user.stats.likesReceived}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center">
+                      <ArrowUp className="h-5 w-5 mr-2 text-success" />
+                      <span className="text-xl font-bold">{user.stats.upvotesReceived}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <ArrowUp className="h-5 w-5 mr-2 rotate-180 text-destructive" />
+                      <span className="text-xl font-bold">{user.stats.downvotesReceived}</span>
+                    </div>
+                    <div className="flex items-center ml-2">
+                      <span className="text-xl font-bold">Net: {user.stats.netScore}</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -145,12 +154,18 @@ export default function ProfileModal({ userId, open, onClose }: ProfileModalProp
                         </div>
                       )}
                       
-                      {user.stats.likesReceived > 0 && (
+                      {(user.stats.upvotesReceived > 0 || user.stats.downvotesReceived > 0) && (
                         <div className="flex items-start gap-2">
-                          <ArrowUp className="h-4 w-4 text-success mt-1" />
+                          <div className="flex mt-1">
+                            <ArrowUp className="h-4 w-4 text-success" />
+                            <ArrowUp className="h-4 w-4 rotate-180 text-destructive ml-1" />
+                          </div>
                           <div>
                             <p className="text-sm">
-                              Received {user.stats.likesReceived} like{user.stats.likesReceived !== 1 ? 's' : ''}
+                              Received {user.stats.upvotesReceived} upvote{user.stats.upvotesReceived !== 1 ? 's' : ''} and {user.stats.downvotesReceived} downvote{user.stats.downvotesReceived !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Net score: {user.stats.netScore}
                             </p>
                           </div>
                         </div>
