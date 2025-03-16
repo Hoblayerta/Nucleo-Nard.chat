@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowUp, ArrowDown, MessageSquare, Flag, Shield, Flame, CornerDownRight, ChevronRight, MinusSquare, PlusSquare } from "lucide-react";
+import { ArrowUp, ArrowDown, MessageSquare, Share2, Shield, Flame, CornerDownRight, ChevronRight, MinusSquare, PlusSquare, Link } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CommentForm from "./comment-form";
 import type { CommentWithUser } from "@shared/schema";
 
@@ -22,9 +23,10 @@ interface CommentItemProps {
   comment: CommentWithUser;
   postId: number;
   level?: number;
+  index?: string; // Índice para la enumeración del hilo, ej: "1", "1.2", "1.2.3"
 }
 
-function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
+function CommentItem({ comment, postId, level = 0, index = "" }: CommentItemProps) {
   // Añadir una clase para identificar nivel de anidación
   const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -36,8 +38,24 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   
-  // No usamos auto-scroll vertical por petición del usuario
-  // Pero mantenemos la referencia para posibles mejoras futuras
+  // Efecto para hacer scroll al comentario si es el solicitado en la URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const commentId = params.get('comment');
+    
+    if (commentId && commentId === comment.id.toString() && commentRef.current) {
+      // Añadir un pequeño delay para asegurar que el DOM está listo
+      setTimeout(() => {
+        commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Añadir una clase para destacar brevemente el comentario
+        commentRef.current?.classList.add('highlight-comment');
+        setTimeout(() => {
+          commentRef.current?.classList.remove('highlight-comment');
+        }, 2000);
+      }, 500);
+    }
+  }, [comment.id]);
   
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -104,7 +122,7 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
       {isMobile && level > 0 && (
         <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
           <CornerDownRight className="h-3 w-3 mr-1" />
-          <span>Nivel {level}</span>
+          <span>Nivel {level}{index ? ` - #${index}` : ''}</span>
         </div>
       )}
     
@@ -117,6 +135,11 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center flex-wrap mb-1 gap-2">
+            {index && (
+              <Badge variant="outline" className="mr-1 text-xs bg-muted/30">
+                #{index}
+              </Badge>
+            )}
             <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline">
               {comment.user.username}
             </a>
@@ -177,14 +200,40 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               Reply
             </Button>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="px-1 py-0 h-auto hover:text-primary"
-            >
-              <Flag className="h-4 w-4 mr-1" />
-              Report
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="px-1 py-0 h-auto hover:text-primary"
+                    onClick={() => {
+                      const commentUrl = `${window.location.origin}/posts/${postId}?comment=${comment.id}`;
+                      navigator.clipboard.writeText(commentUrl)
+                        .then(() => {
+                          toast({
+                            title: "¡Enlace copiado!",
+                            description: `Puedes compartir este comentario ${index ? `(#${index})` : ""} con otros.`,
+                          });
+                        })
+                        .catch(() => {
+                          toast({
+                            title: "Error",
+                            description: "No se pudo copiar el enlace. Intenta de nuevo.",
+                            variant: "destructive",
+                          });
+                        });
+                    }}
+                  >
+                    <Share2 className="h-4 w-4 mr-1" />
+                    Compartir
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copiar enlace al comentario {index ? `#${index}` : ""}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           {replyOpen && (
@@ -232,12 +281,13 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
                     minWidth: 'calc(100% - 1rem)',
                   }}
                 >
-                  {comment.replies.map((reply) => (
+                  {comment.replies.map((reply, replyIndex) => (
                     <CommentItem 
                       key={reply.id} 
                       comment={reply} 
                       postId={postId}
                       level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
+                      index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
                     />
                   ))}
                 </div>
@@ -281,9 +331,13 @@ export default function CommentThread({ postId }: CommentThreadProps) {
       {/* Información de navegación para móviles */}
       {isMobile && (
         <div className="mb-3 p-2 bg-muted/20 rounded-md">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mb-1">
             <ChevronRight className="h-3 w-3 inline mr-1" />
             Para comentarios anidados, usa el botón de mostrar/ocultar respuestas
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <Link className="h-3 w-3 inline mr-1" />
+            Los comentarios están enumerados (#1, #1.2, #2.1, etc.) para facilitar referencias
           </p>
         </div>
       )}
@@ -292,8 +346,13 @@ export default function CommentThread({ postId }: CommentThreadProps) {
       <div className="space-y-6 comment-thread-container">
         {/* Contenedor interior que puede desbordarse horizontalmente */}
         <div className="comment-thread-main">
-          {comments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} postId={postId} />
+          {comments.map((comment, index) => (
+            <CommentItem 
+              key={comment.id} 
+              comment={comment} 
+              postId={postId} 
+              index={`${index + 1}`}
+            />
           ))}
           
           {comments.length > 5 && (
