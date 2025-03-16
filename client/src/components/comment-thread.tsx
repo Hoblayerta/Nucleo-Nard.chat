@@ -185,13 +185,21 @@ function CommentItem({ comment, postId, level = 0 }: CommentItemProps) {
               className="mt-4 space-y-4 pl-4 border-l-2 border-border"
               style={{ marginLeft: level > 3 ? '0.5rem' : '0' }}
             >
-              {comment.replies.map((reply) => (
-                <CommentItem 
-                  key={reply.id} 
-                  comment={reply} 
-                  postId={postId}
-                  level={level + 1}
-                />
+              {/* Separador horizontal antes de las respuestas */}
+              <Separator className="my-2" />
+              
+              {comment.replies.map((reply, index) => (
+                <div key={reply.id}>
+                  <CommentItem 
+                    comment={reply} 
+                    postId={postId}
+                    level={level + 1}
+                  />
+                  {/* Separador horizontal entre respuestas (excepto la última) */}
+                  {comment.replies && index < comment.replies.length - 1 && (
+                    <Separator className="my-2" />
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -225,8 +233,12 @@ export default function CommentThread({ postId }: CommentThreadProps) {
 
   return (
     <div className="space-y-6">
-      {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} postId={postId} />
+      {comments.map((comment, index) => (
+        <div key={comment.id}>
+          {/* Separador horizontal antes de cada comentario excepto el primero */}
+          {index > 0 && <Separator className="mb-6" />}
+          <CommentItem comment={comment} postId={postId} />
+        </div>
       ))}
       
       {comments.length > 5 && (
