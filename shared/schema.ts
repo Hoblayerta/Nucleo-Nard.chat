@@ -56,12 +56,13 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   createdAt: true,
 });
 
-// Like model
+// Vote model (replaces the old Like model)
 export const likes = pgTable("likes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   commentId: integer("comment_id"),
   postId: integer("post_id"),
+  isUpvote: boolean("is_upvote").notNull().default(true), // true = upvote, false = downvote
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -93,7 +94,10 @@ export type CommentWithUser = Comment & {
     role: string;
     likeMultiplier: number;
   };
-  likes: number;
+  upvotes: number;
+  downvotes: number;
+  voteScore: number; // net score = upvotes - downvotes
+  userVote?: 'upvote' | 'downvote' | null; // for logged in user
   replies?: CommentWithUser[];
 };
 
@@ -103,12 +107,17 @@ export type PostWithDetails = Post & {
     username: string;
     role: string;
   };
-  likes: number;
+  upvotes: number;
+  downvotes: number;
+  voteScore: number; // net score = upvotes - downvotes
+  userVote?: 'upvote' | 'downvote' | null; // for logged in user
   comments: number;
 };
 
 export type UserStats = {
   postCount: number;
   commentCount: number;
-  likesReceived: number;
+  upvotesReceived: number;
+  downvotesReceived: number;
+  netScore: number; // upvotes - downvotes
 };

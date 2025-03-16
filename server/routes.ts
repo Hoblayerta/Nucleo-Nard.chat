@@ -354,36 +354,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Like Routes
-  app.post("/api/likes", requireAuth, async (req, res) => {
+  // Vote Routes
+  app.post("/api/votes", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
-      const { commentId, postId } = req.body;
+      const { commentId, postId, isUpvote } = req.body;
       
       if (!commentId && !postId) {
         return res.status(400).json({ message: "Either commentId or postId is required" });
       }
       
-      // Check if already liked
-      const alreadyLiked = await storage.checkLikeExists(userId, commentId, postId);
-      if (alreadyLiked) {
-        await storage.removeLike(userId, commentId, postId);
-        return res.status(200).json({ message: "Like removed", action: "removed" });
+      if (isUpvote === undefined) {
+        return res.status(400).json({ message: "Vote type (isUpvote) is required" });
       }
       
+      // Check if already voted on this item
+      const existingVote = await storage.getUserVote(userId, commentId, postId);
+      if (existingVote) {
+        // Remove existing vote
+        await storage.removeLike(userId, commentId, postId);
+        
+        // If the user is changing vote type (upvote -> downvote or vice versa), add the new vote
+        if ((existingVote === 'upvote' && !isUpvote) || (existingVote === 'downvote' && isUpvote)) {
+          const data = insertLikeSchema.parse({
+            userId,
+            commentId,
+            postId,
+            isUpvote
+          });
+          
+          await storage.createLike(data);
+          return res.status(201).json({ 
+            message: isUpvote ? "Upvoted successfully" : "Downvoted successfully", 
+            action: "changed", 
+            voteType: isUpvote ? "upvote" : "downvote" 
+          });
+        }
+        
+        // If the user is clicking the same vote type, just remove the vote
+        return res.status(200).json({ 
+          message: "Vote removed", 
+          action: "removed" 
+        });
+      }
+      
+      // Add new vote
       const data = insertLikeSchema.parse({
         userId,
         commentId,
-        postId
+        postId,
+        isUpvote
       });
       
       await storage.createLike(data);
-      res.status(201).json({ message: "Liked successfully", action: "added" });
+      res.status(201).json({ 
+        message: isUpvote ? "Upvoted successfully" : "Downvoted successfully", 
+        action: "added", 
+        voteType: isUpvote ? "upvote" : "downvote" 
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
-      res.status(500).json({ message: "Failed to like" });
+      res.status(500).json({ message: "Failed to vote" });
+    }
+  });
+  
+  // Legacy route for backwards compatibility
+  app.post("/api/likes", requireAuth, async (req, res) => {
+    try {
+      // Redirect to the votes endpoint with isUpvote=true
+      req.body.isUpvote = true;
+      
+      // Forward the request to the votes handler
+      const voteHandler = app._router.stack
+        .filter((layer: any) => layer.route?.path === '/api/votes')
+        .map((layer: any) => layer.route.stack[0].handle)[0];
+      
+      if (voteHandler) {
+        voteHandler(req, res);
+      } else {
+        res.status(500).json({ message: "Vote handler not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process like" });
     }
   });
 

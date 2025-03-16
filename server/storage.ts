@@ -190,16 +190,30 @@ export class MemStorage implements IStorage {
     
     return Promise.all(posts.map(async (post) => {
       const user = await this.getUser(post.userId);
-      // Calculate likes with multipliers
-      const postLikes = Array.from(this.likes.values())
-        .filter((like) => like.postId === post.id)
+      
+      // Calculate upvotes with multipliers
+      const postUpvotes = Array.from(this.likes.values())
+        .filter((like) => like.postId === post.id && like.isUpvote)
         .reduce((total, like) => {
           const likeUser = this.users.get(like.userId);
           return total + (likeUser?.likeMultiplier || 1);
         }, 0);
+      
+      // Calculate downvotes with multipliers
+      const postDownvotes = Array.from(this.likes.values())
+        .filter((like) => like.postId === post.id && !like.isUpvote)
+        .reduce((total, like) => {
+          const likeUser = this.users.get(like.userId);
+          return total + (likeUser?.likeMultiplier || 1);
+        }, 0);
+        
       const postComments = Array.from(this.comments.values()).filter(
         (comment) => comment.postId === post.id
       ).length;
+      
+      // Get logged in user's vote if applicable
+      const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
+      const userVote = await this.getUserVote(sessionUserId, undefined, post.id);
       
       return {
         ...post,
@@ -208,7 +222,10 @@ export class MemStorage implements IStorage {
           username: user?.username || "unknown",
           role: user?.role || "user",
         },
-        likes: postLikes,
+        upvotes: postUpvotes,
+        downvotes: postDownvotes,
+        voteScore: postUpvotes - postDownvotes,
+        userVote,
         comments: postComments,
       };
     }));
@@ -217,9 +234,9 @@ export class MemStorage implements IStorage {
   async getTopPosts(limit: number): Promise<PostWithDetails[]> {
     const posts = await this.getPosts();
     
-    // Sort by likes (highest first) and take the specified limit
+    // Sort by vote score (highest first) and take the specified limit
     return posts
-      .sort((a, b) => b.likes - a.likes)
+      .sort((a, b) => b.voteScore - a.voteScore)
       .slice(0, limit);
   }
 
@@ -246,12 +263,26 @@ export class MemStorage implements IStorage {
       .filter((comment) => comment.postId === postId)
       .map(async (comment) => {
         const user = await this.getUser(comment.userId);
-        const commentLikes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id)
+        
+        // Calculate upvotes with multipliers
+        const commentUpvotes = Array.from(this.likes.values())
+          .filter((like) => like.commentId === comment.id && like.isUpvote)
           .reduce((total, like) => {
             const likeUser = this.users.get(like.userId);
             return total + (likeUser?.likeMultiplier || 1);
           }, 0);
+          
+        // Calculate downvotes with multipliers
+        const commentDownvotes = Array.from(this.likes.values())
+          .filter((like) => like.commentId === comment.id && !like.isUpvote)
+          .reduce((total, like) => {
+            const likeUser = this.users.get(like.userId);
+            return total + (likeUser?.likeMultiplier || 1);
+          }, 0);
+        
+        // Get logged in user's vote if applicable
+        const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
+        const userVote = await this.getUserVote(sessionUserId, comment.id);
         
         return {
           ...comment,
@@ -261,7 +292,10 @@ export class MemStorage implements IStorage {
             role: user?.role || "user",
             likeMultiplier: user?.likeMultiplier || 1,
           },
-          likes: commentLikes,
+          upvotes: commentUpvotes,
+          downvotes: commentDownvotes,
+          voteScore: commentUpvotes - commentDownvotes,
+          userVote,
           replies: [],
         };
       });
@@ -304,7 +338,8 @@ export class MemStorage implements IStorage {
       id, 
       createdAt: now,
       postId: insertLike.postId ?? null,
-      commentId: insertLike.commentId ?? null
+      commentId: insertLike.commentId ?? null,
+      isUpvote: insertLike.isUpvote !== undefined ? insertLike.isUpvote : true
     };
     this.likes.set(id, like);
     return like;
@@ -340,6 +375,18 @@ export class MemStorage implements IStorage {
          (postId && like.postId === postId))
     );
   }
+  
+  async getUserVote(userId: number, commentId?: number, postId?: number): Promise<'upvote' | 'downvote' | null> {
+    const vote = Array.from(this.likes.values()).find(
+      (like) => 
+        like.userId === userId && 
+        ((commentId && like.commentId === commentId) || 
+         (postId && like.postId === postId))
+    );
+    
+    if (!vote) return null;
+    return vote.isUpvote ? 'upvote' : 'downvote';
+  }
 
   // Combined operations
   async getTopComments(limit: number): Promise<CommentWithUser[]> {
@@ -349,13 +396,25 @@ export class MemStorage implements IStorage {
       comments.map(async (comment) => {
         const user = await this.getUser(comment.userId);
         
-        // Calculate likes with multipliers
-        const commentLikes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id)
+        // Calculate upvotes with multipliers
+        const commentUpvotes = Array.from(this.likes.values())
+          .filter((like) => like.commentId === comment.id && like.isUpvote)
           .reduce((total, like) => {
             const likeUser = this.users.get(like.userId);
             return total + (likeUser?.likeMultiplier || 1);
           }, 0);
+          
+        // Calculate downvotes with multipliers
+        const commentDownvotes = Array.from(this.likes.values())
+          .filter((like) => like.commentId === comment.id && !like.isUpvote)
+          .reduce((total, like) => {
+            const likeUser = this.users.get(like.userId);
+            return total + (likeUser?.likeMultiplier || 1);
+          }, 0);
+          
+        // Get logged in user's vote if applicable
+        const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
+        const userVote = await this.getUserVote(sessionUserId, comment.id);
         
         return {
           ...comment,
@@ -365,14 +424,18 @@ export class MemStorage implements IStorage {
             role: user?.role || "user",
             likeMultiplier: user?.likeMultiplier || 1,
           },
-          likes: commentLikes,
+          upvotes: commentUpvotes,
+          downvotes: commentDownvotes,
+          voteScore: commentUpvotes - commentDownvotes,
+          userVote,
+          replies: [], // Will be populated later if needed
         };
       })
     );
     
-    // Sort by likes (highest first) and take the specified limit
+    // Sort by vote score (highest first) and take the specified limit
     return commentsWithDetails
-      .sort((a, b) => b.likes - a.likes)
+      .sort((a, b) => b.voteScore - a.voteScore)
       .slice(0, limit);
   }
 
@@ -385,31 +448,50 @@ export class MemStorage implements IStorage {
       (comment) => comment.userId === userId
     ).length;
     
-    // Calculate total likes received on user's posts and comments
-    let likesReceived = 0;
+    // Calculate upvotes and downvotes received
+    let upvotesReceived = 0;
+    let downvotesReceived = 0;
     
-    // Count likes on posts
+    // Count votes on posts
     const userPosts = Array.from(this.posts.values()).filter(
       (post) => post.userId === userId
     );
     
     userPosts.forEach(post => {
-      likesReceived += Array.from(this.likes.values())
-        .filter(like => like.postId === post.id)
+      // Count upvotes
+      upvotesReceived += Array.from(this.likes.values())
+        .filter(like => like.postId === post.id && like.isUpvote)
+        .reduce((total, like) => {
+          const likeUser = this.users.get(like.userId);
+          return total + (likeUser?.likeMultiplier || 1);
+        }, 0);
+        
+      // Count downvotes
+      downvotesReceived += Array.from(this.likes.values())
+        .filter(like => like.postId === post.id && !like.isUpvote)
         .reduce((total, like) => {
           const likeUser = this.users.get(like.userId);
           return total + (likeUser?.likeMultiplier || 1);
         }, 0);
     });
     
-    // Count likes on comments
+    // Count votes on comments
     const userComments = Array.from(this.comments.values()).filter(
       (comment) => comment.userId === userId
     );
     
     userComments.forEach(comment => {
-      likesReceived += Array.from(this.likes.values())
-        .filter(like => like.commentId === comment.id)
+      // Count upvotes
+      upvotesReceived += Array.from(this.likes.values())
+        .filter(like => like.commentId === comment.id && like.isUpvote)
+        .reduce((total, like) => {
+          const likeUser = this.users.get(like.userId);
+          return total + (likeUser?.likeMultiplier || 1);
+        }, 0);
+        
+      // Count downvotes
+      downvotesReceived += Array.from(this.likes.values())
+        .filter(like => like.commentId === comment.id && !like.isUpvote)
         .reduce((total, like) => {
           const likeUser = this.users.get(like.userId);
           return total + (likeUser?.likeMultiplier || 1);
@@ -419,7 +501,9 @@ export class MemStorage implements IStorage {
     return {
       postCount,
       commentCount,
-      likesReceived,
+      upvotesReceived,
+      downvotesReceived,
+      netScore: upvotesReceived - downvotesReceived
     };
   }
 }
