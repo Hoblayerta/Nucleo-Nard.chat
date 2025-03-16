@@ -88,11 +88,7 @@ export default function Leaderboard() {
                               </Badge>
                             )}
                             
-                            {comment.user.role === "moderator" && (
-                              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
-                                Mod
-                              </Badge>
-                            )}
+
                             
                             <span className="flex items-center text-xs text-success">
                               <Flame className="h-3 w-3 mr-1" />
@@ -172,11 +168,7 @@ export default function Leaderboard() {
                               </Badge>
                             )}
                             
-                            {post.user.role === "moderator" && (
-                              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-xs">
-                                Mod
-                              </Badge>
-                            )}
+
                             
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(post.createdAt), "PP")}
@@ -246,11 +238,7 @@ export default function Leaderboard() {
                             </Badge>
                           )}
                           
-                          {user.role === "moderator" && (
-                            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-xs">
-                              Mod
-                            </Badge>
-                          )}
+
                         </div>
                         
                         <div className="grid grid-cols-2 gap-2 text-xs">
