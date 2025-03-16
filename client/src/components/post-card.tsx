@@ -134,7 +134,7 @@ export default function PostCard({ post }: PostCardProps) {
               <h2 className="text-xl font-medium mb-2">{post.title}</h2>
               
               <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
-                <p>{post.content}</p>
+                <div dangerouslySetInnerHTML={{ __html: post.content }} />
               </div>
               
               <div className="flex items-center text-sm text-muted-foreground">

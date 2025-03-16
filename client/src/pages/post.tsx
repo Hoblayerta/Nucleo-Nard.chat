@@ -81,7 +81,7 @@ export default function Post() {
           </div>
           
           <div className="prose max-w-none">
-            <p>{post.content}</p>
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
           </div>
         </div>
         

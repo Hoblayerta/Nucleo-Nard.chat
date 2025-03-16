@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,18 +17,20 @@ interface CreatePostModalProps {
 export default function CreatePostModal({ open, onClose }: CreatePostModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   
   const createPostMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/posts", {
-        title: "New Post", // Título predeterminado
+        title,
         content
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      setTitle("");
       setContent("");
       onClose();
       toast({
@@ -47,6 +50,15 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!title.trim()) {
+      toast({
+        title: "Title required",
+        description: "Please enter a title for your post.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!content.trim()) {
       toast({
         title: "Content required",
@@ -62,8 +74,9 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
   const insertImage = () => {
     const imageUrl = prompt("Enter image URL:");
     if (imageUrl) {
-      const imageMarkdown = `![Image](${imageUrl})`;
-      setContent(prev => prev + '\n' + imageMarkdown);
+      // Insertamos directamente un elemento HTML de imagen
+      const imageHtml = `<img src="${imageUrl}" alt="Image" style="max-width: 100%; margin: 10px 0;" />`;
+      setContent(prev => prev + '\n' + imageHtml);
       toast({
         title: "Image added",
         description: "Image has been added to your post."
@@ -75,8 +88,9 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
     const linkUrl = prompt("Enter link URL:");
     const linkText = prompt("Enter link text:", "Click here");
     if (linkUrl && linkText) {
-      const linkMarkdown = `[${linkText}](${linkUrl})`;
-      setContent(prev => prev + '\n' + linkMarkdown);
+      // Insertamos directamente un elemento HTML de enlace
+      const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+      setContent(prev => prev + '\n' + linkHtml);
       toast({
         title: "Link added",
         description: "Link has been added to your post."
@@ -92,6 +106,17 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="post-title">Title</Label>
+            <Input
+              id="post-title"
+              placeholder="Write an engaging title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          
           <div>
             <Label htmlFor="post-content">Description</Label>
             <Textarea
