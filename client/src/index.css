@@ -34,79 +34,44 @@
 /* Contenedor principal de comentarios */
 .comment-thread-container {
   max-width: 100%;
-  overflow-x: hidden; /* Cambiado de auto a hidden para control automático */
+  overflow-x: auto;
   padding-bottom: 12px; /* espacio para scrollbar */
   scrollbar-width: thin;
-  position: relative;
 }
 
 .comment-thread-main {
-  width: 100%;
+  width: max-content;
   min-width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Centrar comentarios */
 }
 
 /* Contenedor de comentarios anidados */
 .comment-replies-container {
   overflow-x: visible;
-  width: 100%;
+  width: auto;
   position: relative;
 }
 
 /* Comentarios anidados */
 .nested-comment {
   position: relative;
-  padding-left: 0.75rem; /* Reducido para una indentación mínima pero legible */
+  padding-left: 1.5rem;
   min-width: fit-content;
-  transition: transform 0.3s ease-out; /* Para animación de scroll horizontal */
 }
 
-/* Colores para las líneas de anidación siguiendo el estilo de lemmy con gradaciones más sutiles */
-.nesting-level-0 .nested-comment { border-left: 3px solid hsla(220, 92%, 60%, 0.9); } /* Azul vibrante */
-.nesting-level-1 .nested-comment { border-left: 3px solid hsla(190, 90%, 43%, 0.9); } /* Turquesa */
-.nesting-level-2 .nested-comment { border-left: 3px solid hsla(160, 84%, 39%, 0.9); } /* Verde */
-.nesting-level-3 .nested-comment { border-left: 3px solid hsla(80, 76%, 44%, 0.9); } /* Verde limón */
-.nesting-level-4 .nested-comment { border-left: 3px solid hsla(48, 90%, 48%, 0.9); } /* Amarillo */
-.nesting-level-5 .nested-comment { border-left: 3px solid hsla(38, 92%, 50%, 0.9); } /* Amarillo naranja */
-.nesting-level-6 .nested-comment { border-left: 3px solid hsla(28, 92%, 52%, 0.9); } /* Naranja */
-.nesting-level-7 .nested-comment { border-left: 3px solid hsla(0, 84%, 60%, 0.9); } /* Rojo */
-.nesting-level-8 .nested-comment { border-left: 3px solid hsla(330, 82%, 60%, 0.9); } /* Magenta */
-.nesting-level-9 .nested-comment { border-left: 3px solid hsla(290, 84%, 60%, 0.9); } /* Violeta */
-.nesting-level-10 .nested-comment { border-left: 3px solid hsla(260, 90%, 65%, 0.9); } /* Morado */
-.nesting-level-11 .nested-comment { border-left: 3px solid hsla(200, 90%, 50%, 0.9); } /* Azul cyan */
-.nesting-level-12 .nested-comment { border-left: 3px solid hsla(220, 92%, 60%, 0.9); } /* Azul (repetido) */
-
-/* Versiones pastel de los colores para alternar en niveles */
-.nesting-level-0.pastel .nested-comment { border-left: 3px solid hsla(220, 70%, 80%, 0.9); } /* Azul pastel */
-.nesting-level-1.pastel .nested-comment { border-left: 3px solid hsla(190, 70%, 80%, 0.9); } /* Turquesa pastel */
-.nesting-level-2.pastel .nested-comment { border-left: 3px solid hsla(160, 70%, 80%, 0.9); } /* Verde pastel */
-.nesting-level-3.pastel .nested-comment { border-left: 3px solid hsla(80, 70%, 80%, 0.9); } /* Verde limón pastel */
-.nesting-level-4.pastel .nested-comment { border-left: 3px solid hsla(48, 70%, 80%, 0.9); } /* Amarillo pastel */
-.nesting-level-5.pastel .nested-comment { border-left: 3px solid hsla(38, 70%, 80%, 0.9); } /* Amarillo naranja pastel */
-.nesting-level-6.pastel .nested-comment { border-left: 3px solid hsla(28, 70%, 80%, 0.9); } /* Naranja pastel */
-.nesting-level-7.pastel .nested-comment { border-left: 3px solid hsla(0, 70%, 80%, 0.9); } /* Rojo pastel */
-.nesting-level-8.pastel .nested-comment { border-left: 3px solid hsla(330, 70%, 80%, 0.9); } /* Magenta pastel */
-.nesting-level-9.pastel .nested-comment { border-left: 3px solid hsla(290, 70%, 80%, 0.9); } /* Violeta pastel */
-.nesting-level-10.pastel .nested-comment { border-left: 3px solid hsla(260, 70%, 80%, 0.9); } /* Morado pastel */
-.nesting-level-11.pastel .nested-comment { border-left: 3px solid hsla(200, 70%, 80%, 0.9); } /* Azul cyan pastel */
-.nesting-level-12.pastel .nested-comment { border-left: 3px solid hsla(220, 70%, 80%, 0.9); } /* Azul pastel (repetido) */
-
-/* Versiones oscuras de los colores para alternar en niveles */
-.nesting-level-0.dark .nested-comment { border-left: 3px solid hsla(220, 80%, 30%, 0.9); } /* Azul oscuro */
-.nesting-level-1.dark .nested-comment { border-left: 3px solid hsla(190, 80%, 30%, 0.9); } /* Turquesa oscuro */
-.nesting-level-2.dark .nested-comment { border-left: 3px solid hsla(160, 80%, 30%, 0.9); } /* Verde oscuro */
-.nesting-level-3.dark .nested-comment { border-left: 3px solid hsla(80, 80%, 30%, 0.9); } /* Verde limón oscuro */
-.nesting-level-4.dark .nested-comment { border-left: 3px solid hsla(48, 80%, 30%, 0.9); } /* Amarillo oscuro */
-.nesting-level-5.dark .nested-comment { border-left: 3px solid hsla(38, 80%, 30%, 0.9); } /* Amarillo naranja oscuro */
-.nesting-level-6.dark .nested-comment { border-left: 3px solid hsla(28, 80%, 30%, 0.9); } /* Naranja oscuro */
-.nesting-level-7.dark .nested-comment { border-left: 3px solid hsla(0, 80%, 30%, 0.9); } /* Rojo oscuro */
-.nesting-level-8.dark .nested-comment { border-left: 3px solid hsla(330, 80%, 30%, 0.9); } /* Magenta oscuro */
-.nesting-level-9.dark .nested-comment { border-left: 3px solid hsla(290, 80%, 30%, 0.9); } /* Violeta oscuro */
-.nesting-level-10.dark .nested-comment { border-left: 3px solid hsla(260, 80%, 30%, 0.9); } /* Morado oscuro */
-.nesting-level-11.dark .nested-comment { border-left: 3px solid hsla(200, 80%, 30%, 0.9); } /* Azul cyan oscuro */
-.nesting-level-12.dark .nested-comment { border-left: 3px solid hsla(220, 80%, 30%, 0.9); } /* Azul oscuro (repetido) */
+/* Colores para las líneas de anidación siguiendo el estilo de lemmy */
+.nesting-level-0 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul */
+.nesting-level-1 .nested-comment { border-left: 2px solid #06b6d4; } /* Turquesa */
+.nesting-level-2 .nested-comment { border-left: 2px solid #10b981; } /* Verde */
+.nesting-level-3 .nested-comment { border-left: 2px solid #84cc16; } /* Verde limón */
+.nesting-level-4 .nested-comment { border-left: 2px solid #eab308; } /* Amarillo */
+.nesting-level-5 .nested-comment { border-left: 2px solid #f59e0b; } /* Amarillo naranja */
+.nesting-level-6 .nested-comment { border-left: 2px solid #f97316; } /* Naranja */
+.nesting-level-7 .nested-comment { border-left: 2px solid #ef4444; } /* Rojo */
+.nesting-level-8 .nested-comment { border-left: 2px solid #ec4899; } /* Magenta */
+.nesting-level-9 .nested-comment { border-left: 2px solid #d946ef; } /* Violeta */
+.nesting-level-10 .nested-comment { border-left: 2px solid #8b5cf6; } /* Morado */
+.nesting-level-11 .nested-comment { border-left: 2px solid #0ea5e9; } /* Azul cyan */
+.nesting-level-12 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul (repetido) */
 
 /* Estilos para comentarios - mantener tamaño consistente */
 .comment-item {
@@ -180,66 +145,11 @@
   overflow-x: visible;
 }
 
-/* Estilos de ancho responsivo para comentarios */
-.comment-item {
-  width: 100%; /* Por defecto en móvil vertical - 100% del ancho */
-  max-width: 100%; 
-  margin: 0 auto 1rem auto;
-  transition: all 0.3s ease-out;
-  box-sizing: border-box;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  background-color: hsl(var(--card) / 0.3);
-}
-
-/* Tamaños responsivos para diferentes dispositivos */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .comment-item {
-    width: 70%; /* Tablet/celular horizontal - 70% del ancho */
-  }
-}
-
-@media (min-width: 1024px) {
-  .comment-item {
-    width: 50%; /* PC - 50% del ancho */
-  }
-}
-
-/* Animación para el desplazamiento horizontal automático */
-@keyframes horizontalScroll {
-  0% { transform: translateX(0); }
-  5% { transform: translateX(0); }
-  95% { transform: translateX(calc(-100% + 100vw)); }
-  100% { transform: translateX(calc(-100% + 100vw)); }
-}
-
-/* Clase para centrar automáticamente en comentarios anidados */
-.auto-center-comment {
-  scroll-behavior: smooth; 
-  transition: transform 0.4s ease-out;
-}
-
-/* Control visual de desplazamiento */
-.comment-thread-container::after, 
-.comment-thread-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  pointer-events: none;
-  z-index: 5;
-  transition: opacity 0.3s;
-}
-
-.comment-thread-container::after {
-  right: 0;
-  background: linear-gradient(to right, transparent, hsl(var(--background) / 0.8));
-}
-
-.comment-thread-container::before {
-  left: 0;
-  background: linear-gradient(to left, transparent, hsl(var(--background) / 0.8));
+/* Hacer que las líneas de colores sean más visibles */
+.nested-comment {
+  border-width: 3px !important; /* Línea más gruesa para mayor visibilidad */
+  padding-left: 1rem;  /* Reducir padding */
+  margin-top: 0.5rem;  /* Espacio superior */
 }
 
 /* Mejoras para el desplazamiento horizontal */
@@ -247,17 +157,54 @@
   .comment-thread-container {
     -webkit-overflow-scrolling: touch; /* Desplazamiento suave en dispositivos táctiles */
   }
-  
+}
+
+/* Añadir indicación visual de desplazamiento */
+.comment-thread-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, transparent, rgba(var(--background), 0.8));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.comment-thread-container:hover::after {
+  opacity: 1;
+}
+
+/* Estilos específicos para dispositivos móviles */
+@media (max-width: 768px) {
   /* Estilo para comentarios anidados en móvil */
   .mobile-nested-comment {
-    padding-left: 0.5rem;
+    padding-left: 0.75rem;
     position: relative;
     border-left-width: 3px !important;
   }
   
-  /* El ancho de comentarios en móvil siempre es 100% */
+  /* Añadir espacio adicional para móviles */
+  .comment-thread-container {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  
+  /* Permitir que los comentarios tengan más espacio en pantallas pequeñas */
+  .comment-thread-main {
+    padding-right: 0.5rem;
+  }
+  
+  /* Reducir el espaciado entre elementos en móvil */
   .comment-item {
-    width: 100%;
     margin-bottom: 0.5rem;
+  }
+  
+  /* Mejorar visualización de los hilos de comentarios */
+  .nested-comment {
+    position: relative;
+    margin-left: 0.25rem !important;
   }
 }

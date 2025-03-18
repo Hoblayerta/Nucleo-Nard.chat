@@ -28,13 +28,9 @@ interface CommentItemProps {
 }
 
 function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId }: CommentItemProps) {
-  // Determinar el tipo de nivel visual (normal, pastel, oscuro) para mejorar la diferenciación
-  const levelType = level % 3 === 0 ? '' : (level % 3 === 1 ? 'pastel' : 'dark');
-  // Añadir una clase para identificar nivel de anidación y tipo visual
-  const nestingClass = `nesting-level-${level % 13} ${levelType}`;
-  
+  // Añadir una clase para identificar nivel de anidación
+  const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
-  const threadContainerRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -50,39 +46,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   // Determina si el usuario ha votado en este comentario
   const userVoteStatus = comment.userVote || null;
   
-  // Función para centrar el comentario horizontalmente
-  const centerCommentHorizontally = (commentElement: HTMLElement) => {
-    if (!commentElement) return;
-    
-    // Encontrar el contenedor de hilos más cercano 
-    const threadContainer = commentElement.closest('.comment-thread-container');
-    if (threadContainer) {
-      // Guardar referencia al contenedor para poder usarlo después
-      threadContainerRef.current = threadContainer as HTMLDivElement;
-      
-      // Calcular posiciones
-      const commentRect = commentElement.getBoundingClientRect();
-      const containerRect = threadContainer.getBoundingClientRect();
-      
-      // Calcular el desplazamiento necesario para centrar
-      const commentCenter = commentRect.left + commentRect.width / 2;
-      const containerCenter = containerRect.left + containerRect.width / 2;
-      const offset = commentCenter - containerCenter;
-      
-      // Calcular el nuevo desplazamiento del scrollLeft
-      const newScrollLeft = threadContainer.scrollLeft + offset;
-      
-      // Aplicar el scroll con animación suave
-      threadContainer.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth'
-      });
-      
-      // Añadir clase para indicar que el comentario está centrado
-      commentElement.classList.add('auto-center-comment');
-    }
-  };
-  
   // Efecto para hacer scroll al comentario si es el solicitado en la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -96,13 +59,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
       
       // Añadir un pequeño delay para asegurar que el DOM está listo
       setTimeout(() => {
-        // Primero hacer scroll vertical para que el comentario esté en la pantalla
         commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Después centrar horizontalmente
-        if (commentRef.current) {
-          centerCommentHorizontally(commentRef.current);
-        }
         
         // Añadir una clase para destacar brevemente el comentario
         commentRef.current?.classList.add('highlight-comment');
@@ -172,19 +129,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
     return format(date, "MMM d, yyyy");
   };
     
-  // Función para manejar el clic en el comentario y centrarlo en la pantalla
-  const handleCommentClick = () => {
-    if (commentRef.current) {
-      centerCommentHorizontally(commentRef.current);
-    }
-  };
-
   return (
-    <div 
-      ref={commentRef} 
-      className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}
-      onClick={handleCommentClick}
-    >
+    <div ref={commentRef} className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
       {isMobile && level > 0 && (
         <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
           <CornerDownRight className="h-3 w-3 mr-1" />
@@ -390,31 +336,19 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
   
   return (
     <div className="relative">
-      {/* Información de navegación */}
-      <div className={`mb-3 p-2 bg-muted/20 rounded-md ${isMobile ? '' : 'flex items-center justify-between'}`}>
-        {isMobile ? (
-          <>
-            <p className="text-xs text-muted-foreground mb-1">
-              <ChevronRight className="h-3 w-3 inline mr-1" />
-              Para comentarios anidados, usa el botón de mostrar/ocultar respuestas
-            </p>
-            <p className="text-xs text-muted-foreground mb-1">
-              <Link className="h-3 w-3 inline mr-1" />
-              Los comentarios están enumerados (#1, #1.2, #2.1, etc.) para facilitar referencias
-            </p>
-          </>
-        ) : (
+      {/* Información de navegación para móviles */}
+      {isMobile && (
+        <div className="mb-3 p-2 bg-muted/20 rounded-md">
+          <p className="text-xs text-muted-foreground mb-1">
+            <ChevronRight className="h-3 w-3 inline mr-1" />
+            Para comentarios anidados, usa el botón de mostrar/ocultar respuestas
+          </p>
           <p className="text-xs text-muted-foreground">
             <Link className="h-3 w-3 inline mr-1" />
-            Comentarios enumerados (#1, #1.2, #2.1, etc.) para facilitar referencias
+            Los comentarios están enumerados (#1, #1.2, #2.1, etc.) para facilitar referencias
           </p>
-        )}
-        
-        <p className="text-xs text-primary font-medium">
-          <ChevronRight className="h-3 w-3 inline mr-1" />
-          Haz clic en cualquier comentario para centrarlo en la pantalla
-        </p>
-      </div>
+        </div>
+      )}
       
       {/* Contenedor exterior que establece los límites */}
       <div className="space-y-6 comment-thread-container">
