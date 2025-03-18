@@ -177,6 +177,27 @@
   opacity: 1;
 }
 
+/* Estilos para las imágenes en los posts */
+.prose img {
+  max-width: 200px; /* Tamaño máximo para miniaturas por defecto */
+  height: auto;
+  object-fit: cover;
+  border-radius: 0.375rem; /* 6px */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.prose img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.prose img.expanded {
+  max-width: 100%;
+  cursor: zoom-out;
+}
+
 /* Estilos específicos para dispositivos móviles */
 @media (max-width: 768px) {
   /* Estilo para comentarios anidados en móvil */
@@ -206,5 +227,10 @@
   .nested-comment {
     position: relative;
     margin-left: 0.25rem !important;
+  }
+  
+  /* Ajuste de tamaño de miniaturas en móvil */
+  .prose img {
+    max-width: 150px;
   }
 }

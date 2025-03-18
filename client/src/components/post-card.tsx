@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { 
   ArrowUp,
@@ -6,7 +6,9 @@ import {
   MessageSquare,
   Bookmark,
   Share2,
-  Shield
+  Shield,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -30,9 +32,34 @@ export default function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   
   // Determina si el usuario ha votado en este post
   const userVoteStatus = post.userVote || null;
+  
+  // Efecto para añadir manejadores de eventos a las imágenes
+  useEffect(() => {
+    if (!contentRef.current) return;
+    
+    const images = contentRef.current.querySelectorAll('img');
+    
+    const handleImageClick = (e: Event) => {
+      const img = e.target as HTMLImageElement;
+      img.classList.toggle('expanded');
+    };
+    
+    // Añadir manejadores de eventos a todas las imágenes
+    images.forEach(img => {
+      img.addEventListener('click', handleImageClick);
+    });
+    
+    // Limpiar manejadores de eventos al desmontar
+    return () => {
+      images.forEach(img => {
+        img.removeEventListener('click', handleImageClick);
+      });
+    };
+  }, [post.content]);
   
   const voteMutation = useMutation({
     mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {
@@ -139,7 +166,13 @@ export default function PostCard({ post }: PostCardProps) {
               <h2 className="text-xl font-medium mb-2">{post.title}</h2>
               
               <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div 
+                  ref={contentRef}
+                  dangerouslySetInnerHTML={{ __html: post.content }} 
+                />
+                <div className="text-xs text-muted-foreground mt-2 italic">
+                  <span>Haz clic en las imágenes para ampliarlas</span>
+                </div>
               </div>
               
               <div className="flex items-center text-sm text-muted-foreground">
