@@ -179,7 +179,7 @@
 
 /* Estilos para las imágenes en los posts */
 .prose img {
-  max-width: 200px; /* Tamaño máximo para miniaturas por defecto */
+  max-width: 50px; /* Tamaño máximo para miniaturas por defecto (1/4 del anterior) */
   height: auto;
   object-fit: cover;
   border-radius: 0.375rem; /* 6px */
@@ -231,6 +231,6 @@
   
   /* Ajuste de tamaño de miniaturas en móvil */
   .prose img {
-    max-width: 150px;
+    max-width: 38px; /* 1/4 del tamaño anterior */
   }
 }
