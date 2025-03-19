@@ -170,8 +170,8 @@ export default function PostCard({ post }: PostCardProps) {
                   ref={contentRef}
                   dangerouslySetInnerHTML={{ __html: post.content }} 
                 />
-                <div className="text-xs text-muted-foreground mt-2 italic">
-                  <span>Haz clic en las imágenes para ampliarlas</span>
+                <div className="text-[10px] text-muted-foreground mt-1 italic">
+                  <span>Las imágenes son pequeñas para no interrumpir la lectura. Haz clic en ellas para ampliarlas.</span>
                 </div>
               </div>
               
