@@ -251,10 +251,11 @@
   object-fit: cover;
 }
 
-/* Estilos para el contenido de markdown */
+/* Estilos para el contenido de markdown - estilo Lemmy */
 .md-div p {
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 0.75rem;
 }
 
 .md-div p:last-child {
@@ -263,6 +264,45 @@
 
 .overflow-wrap-anywhere {
   overflow-wrap: anywhere;
+}
+
+/* Clases de utilidad al estilo Lemmy */
+.d-flex {
+  display: flex;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.unselectable {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Estilos para los posts al estilo Lemmy */
+.post-listing {
+  margin-bottom: 1rem;
+  break-inside: avoid;
+}
+
+.post-title {
+  word-wrap: break-word;
+}
+
+.post-body {
+  max-width: 850px;
+  word-wrap: break-word;
 }
 
 /* Clase estilo thumbnail según el ejemplo */

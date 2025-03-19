@@ -121,54 +121,67 @@ export default function PostCard({ post }: PostCardProps) {
   };
 
   return (
-    <Card className="bg-card overflow-hidden">
+    <Card className="bg-card overflow-hidden post-listing d-flex position-relative">
       <CardContent className="p-0">
         <div className="p-4">
-          <div className="flex items-start">
-            <div className="flex flex-col items-center mr-4 space-y-1">
+          <div className="d-flex">
+            {/* Columna izquierda - votos (estilo Lemmy) */}
+            <div className="vote-bar text-center mr-3">
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className={`p-0 h-8 w-8 rounded-full ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'text-muted-foreground hover:text-success'}`} 
+                className={`upvote p-0 h-7 w-7 ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'text-muted-foreground hover:text-success'}`} 
                 onClick={() => handleVote(true)}
                 disabled={voteMutation.isPending}
+                aria-label="Upvote"
+                aria-pressed={userVoteStatus === 'upvote'}
               >
                 <ArrowUp className="h-5 w-5" />
               </Button>
-              <span className="font-medium">{post.voteScore || 0}</span>
+              <div className="unselectable pointer score font-medium">{post.voteScore || 0}</div>
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className={`p-0 h-8 w-8 rounded-full ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
+                className={`downvote p-0 h-7 w-7 ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
                 onClick={() => handleVote(false)}
                 disabled={voteMutation.isPending}
+                aria-label="Downvote"
+                aria-pressed={userVoteStatus === 'downvote'}
               >
                 <ArrowDown className="h-5 w-5" />
               </Button>
             </div>
             
+            {/* Columna principal - contenido del post */}
             <div className="flex-1">
-              <div className="flex items-center text-sm text-muted-foreground mb-2">
-                {post.user.role === "admin" && (
-                  <Badge variant="outline" className="bg-success/20 text-success border-success/30 mr-2">
-                    <Shield className="h-3 w-3 mr-1" /> Admin
-                  </Badge>
-                )}
-                
-                <span>Posted by</span>
-                <a href={`/profile/${post.user.id}`} className="text-primary hover:underline mx-1">
-                  {post.user.username}
-                </a>
-                <span className="mx-1">•</span>
-                <span>{timeAgo(new Date(post.createdAt))}</span>
+              {/* Encabezado del post */}
+              <div className="post-title mb-2">
+                <h2 className="text-xl font-medium hover:underline post-title">{post.title}</h2>
               </div>
               
-              <h2 className="text-xl font-medium mb-2">{post.title}</h2>
+              {/* Metadata del post - estilo Lemmy */}
+              <div className="mb-2 text-sm text-muted-foreground post-metadata">
+                <div className="d-flex flex-wrap align-items-center">
+                  {post.user.role === "admin" && (
+                    <Badge variant="outline" className="bg-success/20 text-success border-success/30 mr-2">
+                      <Shield className="h-3 w-3 mr-1" /> Admin
+                    </Badge>
+                  )}
+                  
+                  <span className="mr-1">Posted by</span>
+                  <a href={`/profile/${post.user.id}`} className="text-primary hover:underline mr-1">
+                    {post.user.username}
+                  </a>
+                  <span className="mx-1">•</span>
+                  <span>{timeAgo(new Date(post.createdAt))}</span>
+                </div>
+              </div>
               
-              <div className="prose prose-sm dark:prose-invert max-w-none mb-4 md-div">
+              {/* Contenido del post - imágenes con estilo Lemmy */}
+              <div className="post-body mb-3">
                 <div 
                   ref={contentRef}
-                  className="comment-content overflow-wrap-anywhere"
+                  className="md-div overflow-wrap-anywhere"
                   dangerouslySetInnerHTML={{ __html: post.content }} 
                 />
                 <div className="text-xs text-muted-foreground mt-2 italic">
@@ -176,18 +189,21 @@ export default function PostCard({ post }: PostCardProps) {
                 </div>
               </div>
               
-              <div className="flex items-center text-sm text-muted-foreground">
+              {/* Barra de acciones - estilo Lemmy */}
+              <div className="post-actions d-flex flex-wrap text-xs text-muted-foreground">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="hover:text-primary mr-4"
+                  className="pointer mr-3 p-0 h-7"
                   onClick={() => setShowComments(!showComments)}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
                   <span>{post.comments} comment{post.comments !== 1 ? 's' : ''}</span>
+                  {showComments && <Minimize2 className="h-4 w-4 ml-1" />}
+                  {!showComments && <Maximize2 className="h-4 w-4 ml-1" />}
                 </Button>
                 
-                <Button variant="ghost" size="sm" className="hover:text-primary mr-4">
+                <Button variant="ghost" size="sm" className="pointer mr-3 p-0 h-7">
                   <Bookmark className="h-4 w-4 mr-1" />
                   <span>Save</span>
                 </Button>
@@ -195,7 +211,7 @@ export default function PostCard({ post }: PostCardProps) {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="hover:text-primary"
+                  className="pointer p-0 h-7"
                   onClick={() => {
                     const url = `${window.location.origin}/posts/${post.id}`;
                     navigator.clipboard.writeText(url).then(() => {
@@ -214,21 +230,17 @@ export default function PostCard({ post }: PostCardProps) {
           </div>
         </div>
         
+        {/* Sección de comentarios - estilo Lemmy */}
         {showComments && (
-          <>
-            <Separator />
-            
-            <div className="bg-background p-4 border-t border-border">
+          <div className="comments-section border-t border-muted">
+            <div className="p-4 mb-0 bg-background">
               <CommentForm postId={post.id} />
             </div>
             
-            <Separator />
-            
-            <div className="bg-background p-4 border-t border-border">
-              <h3 className="font-medium mb-4">Comments ({post.comments})</h3>
+            <div className="p-4 pt-0 bg-background">
               <CommentThread postId={post.id} />
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
