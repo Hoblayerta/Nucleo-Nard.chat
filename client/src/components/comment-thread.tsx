@@ -174,14 +174,14 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             </span>
           </div>
           
-          <p className="text-sm mb-2">{comment.content}</p>
+          <div className="comment-content overflow-wrap-anywhere text-sm mb-2">{comment.content}</div>
           
           <div className="flex items-center text-xs text-muted-foreground">
-            <div className="flex items-center mr-3">
+            <div className="flex items-center mr-3 vote-bar">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`px-1 py-0 h-auto ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
+                className={`px-1 py-0 h-auto upvote ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
                 onClick={() => handleVote(true)}
                 disabled={voteMutation.isPending}
               >
@@ -191,7 +191,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`px-1 py-0 h-auto ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
+                className={`px-1 py-0 h-auto downvote ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
                 onClick={() => handleVote(false)}
                 disabled={voteMutation.isPending}
               >
@@ -202,7 +202,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             <Button 
               variant="ghost" 
               size="sm" 
-              className="px-1 py-0 h-auto hover:text-primary mr-3"
+              className="px-1 py-0 h-auto hover:text-primary mr-3 pointer"
               onClick={() => setReplyOpen(!replyOpen)}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
@@ -215,7 +215,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="px-1 py-0 h-auto hover:text-primary"
+                    className="px-1 py-0 h-auto hover:text-primary pointer"
                     onClick={() => {
                       const commentUrl = `${window.location.origin}/posts/${postId}?comment=${comment.id}`;
                       navigator.clipboard.writeText(commentUrl)
@@ -262,7 +262,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs flex items-center text-muted-foreground hover:text-primary w-full justify-start"
+                    className="text-xs flex items-center text-muted-foreground hover:text-primary w-full justify-start pointer"
                     onClick={() => setExpanded(!expanded)}
                   >
                     {expanded ? (
@@ -288,16 +288,19 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                     minWidth: 'calc(100% - 1rem)',
                   }}
                 >
-                  {comment.replies.map((reply, replyIndex) => (
-                    <CommentItem 
-                      key={reply.id} 
-                      comment={reply} 
-                      postId={postId}
-                      level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
-                      index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
-                      highlightedCommentId={highlightedCommentId}
-                    />
-                  ))}
+                  <ul className="comments">
+                    {comment.replies.map((reply, replyIndex) => (
+                      <li key={reply.id} className="mb-2">
+                        <CommentItem 
+                          comment={reply} 
+                          postId={postId}
+                          level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
+                          index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
+                          highlightedCommentId={highlightedCommentId}
+                        />
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
@@ -354,15 +357,18 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
       <div className="space-y-6 comment-thread-container">
         {/* Contenedor interior que puede desbordarse horizontalmente */}
         <div className="comment-thread-main">
-          {comments.map((comment, index) => (
-            <CommentItem 
-              key={comment.id} 
-              comment={comment} 
-              postId={postId} 
-              index={`${index + 1}`}
-              highlightedCommentId={highlightedCommentId}
-            />
-          ))}
+          <ul className="comments">
+            {comments.map((comment, index) => (
+              <li key={comment.id} className="mb-4">
+                <CommentItem 
+                  comment={comment} 
+                  postId={postId} 
+                  index={`${index + 1}`}
+                  highlightedCommentId={highlightedCommentId}
+                />
+              </li>
+            ))}
+          </ul>
           
           {comments.length > 5 && (
             <Button 
