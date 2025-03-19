@@ -77,7 +77,7 @@ export default function Profile() {
                       <span className="text-xl font-bold">x{user.likeMultiplier}</span>
                     </div>
                     <span className="text-xs mt-1 text-muted-foreground">
-                      Vote Multiplier
+                      Like Multiplier
                     </span>
                   </div>
                   
@@ -110,20 +110,11 @@ export default function Profile() {
                       <Card className="bg-card/50">
                         <CardContent className="p-4">
                           <h4 className="text-sm text-muted-foreground mb-1">
-                            Vote Score
+                            Likes Received
                           </h4>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center">
-                              <ArrowUp className="h-5 w-5 mr-2 text-success" />
-                              <span className="text-xl font-bold">{user.stats.upvotesReceived}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <ArrowUp className="h-5 w-5 mr-2 rotate-180 text-destructive" />
-                              <span className="text-xl font-bold">{user.stats.downvotesReceived}</span>
-                            </div>
-                            <div className="flex items-center ml-2">
-                              <span className="text-xl font-bold">Net: {user.stats.netScore}</span>
-                            </div>
+                          <div className="flex items-center">
+                            <ArrowUp className="h-5 w-5 mr-2 text-success" />
+                            <span className="text-2xl font-bold">{user.stats.likesReceived}</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -149,10 +140,9 @@ export default function Profile() {
                       </CardHeader>
                       <CardContent>
                         <p className="text-muted-foreground">
-                          This user is a {user.role} with a vote multiplier of {user.likeMultiplier}x.
+                          This user is a {user.role} with a like multiplier of {user.likeMultiplier}.
                           They have made {user.stats.commentCount} comments and created {user.stats.postCount} posts,
-                          receiving {user.stats.upvotesReceived} upvotes and {user.stats.downvotesReceived} downvotes
-                          for a net score of {user.stats.netScore}.
+                          receiving a total of {user.stats.likesReceived} likes from the community.
                         </p>
                       </CardContent>
                     </Card>

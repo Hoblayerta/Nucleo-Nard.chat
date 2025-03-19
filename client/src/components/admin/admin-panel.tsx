@@ -42,6 +42,12 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               Posts
             </TabsTrigger>
             <TabsTrigger 
+              value="moderation" 
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+            >
+              Moderation
+            </TabsTrigger>
+            <TabsTrigger 
               value="settings" 
               className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
@@ -63,7 +69,15 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               </div>
             </TabsContent>
             
-
+            <TabsContent value="moderation" className="p-4 m-0">
+              <div className="text-center py-12">
+                <h3 className="text-xl font-medium mb-2">Moderation Queue</h3>
+                <p className="text-muted-foreground">
+                  Review reported content and take moderation actions.
+                </p>
+              </div>
+            </TabsContent>
+            
             <TabsContent value="settings" className="p-4 m-0">
               <div className="text-center py-12">
                 <h3 className="text-xl font-medium mb-2">Platform Settings</h3>
