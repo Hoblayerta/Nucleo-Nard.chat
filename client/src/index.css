@@ -9,28 +9,6 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    overflow-y: scroll !important;
-  }
-  
-  /* Estilos globales inspirados en Lemmy */
-  .pointer {
-    cursor: pointer;
-  }
-  
-  .upvote:hover {
-    color: var(--color-info);
-  }
-  
-  .upvote {
-    margin-bottom: -5px;
-  }
-  
-  .downvote:hover {
-    color: var(--color-danger);
-  }
-  
-  .downvote {
-    margin-top: -10px;
   }
 }
 
@@ -80,31 +58,20 @@
   min-width: fit-content;
 }
 
-/* Estilos para comentarios - inspirado en Lemmy */
-.comments {
-  list-style: none;
-  padding: 0;
-}
-
-.comment-content ul,
-.comment-content ol {
-  margin-bottom: 1rem;
-}
-
 /* Colores para las líneas de anidación siguiendo el estilo de lemmy */
-.nesting-level-0 .nested-comment { border-left: 3px solid #3b82f6; } /* Azul */
-.nesting-level-1 .nested-comment { border-left: 3px solid #06b6d4; } /* Turquesa */
-.nesting-level-2 .nested-comment { border-left: 3px solid #10b981; } /* Verde */
-.nesting-level-3 .nested-comment { border-left: 3px solid #84cc16; } /* Verde limón */
-.nesting-level-4 .nested-comment { border-left: 3px solid #eab308; } /* Amarillo */
-.nesting-level-5 .nested-comment { border-left: 3px solid #f59e0b; } /* Amarillo naranja */
-.nesting-level-6 .nested-comment { border-left: 3px solid #f97316; } /* Naranja */
-.nesting-level-7 .nested-comment { border-left: 3px solid #ef4444; } /* Rojo */
-.nesting-level-8 .nested-comment { border-left: 3px solid #ec4899; } /* Magenta */
-.nesting-level-9 .nested-comment { border-left: 3px solid #d946ef; } /* Violeta */
-.nesting-level-10 .nested-comment { border-left: 3px solid #8b5cf6; } /* Morado */
-.nesting-level-11 .nested-comment { border-left: 3px solid #0ea5e9; } /* Azul cyan */
-.nesting-level-12 .nested-comment { border-left: 3px solid #3b82f6; } /* Azul (repetido) */
+.nesting-level-0 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul */
+.nesting-level-1 .nested-comment { border-left: 2px solid #06b6d4; } /* Turquesa */
+.nesting-level-2 .nested-comment { border-left: 2px solid #10b981; } /* Verde */
+.nesting-level-3 .nested-comment { border-left: 2px solid #84cc16; } /* Verde limón */
+.nesting-level-4 .nested-comment { border-left: 2px solid #eab308; } /* Amarillo */
+.nesting-level-5 .nested-comment { border-left: 2px solid #f59e0b; } /* Amarillo naranja */
+.nesting-level-6 .nested-comment { border-left: 2px solid #f97316; } /* Naranja */
+.nesting-level-7 .nested-comment { border-left: 2px solid #ef4444; } /* Rojo */
+.nesting-level-8 .nested-comment { border-left: 2px solid #ec4899; } /* Magenta */
+.nesting-level-9 .nested-comment { border-left: 2px solid #d946ef; } /* Violeta */
+.nesting-level-10 .nested-comment { border-left: 2px solid #8b5cf6; } /* Morado */
+.nesting-level-11 .nested-comment { border-left: 2px solid #0ea5e9; } /* Azul cyan */
+.nesting-level-12 .nested-comment { border-left: 2px solid #3b82f6; } /* Azul (repetido) */
 
 /* Estilos para comentarios - mantener tamaño consistente */
 .comment-item {
@@ -210,109 +177,6 @@
   opacity: 1;
 }
 
-/* Estilos para las imágenes en los posts - basado en el modelo Lemmy */
-.md-div img {
-  max-height: 40vh;
-  max-width: 200px;
-  height: auto;
-  object-fit: cover;
-  border-radius: 0.375rem; /* 6px */
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.md-div img:hover {
-  transform: scale(1.03);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.md-div img.expanded {
-  max-width: 100%;
-  max-height: 90vh;
-  aspect-ratio: auto;
-  cursor: zoom-out;
-  object-fit: contain;
-}
-
-.img-expanded {
-  max-height: 90vh;
-}
-
-.img-blur-thumb {
-  filter: blur(10px);
-  -webkit-filter: blur(10px);
-  -moz-filter: blur(10px);
-  -o-filter: blur(10px);
-  -ms-filter: blur(10px);
-}
-
-.img-cover {
-  object-fit: cover;
-}
-
-/* Estilos para el contenido de markdown - estilo Lemmy */
-.md-div p {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 0.75rem;
-}
-
-.md-div p:last-child {
-  margin-bottom: 0;
-}
-
-.overflow-wrap-anywhere {
-  overflow-wrap: anywhere;
-}
-
-/* Clases de utilidad al estilo Lemmy */
-.d-flex {
-  display: flex;
-}
-
-.flex-wrap {
-  flex-wrap: wrap;
-}
-
-.align-items-center {
-  align-items: center;
-}
-
-.position-relative {
-  position: relative;
-}
-
-.unselectable {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-/* Estilos para los posts al estilo Lemmy */
-.post-listing {
-  margin-bottom: 1rem;
-  break-inside: avoid;
-}
-
-.post-title {
-  word-wrap: break-word;
-}
-
-.post-body {
-  max-width: 850px;
-  word-wrap: break-word;
-}
-
-/* Clase estilo thumbnail según el ejemplo */
-.thumbnail {
-  object-fit: cover;
-  aspect-ratio: 1/1;
-  width: 5rem;
-  height: 5rem;
-}
-
 /* Estilos específicos para dispositivos móviles */
 @media (max-width: 768px) {
   /* Estilo para comentarios anidados en móvil */
@@ -342,16 +206,5 @@
   .nested-comment {
     position: relative;
     margin-left: 0.25rem !important;
-  }
-  
-  /* Ajuste de tamaño de miniaturas en móvil */
-  .md-div img {
-    max-width: 150px;
-  }
-  
-  /* Soporte específico para miniaturas en móvil */
-  .mobile-thumbnail-container .thumbnail {
-    width: 100%;
-    height: auto;
   }
 }

@@ -196,6 +196,7 @@ export default function UserManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="moderator">Moderator</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
@@ -204,6 +205,11 @@ export default function UserManagement() {
                       {user.role === "admin" && (
                         <Badge variant="outline" className="bg-success/20 text-success border-success/30">
                           Admin
+                        </Badge>
+                      )}
+                      {user.role === "moderator" && (
+                        <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
+                          Moderator
                         </Badge>
                       )}
                       {user.role === "user" && (
@@ -221,7 +227,7 @@ export default function UserManagement() {
                       <Input
                         type="number"
                         min="1"
-                        max="10"
+                        max="20"
                         value={tempMultiplier}
                         onChange={(e) => setTempMultiplier(parseInt(e.target.value))}
                         className="w-16 text-center"

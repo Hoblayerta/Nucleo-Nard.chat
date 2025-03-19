@@ -86,36 +86,29 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
   }
 
   return (
-    <form className="comment-form flex items-start gap-3" onSubmit={handleSubmit}>
-      <Avatar className="h-8 w-8 flex-shrink-0">
+    <form className="flex items-start gap-3" onSubmit={handleSubmit}>
+      <Avatar className="h-8 w-8">
         <AvatarFallback className="bg-primary/20 text-primary">
           {user.username.substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       
-      <div className="flex-1 comment-form-content">
-        <div className="comment-form-container">
-          <Textarea
-            className="w-full bg-card/50 border border-border rounded-md p-3 text-sm min-h-[100px] focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
-            placeholder={parentId ? "Escribe una respuesta..." : "Escribe un comentario..."}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          
-          <div className="flex justify-end mt-2 comment-form-actions">
-            <Button 
-              type="submit" 
-              className="bg-primary hover:bg-primary/90 text-white" 
-              disabled={createCommentMutation.isPending}
-            >
-              {createCommentMutation.isPending ? 
-                "Enviando..." : 
-                parentId ? "Responder" : "Comentar"}
-            </Button>
-          </div>
-        </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          <span>Formato con Markdown está soportado</span>
+      <div className="flex-1">
+        <Textarea
+          className="w-full bg-card/50 border border-border rounded-md p-3 text-sm min-h-[100px] focus-visible:border-primary focus-visible:ring-0"
+          placeholder={parentId ? "Write a reply..." : "Write a comment..."}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+        
+        <div className="flex justify-end mt-2">
+          <Button 
+            type="submit" 
+            className="bg-primary hover:bg-primary/90" 
+            disabled={createCommentMutation.isPending}
+          >
+            {createCommentMutation.isPending ? "Posting..." : parentId ? "Reply" : "Comment"}
+          </Button>
         </div>
       </div>
     </form>
