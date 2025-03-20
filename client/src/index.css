@@ -54,7 +54,7 @@
 /* Comentarios anidados */
 .nested-comment {
   position: relative;
-  padding-left: 1.5rem;
+  padding-left: 0.75rem; /* Reducido de 1.5rem a 0.75rem */
   min-width: fit-content;
 }
 
@@ -148,7 +148,7 @@
 /* Hacer que las líneas de colores sean más visibles */
 .nested-comment {
   border-width: 3px !important; /* Línea más gruesa para mayor visibilidad */
-  padding-left: 1rem;  /* Reducir padding */
+  padding-left: 0.5rem;  /* Padding reducido aún más */
   margin-top: 0.5rem;  /* Espacio superior */
 }
 
@@ -181,7 +181,7 @@
 @media (max-width: 768px) {
   /* Estilo para comentarios anidados en móvil */
   .mobile-nested-comment {
-    padding-left: 0.75rem;
+    padding-left: 0.5rem; /* Reducido de 0.75rem a 0.5rem */
     position: relative;
     border-left-width: 3px !important;
   }
@@ -205,6 +205,6 @@
   /* Mejorar visualización de los hilos de comentarios */
   .nested-comment {
     position: relative;
-    margin-left: 0.25rem !important;
+    margin-left: 0.125rem !important; /* Reducido de 0.25rem a 0.125rem */
   }
 }

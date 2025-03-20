@@ -288,10 +288,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               
               {(!isMobile || expanded) && (
                 <div 
-                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-6'}`}
+                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-3'}`}
                   style={{ 
-                    marginLeft: '0.5rem',
-                    minWidth: 'calc(100% - 1rem)',
+                    marginLeft: '0.25rem',
+                    minWidth: 'calc(100% - 0.5rem)',
                   }}
                 >
                   {comment.replies.map((reply, replyIndex) => (
