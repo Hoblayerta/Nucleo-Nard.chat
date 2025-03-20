@@ -32,12 +32,12 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
       setComment("");
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      
+
       toast({
         title: "Comment posted",
         description: parentId ? "Your reply has been added" : "Your comment has been added"
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -53,7 +53,7 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Authentication required",
@@ -62,7 +62,7 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
       });
       return;
     }
-    
+
     if (!comment.trim()) {
       toast({
         title: "Empty comment",
@@ -71,7 +71,7 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
       });
       return;
     }
-    
+
     createCommentMutation.mutate();
   };
 
@@ -86,22 +86,22 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
   }
 
   return (
-    <form className="flex items-start gap-3" onSubmit={handleSubmit}>
+    <form className="flex items-start gap-2" onSubmit={handleSubmit}>
       <Avatar className="h-8 w-8">
         <AvatarFallback className="bg-primary/20 text-primary">
           {user.username.substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      
+
       <div className="flex-1">
         <Textarea
-          className="w-full bg-card/50 border border-border rounded-md p-3 text-sm min-h-[100px] focus-visible:border-primary focus-visible:ring-0"
+          className="w-full bg-card/50 border border-border rounded-md p-2 text-sm min-h-[80px] focus-visible:border-primary focus-visible:ring-0"
           placeholder={parentId ? "Write a reply..." : "Write a comment..."}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
-        
-        <div className="flex justify-end mt-2">
+
+        <div className="flex justify-end mt-1">
           <Button 
             type="submit" 
             className="bg-primary hover:bg-primary/90" 
