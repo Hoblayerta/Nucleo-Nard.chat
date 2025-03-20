@@ -180,7 +180,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             </span>
           </div>
           
-          <p className="text-base mb-4">{comment.content}</p>
+          <p className="text-sm mb-2">{comment.content}</p>
           
           <div className="flex items-center text-xs text-muted-foreground">
             <div className="flex items-center mr-3">
@@ -211,8 +211,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               className="px-1 py-0 h-auto hover:text-primary mr-3"
               onClick={() => setReplyOpen(!replyOpen)}
             >
-              <MessageSquare className="h-4 w-4 mr-1 reply-icon" />
-              <span className="hidden sm:inline">Reply</span>
+              <MessageSquare className="h-4 w-4 mr-1" />
+              Reply
             </Button>
             
             <TooltipProvider>
@@ -240,8 +240,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                         });
                     }}
                   >
-                    <Share2 className="h-4 w-4 mr-1 share-icon" />
-                    <span className="hidden sm:inline">Compartir</span>
+                    <Share2 className="h-4 w-4 mr-1" />
+                    Compartir
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -288,10 +288,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               
               {(!isMobile || expanded) && (
                 <div 
-                  className={`space-y-6 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-5'}`}
+                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-6'}`}
                   style={{ 
-                    marginLeft: '1rem',
-                    minWidth: 'calc(100% - 1.5rem)',
+                    marginLeft: '0.5rem',
+                    minWidth: 'calc(100% - 1rem)',
                   }}
                 >
                   {comment.replies.map((reply, replyIndex) => (
@@ -357,9 +357,9 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
       )}
       
       {/* Contenedor exterior que establece los límites */}
-      <div className="comment-thread-container">
+      <div className="space-y-6 comment-thread-container">
         {/* Contenedor interior que puede desbordarse horizontalmente */}
-        <div className="comment-thread-main space-y-8">
+        <div className="comment-thread-main">
           {comments.map((comment, index) => (
             <CommentItem 
               key={comment.id} 

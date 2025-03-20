@@ -76,14 +76,7 @@
 /* Estilos para comentarios - mantener tamaño consistente */
 .comment-item {
   font-size: 1rem; /* Tamaño base consistente para todos los comentarios */
-  margin-bottom: 1.5rem;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
-}
-
-.comment-item:hover {
-  background-color: rgba(0, 0, 0, 0.03);
+  margin-bottom: 1rem;
 }
 
 /* Todos los niveles de anidación tienen el mismo margen */
@@ -141,10 +134,8 @@
 }
 
 .comment-thread-main {
-  width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
+  width: fit-content;
+  min-width: 100%;
 }
 
 /* Asegurar que los contenedores de comentarios anidados permitan desplazamiento */
@@ -193,58 +184,27 @@
     padding-left: 0.75rem;
     position: relative;
     border-left-width: 3px !important;
-    max-width: 100%;
-    box-sizing: border-box;
   }
   
   /* Añadir espacio adicional para móviles */
   .comment-thread-container {
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto;
   }
   
   /* Permitir que los comentarios tengan más espacio en pantallas pequeñas */
   .comment-thread-main {
     padding-right: 0.5rem;
-    max-width: 100%;
-    width: 100%;
   }
   
-  /* Espaciado para elementos en móvil */
+  /* Reducir el espaciado entre elementos en móvil */
   .comment-item {
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+    margin-bottom: 0.5rem;
   }
   
   /* Mejorar visualización de los hilos de comentarios */
   .nested-comment {
     position: relative;
     margin-left: 0.25rem !important;
-    max-width: calc(100% - 0.5rem);
-    width: auto;
-  }
-  
-  /* Evitar que el contenido de texto se desborde */
-  p, span, div {
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    hyphens: auto;
-  }
-  
-  /* Ajustar botones de acciones en móvil */
-  .comment-item .flex button {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-  }
-  
-  /* Ajustar el botón de compartir que puede causar desbordamiento */
-  button:has(.share-icon) {
-    min-width: auto;
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
   }
 }
