@@ -149,13 +149,13 @@ export default function PostCard({ post }: PostCardProps) {
                   className="hover:text-primary mr-4"
                   onClick={() => setShowComments(!showComments)}
                 >
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  <span>{post.comments} comment{post.comments !== 1 ? 's' : ''}</span>
+                  <MessageSquare className="h-4 w-4 mr-1 comment-icon" />
+                  <span className="text-xs sm:text-sm">{post.comments} <span className="hidden sm:inline">comment{post.comments !== 1 ? 's' : ''}</span></span>
                 </Button>
                 
                 <Button variant="ghost" size="sm" className="hover:text-primary mr-4">
-                  <Bookmark className="h-4 w-4 mr-1" />
-                  <span>Save</span>
+                  <Bookmark className="h-4 w-4 mr-1 save-icon" />
+                  <span className="hidden sm:inline">Save</span>
                 </Button>
                 
                 <Button 
@@ -172,8 +172,8 @@ export default function PostCard({ post }: PostCardProps) {
                     });
                   }}
                 >
-                  <Share2 className="h-4 w-4 mr-1" />
-                  <span>Share</span>
+                  <Share2 className="h-4 w-4 mr-1 share-icon" />
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
               </div>
             </div>

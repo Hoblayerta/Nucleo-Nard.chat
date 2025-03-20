@@ -211,8 +211,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               className="px-1 py-0 h-auto hover:text-primary mr-3"
               onClick={() => setReplyOpen(!replyOpen)}
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Reply
+              <MessageSquare className="h-4 w-4 mr-1 reply-icon" />
+              <span className="hidden sm:inline">Reply</span>
             </Button>
             
             <TooltipProvider>
@@ -240,8 +240,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                         });
                     }}
                   >
-                    <Share2 className="h-4 w-4 mr-1" />
-                    Compartir
+                    <Share2 className="h-4 w-4 mr-1 share-icon" />
+                    <span className="hidden sm:inline">Compartir</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

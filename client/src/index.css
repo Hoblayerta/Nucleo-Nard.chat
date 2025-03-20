@@ -134,8 +134,10 @@
 }
 
 .comment-thread-main {
-  width: fit-content;
-  min-width: 100%;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Asegurar que los contenedores de comentarios anidados permitan desplazamiento */
@@ -184,27 +186,57 @@
     padding-left: 0.75rem;
     position: relative;
     border-left-width: 3px !important;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   /* Añadir espacio adicional para móviles */
   .comment-thread-container {
     max-width: 100%;
-    overflow-x: auto;
+    overflow-x: hidden;
   }
   
   /* Permitir que los comentarios tengan más espacio en pantallas pequeñas */
   .comment-thread-main {
     padding-right: 0.5rem;
+    max-width: 100%;
+    width: 100%;
   }
   
   /* Reducir el espaciado entre elementos en móvil */
   .comment-item {
     margin-bottom: 0.5rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   /* Mejorar visualización de los hilos de comentarios */
   .nested-comment {
     position: relative;
     margin-left: 0.25rem !important;
+    max-width: calc(100% - 0.5rem);
+    width: auto;
+  }
+  
+  /* Evitar que el contenido de texto se desborde */
+  p, span, div {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  
+  /* Ajustar botones de acciones en móvil */
+  .comment-item .flex button {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  
+  /* Ajustar el botón de compartir que puede causar desbordamiento */
+  button:has(.share-icon) {
+    min-width: auto;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
 }
