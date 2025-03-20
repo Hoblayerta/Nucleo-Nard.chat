@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CommentForm from "./comment-form";
 import type { CommentWithUser } from "@shared/schema";
+import "./comment-thread.css"; // Importar los estilos CSS específicos
 
 interface CommentThreadProps {
   postId: number;
@@ -288,12 +289,36 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               
               {(!isMobile || expanded) && (
                 <div 
-                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-3'}`}
+                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : ''}`}
                   style={{ 
                     marginLeft: '0.25rem',
                     minWidth: 'calc(100% - 0.5rem)',
+                    position: 'relative',
+                    paddingLeft: '16px' // Espacio para la línea vertical
                   }}
                 >
+                  {/* Línea vertical de color según el nivel de anidación */}
+                  <div 
+                    className="lemmy-vertical-line" 
+                    style={{ 
+                      backgroundColor: [
+                        '#3b82f6', // Azul
+                        '#06b6d4', // Turquesa
+                        '#10b981', // Verde
+                        '#84cc16', // Verde limón
+                        '#eab308', // Amarillo
+                        '#f59e0b', // Amarillo naranja
+                        '#f97316', // Naranja
+                        '#ef4444', // Rojo
+                        '#ec4899', // Magenta
+                        '#d946ef', // Violeta
+                        '#8b5cf6', // Morado
+                        '#0ea5e9', // Azul cyan
+                        '#3b82f6'  // Azul (repetido)
+                      ][level % 13]
+                    }}
+                  />
+                  
                   {comment.replies.map((reply, replyIndex) => (
                     <CommentItem 
                       key={reply.id} 
@@ -356,6 +381,20 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
         </div>
       )}
       
+      {/* Agregar formulario de comentario al inicio, como en Lemmy */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
+        <CommentForm postId={postId} />
+      </div>
+      
+      {/* Separador entre formulario y comentarios */}
+      <Separator className="my-6" />
+      
+      {/* Título de la sección de comentarios */}
+      <h3 className="text-lg font-medium mb-4">
+        {comments.length} {comments.length === 1 ? 'Comentario' : 'Comentarios'}
+      </h3>
+      
       {/* Contenedor exterior que establece los límites */}
       <div className="space-y-6 comment-thread-container">
         {/* Contenedor interior que puede desbordarse horizontalmente */}
@@ -373,9 +412,9 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
           {comments.length > 5 && (
             <Button 
               variant="outline" 
-              className="w-full"
+              className="w-full mt-4"
             >
-              Show more comments
+              Mostrar más comentarios
             </Button>
           )}
         </div>

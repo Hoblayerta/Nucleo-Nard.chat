@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import "./comment-form.css"; // Importar los estilos CSS específicos
 
 interface CommentFormProps {
   postId: number;
@@ -86,8 +87,8 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
   }
 
   return (
-    <form className="flex items-start gap-2" onSubmit={handleSubmit}>
-      <Avatar className="h-8 w-8">
+    <form className="comment-form-container" onSubmit={handleSubmit}>
+      <Avatar className="comment-form-avatar">
         <AvatarFallback className="bg-primary/20 text-primary">
           {user.username.substring(0, 2).toUpperCase()}
         </AvatarFallback>
@@ -95,16 +96,16 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
 
       <div className="flex-1">
         <Textarea
-          className="w-full bg-card/50 border border-border rounded-md p-2 text-sm min-h-[80px] focus-visible:border-primary focus-visible:ring-0"
+          className="comment-form-textarea"
           placeholder={parentId ? "Write a reply..." : "Write a comment..."}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
 
-        <div className="flex justify-end mt-1">
+        <div className="flex justify-end mt-2">
           <Button 
             type="submit" 
-            className="bg-primary hover:bg-primary/90" 
+            className="comment-form-button"
             disabled={createCommentMutation.isPending}
           >
             {createCommentMutation.isPending ? "Posting..." : parentId ? "Reply" : "Comment"}
