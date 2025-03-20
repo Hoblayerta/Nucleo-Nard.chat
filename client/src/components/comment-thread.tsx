@@ -180,7 +180,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             </span>
           </div>
           
-          <p className="text-sm mb-2">{comment.content}</p>
+          <p className="text-base mb-4">{comment.content}</p>
           
           <div className="flex items-center text-xs text-muted-foreground">
             <div className="flex items-center mr-3">
@@ -288,10 +288,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               
               {(!isMobile || expanded) && (
                 <div 
-                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-6'}`}
+                  className={`space-y-6 nested-comment ${isMobile ? 'mobile-nested-comment' : 'pl-5'}`}
                   style={{ 
-                    marginLeft: '0.5rem',
-                    minWidth: 'calc(100% - 1rem)',
+                    marginLeft: '1rem',
+                    minWidth: 'calc(100% - 1.5rem)',
                   }}
                 >
                   {comment.replies.map((reply, replyIndex) => (
@@ -357,9 +357,9 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
       )}
       
       {/* Contenedor exterior que establece los límites */}
-      <div className="space-y-6 comment-thread-container">
+      <div className="comment-thread-container">
         {/* Contenedor interior que puede desbordarse horizontalmente */}
-        <div className="comment-thread-main">
+        <div className="comment-thread-main space-y-8">
           {comments.map((comment, index) => (
             <CommentItem 
               key={comment.id} 

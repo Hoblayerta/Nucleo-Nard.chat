@@ -76,7 +76,14 @@
 /* Estilos para comentarios - mantener tamaño consistente */
 .comment-item {
   font-size: 1rem; /* Tamaño base consistente para todos los comentarios */
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.comment-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 /* Todos los niveles de anidación tienen el mismo margen */
@@ -203,9 +210,10 @@
     width: 100%;
   }
   
-  /* Reducir el espaciado entre elementos en móvil */
+  /* Espaciado para elementos en móvil */
   .comment-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
