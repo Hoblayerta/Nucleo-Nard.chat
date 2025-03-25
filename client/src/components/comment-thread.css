@@ -18,9 +18,9 @@
 
 .nested-comment {
   position: relative;
-  padding-left: 16px;
+  padding-left: 8px;
   min-width: fit-content;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 /* Colores de líneas de anidación al estilo Lemmy */
@@ -78,7 +78,10 @@
 
 .comment-item {
   font-size: 14px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  /* Agregamos un borde lateral sutil solo para el primer nivel */
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .comment-content {
@@ -183,6 +186,9 @@
   left: 0;
   width: 2px;
   z-index: 1;
+  /* Agregamos un ligero efecto de degradado para una mejor visualización */
+  opacity: 0.8;
+  border-radius: 1px;
 }
 
 /* Estilo para comentario resaltado */

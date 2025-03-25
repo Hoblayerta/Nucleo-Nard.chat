@@ -139,201 +139,195 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         </div>
       )}
       
-      <div className="flex gap-3">
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-primary/20 text-primary">
-            {comment.user.username.substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center flex-wrap mb-1 gap-2">
-            {index && (
-              <Badge variant="outline" className="mr-1 text-xs bg-muted/30">
-                #{index}
-              </Badge>
-            )}
-            <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline">
-              {comment.user.username}
-            </a>
-            
-            {comment.user.role === "admin" && (
-              <Badge variant="outline" className="bg-success/20 text-success border-success/30">
-                <Shield className="h-3 w-3 mr-1" /> Admin
-              </Badge>
-            )}
-            
-            {comment.user.role === "moderator" && (
-              <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
-                <Shield className="h-3 w-3 mr-1" /> Mod
-              </Badge>
-            )}
-            
-            <span className="text-xs text-success flex items-center">
-              <Flame className="h-3 w-3 mr-1" />
-              x{comment.user.likeMultiplier}
-            </span>
-            
-            <span className="text-xs text-muted-foreground">•</span>
-            
-            <span className="text-xs text-muted-foreground">
-              {timeAgo(new Date(comment.createdAt))}
-            </span>
-          </div>
-          
-          <p className="text-sm mb-2">{comment.content}</p>
-          
-          <div className="flex items-center text-xs text-muted-foreground">
-            <div className="flex items-center mr-3">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`px-1 py-0 h-auto ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
-                onClick={() => handleVote(true)}
-                disabled={voteMutation.isPending}
-              >
-                <ArrowUp className="h-4 w-4 mr-1" />
-              </Button>
-              <span>{comment.voteScore || 0}</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`px-1 py-0 h-auto ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
-                onClick={() => handleVote(false)}
-                disabled={voteMutation.isPending}
-              >
-                <ArrowDown className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-            
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center flex-wrap gap-1 mb-0">
+          {/* Panel de votos a la altura del nombre */}
+          <div className="flex items-center mr-1">
             <Button 
               variant="ghost" 
               size="sm" 
-              className="px-1 py-0 h-auto hover:text-primary mr-3"
-              onClick={() => setReplyOpen(!replyOpen)}
+              className={`px-1 py-0 h-5 ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
+              onClick={() => handleVote(true)}
+              disabled={voteMutation.isPending}
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Reply
+              <ArrowUp className="h-3 w-3" />
             </Button>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="px-1 py-0 h-auto hover:text-primary"
-                    onClick={() => {
-                      const commentUrl = `${window.location.origin}/posts/${postId}?comment=${comment.id}`;
-                      navigator.clipboard.writeText(commentUrl)
-                        .then(() => {
-                          toast({
-                            title: "¡Enlace copiado!",
-                            description: `Puedes compartir este comentario ${index ? `(#${index})` : ""} con otros.`,
-                          });
-                        })
-                        .catch(() => {
-                          toast({
-                            title: "Error",
-                            description: "No se pudo copiar el enlace. Intenta de nuevo.",
-                            variant: "destructive",
-                          });
-                        });
-                    }}
-                  >
-                    <Share2 className="h-4 w-4 mr-1" />
-                    Compartir
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Copiar enlace al comentario {index ? `#${index}` : ""}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <span className="text-xs mx-px">{comment.voteScore || 0}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`px-1 py-0 h-5 ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
+              onClick={() => handleVote(false)}
+              disabled={voteMutation.isPending}
+            >
+              <ArrowDown className="h-3 w-3" />
+            </Button>
           </div>
           
-          {replyOpen && (
-            <div className="mt-3">
-              <CommentForm 
-                postId={postId} 
-                parentId={comment.id} 
-                onSuccess={() => setReplyOpen(false)}
-              />
-            </div>
+          {index && (
+            <Badge variant="outline" className="mr-1 text-xs bg-muted/30 h-5 px-1">
+              #{index}
+            </Badge>
           )}
           
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-4 relative comment-replies-container">
-              {isMobile && (
-                <div className="mb-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs flex items-center text-muted-foreground hover:text-primary w-full justify-start"
-                    onClick={() => setExpanded(!expanded)}
-                  >
-                    {expanded ? (
-                      <>
-                        <MinusSquare className="h-3.5 w-3.5 mr-1" />
-                        Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
-                      </>
-                    ) : (
-                      <>
-                        <PlusSquare className="h-3.5 w-3.5 mr-1" />
-                        Mostrar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-              
-              {(!isMobile || expanded) && (
-                <div 
-                  className={`space-y-4 nested-comment ${isMobile ? 'mobile-nested-comment' : ''}`}
-                  style={{ 
-                    marginLeft: '0.25rem',
-                    minWidth: 'calc(100% - 0.5rem)',
-                    position: 'relative',
-                    paddingLeft: '16px' // Espacio para la línea vertical
+          <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline text-sm">
+            {comment.user.username}
+          </a>
+          
+          {comment.user.role === "admin" && (
+            <Badge variant="outline" className="bg-success/20 text-success border-success/30 h-5 text-xs">
+              <Shield className="h-2.5 w-2.5 mr-0.5" /> Admin
+            </Badge>
+          )}
+          
+          {comment.user.role === "moderator" && (
+            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 h-5 text-xs">
+              <Shield className="h-2.5 w-2.5 mr-0.5" /> Mod
+            </Badge>
+          )}
+          
+          <span className="text-xs text-success flex items-center h-5">
+            <Flame className="h-2.5 w-2.5 mr-0.5" />
+            x{comment.user.likeMultiplier}
+          </span>
+          
+          <span className="text-xs text-muted-foreground">•</span>
+          
+          <span className="text-xs text-muted-foreground">
+            {timeAgo(new Date(comment.createdAt))}
+          </span>
+        </div>
+        
+        <p className="text-sm mb-1 mt-1">{comment.content}</p>
+        
+        <div className="flex items-center text-xs text-muted-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="px-1 py-0 h-5 hover:text-primary mr-2"
+            onClick={() => setReplyOpen(!replyOpen)}
+          >
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Reply
+          </Button>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="px-1 py-0 h-5 hover:text-primary"
+                  onClick={() => {
+                    const commentUrl = `${window.location.origin}/posts/${postId}?comment=${comment.id}`;
+                    navigator.clipboard.writeText(commentUrl)
+                      .then(() => {
+                        toast({
+                          title: "¡Enlace copiado!",
+                          description: `Puedes compartir este comentario ${index ? `(#${index})` : ""} con otros.`,
+                        });
+                      })
+                      .catch(() => {
+                        toast({
+                          title: "Error",
+                          description: "No se pudo copiar el enlace. Intenta de nuevo.",
+                          variant: "destructive",
+                        });
+                      });
                   }}
                 >
-                  {/* Línea vertical de color según el nivel de anidación */}
-                  <div 
-                    className="lemmy-vertical-line" 
-                    style={{ 
-                      backgroundColor: [
-                        '#3b82f6', // Azul
-                        '#06b6d4', // Turquesa
-                        '#10b981', // Verde
-                        '#84cc16', // Verde limón
-                        '#eab308', // Amarillo
-                        '#f59e0b', // Amarillo naranja
-                        '#f97316', // Naranja
-                        '#ef4444', // Rojo
-                        '#ec4899', // Magenta
-                        '#d946ef', // Violeta
-                        '#8b5cf6', // Morado
-                        '#0ea5e9', // Azul cyan
-                        '#3b82f6'  // Azul (repetido)
-                      ][level % 13]
-                    }}
-                  />
-                  
-                  {comment.replies.map((reply, replyIndex) => (
-                    <CommentItem 
-                      key={reply.id} 
-                      comment={reply} 
-                      postId={postId}
-                      level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
-                      index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
-                      highlightedCommentId={highlightedCommentId}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                  <Share2 className="h-3 w-3 mr-1" />
+                  Compartir
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Copiar enlace al comentario {index ? `#${index}` : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
+        
+        {replyOpen && (
+          <div className="mt-2">
+            <CommentForm 
+              postId={postId} 
+              parentId={comment.id} 
+              onSuccess={() => setReplyOpen(false)}
+            />
+          </div>
+        )}
+        
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="mt-2 relative comment-replies-container">
+            {isMobile && (
+              <div className="mb-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs flex items-center text-muted-foreground hover:text-primary w-full justify-start h-6 px-1"
+                  onClick={() => setExpanded(!expanded)}
+                >
+                  {expanded ? (
+                    <>
+                      <MinusSquare className="h-3 w-3 mr-1" />
+                      Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                    </>
+                  ) : (
+                    <>
+                      <PlusSquare className="h-3 w-3 mr-1" />
+                      Mostrar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {(!isMobile || expanded) && (
+              <div 
+                className={`space-y-2 nested-comment ${isMobile ? 'mobile-nested-comment' : ''}`}
+                style={{ 
+                  marginLeft: '0.125rem',
+                  minWidth: 'calc(100% - 0.25rem)',
+                  position: 'relative',
+                  paddingLeft: '8px' // Reducido el espacio para la línea vertical
+                }}
+              >
+                {/* Línea vertical de color según el nivel de anidación */}
+                <div 
+                  className="lemmy-vertical-line" 
+                  style={{ 
+                    backgroundColor: [
+                      '#3b82f6', // Azul
+                      '#06b6d4', // Turquesa
+                      '#10b981', // Verde
+                      '#84cc16', // Verde limón
+                      '#eab308', // Amarillo
+                      '#f59e0b', // Amarillo naranja
+                      '#f97316', // Naranja
+                      '#ef4444', // Rojo
+                      '#ec4899', // Magenta
+                      '#d946ef', // Violeta
+                      '#8b5cf6', // Morado
+                      '#0ea5e9', // Azul cyan
+                      '#3b82f6'  // Azul (repetido)
+                    ][level % 13]
+                  }}
+                />
+                
+                {comment.replies.map((reply, replyIndex) => (
+                  <CommentItem 
+                    key={reply.id} 
+                    comment={reply} 
+                    postId={postId}
+                    level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
+                    index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
+                    highlightedCommentId={highlightedCommentId}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
