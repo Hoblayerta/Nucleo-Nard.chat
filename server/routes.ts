@@ -233,6 +233,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update post freeze status" });
     }
   });
+  
+  app.put("/api/posts/:id/slow-mode", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { slowModeInterval } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      // Validar que slowModeInterval sea un número válido
+      if (typeof slowModeInterval !== 'number' || slowModeInterval < 0) {
+        return res.status(400).json({ message: "slowModeInterval debe ser un número no negativo" });
+      }
+
+      const post = await storage.updatePost(id, { slowModeInterval });
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      res.status(200).json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update post slow mode" });
+    }
+  });
 
   app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     try {
@@ -340,8 +365,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verificar si el post está congelado
       const post = await storage.getPost(data.postId);
-      if (post?.frozen) {
+      if (!post) {
+        return res.status(404).json({ message: "Post no encontrado" });
+      }
+      
+      if (post.frozen) {
         return res.status(403).json({ message: "No se pueden añadir comentarios a un post congelado" });
+      }
+      
+      // Verificar si el post está en modo lento (slow mode)
+      if (post.slowModeInterval > 0) {
+        // Obtener el último comentario del usuario en este post
+        const allComments = Array.from(await storage.getCommentsByPostId(post.id))
+          .flat()
+          .filter(comment => comment.user.id === userId);
+          
+        // Ordenar por fecha de creación (más reciente primero)
+        allComments.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        const lastComment = allComments[0];
+        
+        if (lastComment) {
+          const lastCommentTime = new Date(lastComment.createdAt).getTime();
+          const currentTime = new Date().getTime();
+          const timeDiff = currentTime - lastCommentTime; // diferencia en milisegundos
+          const waitTime = post.slowModeInterval * 1000; // convertir segundos a milisegundos
+          
+          if (timeDiff < waitTime) {
+            const remainingSeconds = Math.ceil((waitTime - timeDiff) / 1000);
+            return res.status(429).json({ 
+              message: `Modo lento activado. Debes esperar ${remainingSeconds} segundos antes de comentar nuevamente.`,
+              remainingSeconds
+            });
+          }
+        }
       }
       
       const comment = await storage.createComment(data);

@@ -35,6 +35,7 @@ export const posts = pgTable("posts", {
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   frozen: boolean("frozen").notNull().default(false),
+  slowModeInterval: integer("slow_mode_interval").default(0).notNull(), // Tiempo en segundos (0 = desactivado)
 });
 
 export const insertPostSchema = createInsertSchema(posts).omit({
@@ -114,6 +115,7 @@ export type PostWithDetails = Post & {
   userVote?: 'upvote' | 'downvote' | null; // for logged in user
   comments: number;
   frozen: boolean;
+  slowModeInterval: number; // tiempo en segundos
 };
 
 export type UserStats = {

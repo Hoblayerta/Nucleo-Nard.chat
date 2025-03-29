@@ -21,7 +21,7 @@ export interface IStorage {
   getPost(id: number): Promise<Post | undefined>;
   getPosts(): Promise<PostWithDetails[]>;
   getTopPosts(limit: number): Promise<PostWithDetails[]>;
-  updatePost(id: number, data: { frozen?: boolean }): Promise<Post | undefined>;
+  updatePost(id: number, data: { frozen?: boolean, slowModeInterval?: number }): Promise<Post | undefined>;
   
   // Comment operations
   createComment(comment: InsertComment): Promise<Comment>;
@@ -181,7 +181,8 @@ export class MemStorage implements IStorage {
       ...insertPost, 
       id, 
       createdAt: now,
-      frozen: insertPost.frozen || false
+      frozen: insertPost.frozen || false,
+      slowModeInterval: insertPost.slowModeInterval || 0
     };
     this.posts.set(id, post);
     return post;
@@ -234,6 +235,7 @@ export class MemStorage implements IStorage {
         userVote,
         comments: postComments,
         frozen: post.frozen || false,
+        slowModeInterval: post.slowModeInterval || 0,
       };
     }));
   }
@@ -247,13 +249,14 @@ export class MemStorage implements IStorage {
       .slice(0, limit);
   }
   
-  async updatePost(id: number, data: { frozen?: boolean }): Promise<Post | undefined> {
+  async updatePost(id: number, data: { frozen?: boolean, slowModeInterval?: number }): Promise<Post | undefined> {
     const post = await this.getPost(id);
     if (!post) return undefined;
     
     const updatedPost: Post = {
       ...post,
       ...(data.frozen !== undefined ? { frozen: data.frozen } : {}),
+      ...(data.slowModeInterval !== undefined ? { slowModeInterval: data.slowModeInterval } : {}),
     };
     
     this.posts.set(id, updatedPost);

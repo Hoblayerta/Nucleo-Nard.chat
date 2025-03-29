@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Lock } from "lucide-react";
+import { Lock, Clock } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress"; 
 import "./comment-form.css"; // Importar los estilos CSS específicos
 
 interface CommentFormProps {
@@ -14,13 +15,56 @@ interface CommentFormProps {
   parentId?: number;
   onSuccess?: () => void;
   isFrozen?: boolean;
+  slowModeInterval?: number;
 }
 
-export default function CommentForm({ postId, parentId, onSuccess, isFrozen = false }: CommentFormProps) {
+export default function CommentForm({ 
+  postId, 
+  parentId, 
+  onSuccess, 
+  isFrozen = false, 
+  slowModeInterval = 0 
+}: CommentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
+  const [slowModeCountdown, setSlowModeCountdown] = useState(0);
+  const countdownInterval = useRef<number | null>(null);
+
+  // Limpiar el intervalo cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      if (countdownInterval.current) {
+        window.clearInterval(countdownInterval.current);
+      }
+    };
+  }, []);
+
+  // Progreso del cooldown (0-100%)
+  const cooldownProgress = slowModeCountdown > 0 
+    ? 100 - (slowModeCountdown / slowModeInterval) * 100 
+    : 100;
+
+  const startCountdown = (seconds: number) => {
+    setSlowModeCountdown(seconds);
+    
+    if (countdownInterval.current) {
+      window.clearInterval(countdownInterval.current);
+    }
+    
+    countdownInterval.current = window.setInterval(() => {
+      setSlowModeCountdown(prev => {
+        if (prev <= 1) {
+          if (countdownInterval.current) {
+            window.clearInterval(countdownInterval.current);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const createCommentMutation = useMutation({
     mutationFn: async () => {
@@ -29,12 +73,27 @@ export default function CommentForm({ postId, parentId, onSuccess, isFrozen = fa
         postId,
         parentId
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        // Si es error de límite de tasa (429) por modo lento
+        if (res.status === 429 && errorData.remainingSeconds) {
+          startCountdown(errorData.remainingSeconds);
+        }
+        throw new Error(errorData.message || "Error al publicar comentario");
+      }
+      
       return res.json();
     },
     onSuccess: () => {
       setComment("");
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+
+      // Si el modo lento está activado, iniciar el contador
+      if (slowModeInterval > 0) {
+        startCountdown(slowModeInterval);
+      }
 
       toast({
         title: "Comment posted",
@@ -45,12 +104,15 @@ export default function CommentForm({ postId, parentId, onSuccess, isFrozen = fa
         onSuccess();
       }
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to post comment. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error: Error) => {
+      // Solo mostrar toast para errores que no sean de modo lento
+      if (!error.message.includes("Modo lento activado")) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to post comment. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -70,6 +132,16 @@ export default function CommentForm({ postId, parentId, onSuccess, isFrozen = fa
       toast({
         title: "Empty comment",
         description: "Please enter a comment",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // No permitir comentar si el modo lento está activo y el contador aún no ha terminado
+    if (slowModeCountdown > 0) {
+      toast({
+        title: "Modo lento activado",
+        description: `Debes esperar ${slowModeCountdown} segundos antes de comentar nuevamente.`,
         variant: "destructive",
       });
       return;
@@ -109,20 +181,48 @@ export default function CommentForm({ postId, parentId, onSuccess, isFrozen = fa
       </Avatar>
 
       <div className="flex-1">
+        {/* Barra de progreso para el modo lento si está activo */}
+        {slowModeInterval > 0 && (
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs flex items-center text-muted-foreground">
+                <Clock className="h-3 w-3 mr-1" />
+                {slowModeCountdown > 0 
+                  ? `Puedes comentar en ${slowModeCountdown} segundos` 
+                  : 'Puedes comentar ahora'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {slowModeInterval > 0 
+                  ? `Modo lento: ${slowModeInterval} segundos`
+                  : ''}
+              </span>
+            </div>
+            <Progress value={cooldownProgress} className="h-1" />
+          </div>
+        )}
+        
         <Textarea
           className="comment-form-textarea"
           placeholder={parentId ? "Write a reply..." : "Write a comment..."}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          disabled={slowModeCountdown > 0}
         />
 
         <div className="flex justify-end mt-2">
           <Button 
             type="submit" 
             className="comment-form-button"
-            disabled={createCommentMutation.isPending}
+            disabled={createCommentMutation.isPending || slowModeCountdown > 0}
           >
-            {createCommentMutation.isPending ? "Posting..." : parentId ? "Reply" : "Comment"}
+            {createCommentMutation.isPending 
+              ? "Posting..." 
+              : slowModeCountdown > 0
+                ? `Espera ${slowModeCountdown}s`
+                : parentId 
+                  ? "Reply" 
+                  : "Comment"
+            }
           </Button>
         </div>
       </div>

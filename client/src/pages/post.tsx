@@ -131,14 +131,29 @@ export default function Post() {
       {/* Sección de formulario de comentario principal - solo si no está congelado */}
       {!post.frozen && (
         <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
-          <CommentForm postId={post.id} />
+          <h3 className="text-lg font-bold mb-3">
+            Deja un comentario
+            {post.slowModeInterval > 0 && (
+              <span className="ml-2 text-sm text-muted-foreground font-normal">
+                (Modo lento: {post.slowModeInterval} segundos)
+              </span>
+            )}
+          </h3>
+          <CommentForm 
+            postId={post.id} 
+            slowModeInterval={post.slowModeInterval} 
+          />
         </section>
       )}
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
-        <CommentThread postId={post.id} highlightedCommentId={commentId} isFrozen={post.frozen} />
+        <CommentThread 
+          postId={post.id} 
+          highlightedCommentId={commentId} 
+          isFrozen={post.frozen}
+          slowModeInterval={post.slowModeInterval}  
+        />
       </section>
     </div>
   );

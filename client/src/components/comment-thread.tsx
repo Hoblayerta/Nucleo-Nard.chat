@@ -19,6 +19,7 @@ interface CommentThreadProps {
   postId: number;
   highlightedCommentId?: string | null;
   isFrozen?: boolean;
+  slowModeInterval?: number;
 }
 
 interface CommentItemProps {
@@ -28,9 +29,10 @@ interface CommentItemProps {
   index?: string; // Índice para la enumeración del hilo, ej: "1", "1.2", "1.2.3"
   highlightedCommentId?: string | null;
   isFrozen?: boolean; // Indica si el post está congelado
+  slowModeInterval?: number; // Indica el intervalo de tiempo para el modo lento
 }
 
-function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId, isFrozen = false }: CommentItemProps) {
+function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId, isFrozen = false, slowModeInterval = 0 }: CommentItemProps) {
   // Añadir una clase para identificar nivel de anidación
   const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -268,6 +270,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               postId={postId} 
               parentId={comment.id} 
               onSuccess={() => setReplyOpen(false)}
+              slowModeInterval={slowModeInterval}
             />
           </div>
         )}
@@ -346,6 +349,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                     index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
                     highlightedCommentId={highlightedCommentId}
                     isFrozen={isFrozen}
+                    slowModeInterval={slowModeInterval}
                   />
                 ))}
               </div>
@@ -357,7 +361,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   );
 }
 
-export default function CommentThread({ postId, highlightedCommentId, isFrozen = false }: CommentThreadProps) {
+export default function CommentThread({ postId, highlightedCommentId, isFrozen = false, slowModeInterval = 0 }: CommentThreadProps) {
   const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
   });
@@ -403,7 +407,7 @@ export default function CommentThread({ postId, highlightedCommentId, isFrozen =
       {comments.length === 0 && !isFrozen && (
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
-          <CommentForm postId={postId} />
+          <CommentForm postId={postId} slowModeInterval={slowModeInterval} />
         </div>
       )}
       {comments.length === 0 && isFrozen && (
@@ -432,6 +436,7 @@ export default function CommentThread({ postId, highlightedCommentId, isFrozen =
               index={`${index + 1}`}
               highlightedCommentId={highlightedCommentId}
               isFrozen={isFrozen}
+              slowModeInterval={slowModeInterval}
             />
           ))}
           
