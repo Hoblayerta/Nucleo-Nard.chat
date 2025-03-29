@@ -4,6 +4,7 @@ import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CommentThread from "@/components/comment-thread";
+import CommentForm from "@/components/comment-form";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -117,7 +118,21 @@ export default function Post() {
       </article>
       
       <section className="bg-card rounded-lg shadow-sm p-6">
-        <CommentThread postId={post.id} highlightedCommentId={commentId} />
+        {/* Sección para escribir comentarios */}
+        <div className="mb-6">
+          <h3 className="text-2xl font-medium mb-3">Comentarios</h3>
+          <CommentForm postId={post.id} />
+        </div>
+        
+        {/* Separador */}
+        <div className="h-px bg-border my-6"></div>
+        
+        {/* Lista de comentarios - sin mostrar el formulario duplicado */}
+        <CommentThread 
+          postId={post.id} 
+          highlightedCommentId={commentId} 
+          showCommentForm={false} 
+        />
       </section>
     </div>
   );
