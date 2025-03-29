@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/posts/:id/freeze", requireAdmin, async (req, res) => {
+  app.put("/api/posts/:id/freeze", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { frozen } = req.body;

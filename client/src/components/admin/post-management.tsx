@@ -63,7 +63,7 @@ export default function PostManagement() {
   
   const freezePostMutation = useMutation({
     mutationFn: async ({ id, frozen }: { id: number, frozen: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/posts/${id}/freeze`, {
+      const res = await apiRequest("PUT", `/api/posts/${id}/freeze`, {
         frozen
       });
       return res.json();
@@ -184,7 +184,8 @@ export default function PostManagement() {
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                          Active
+                          <Unlock className="mr-1 h-3 w-3" />
+                          Not Frozen
                         </Badge>
                       )}
                     </TableCell>

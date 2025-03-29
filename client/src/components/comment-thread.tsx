@@ -94,6 +94,15 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   });
 
   const handleVote = (isUpvote: boolean) => {
+    if (isFrozen) {
+      toast({
+        title: "Post bloqueado",
+        description: "No se pueden realizar votos en un post congelado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!user) {
       toast({
         title: "Authentication required",
