@@ -20,6 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import CommentThread from "./comment-thread";
 import CommentForm from "./comment-form";
 import type { PostWithDetails } from "@shared/schema";
+import { Switch } from "@/components/ui/switch"; // Import the Switch component
+
 
 interface PostCardProps {
   post: PostWithDetails;
@@ -30,10 +32,10 @@ export default function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
-  
+
   // Determina si el usuario ha votado en este post
   const userVoteStatus = post.userVote || null;
-  
+
   const voteMutation = useMutation({
     mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {
       const res = await apiRequest("POST", "/api/votes", {
@@ -63,34 +65,48 @@ export default function PostCard({ post }: PostCardProps) {
       });
       return;
     }
-    
+
     voteMutation.mutate({ isUpvote });
   };
 
   const timeAgo = (date: Date) => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (diffInSeconds < 60) {
       return `${diffInSeconds} seconds ago`;
     }
-    
+
     const diffInMinutes = Math.floor(diffInSeconds / 60);
     if (diffInMinutes < 60) {
       return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
     }
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) {
       return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
     }
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 30) {
       return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
     }
-    
+
     return format(date, "MMM d, yyyy");
+  };
+
+  const handleFreeze = async (frozen: boolean) => {
+    try {
+      await apiRequest("PUT", `/api/posts/${post.id}/freeze`, { frozen });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    } catch (error) {
+      console.error("Error freezing/unfreezing post:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update post status. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -104,7 +120,7 @@ export default function PostCard({ post }: PostCardProps) {
                 variant="ghost" 
                 className={`p-0 h-8 w-8 rounded-full ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'text-muted-foreground hover:text-success'}`} 
                 onClick={() => handleVote(true)}
-                disabled={voteMutation.isPending}
+                disabled={voteMutation.isPending || post.frozen} // Disable if frozen
               >
                 <ArrowUp className="h-5 w-5" />
               </Button>
@@ -114,12 +130,12 @@ export default function PostCard({ post }: PostCardProps) {
                 variant="ghost" 
                 className={`p-0 h-8 w-8 rounded-full ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
                 onClick={() => handleVote(false)}
-                disabled={voteMutation.isPending}
+                disabled={voteMutation.isPending || post.frozen} // Disable if frozen
               >
                 <ArrowDown className="h-5 w-5" />
               </Button>
             </div>
-            
+
             <div className="flex-1">
               <div className="flex items-center text-sm text-muted-foreground mb-2">
                 {post.user.role === "admin" && (
@@ -127,7 +143,7 @@ export default function PostCard({ post }: PostCardProps) {
                     <Shield className="h-3 w-3 mr-1" /> Admin
                   </Badge>
                 )}
-                
+
                 <span>Posted by</span>
                 <a href={`/profile/${post.user.id}`} className="text-primary hover:underline mx-1">
                   {post.user.username}
@@ -135,29 +151,43 @@ export default function PostCard({ post }: PostCardProps) {
                 <span className="mx-1">•</span>
                 <span>{timeAgo(new Date(post.createdAt))}</span>
               </div>
-              
+
               <h2 className="text-xl font-medium mb-2">{post.title}</h2>
-              
+
               <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
                 <div dangerouslySetInnerHTML={{ __html: post.content }} />
               </div>
-              
+
               <div className="flex items-center text-sm text-muted-foreground">
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className="hover:text-primary mr-4"
                   onClick={() => setShowComments(!showComments)}
+                  disabled={post.frozen} // Disable if frozen
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
                   <span>{post.comments} comment{post.comments !== 1 ? 's' : ''}</span>
                 </Button>
-                
+
                 <Button variant="ghost" size="sm" className="hover:text-primary mr-4">
                   <Bookmark className="h-4 w-4 mr-1" />
                   <span>Save</span>
                 </Button>
-                
+
+                {user?.role === "admin" && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={post.frozen}
+                      onCheckedChange={handleFreeze}
+                      aria-label="Freeze post interactions"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {post.frozen ? "Frozen" : "Active"}
+                    </span>
+                  </div>
+                )}
+
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -171,6 +201,7 @@ export default function PostCard({ post }: PostCardProps) {
                       });
                     });
                   }}
+                  disabled={post.frozen} //Disable if frozen
                 >
                   <Share2 className="h-4 w-4 mr-1" />
                   <span>Share</span>
@@ -179,17 +210,17 @@ export default function PostCard({ post }: PostCardProps) {
             </div>
           </div>
         </div>
-        
+
         {showComments && (
           <>
             <Separator />
-            
+
             <div className="bg-background p-4 border-t border-border">
-              <CommentForm postId={post.id} />
+              <CommentForm postId={post.id} disabled={post.frozen}/> {/* Pass disabled prop */}
             </div>
-            
+
             <Separator />
-            
+
             <div className="bg-background p-4 border-t border-border">
               <h3 className="font-medium mb-4">Comments ({post.comments})</h3>
               <CommentThread postId={post.id} />

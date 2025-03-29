@@ -214,6 +214,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch("/api/posts/:id/freeze", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { frozen } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+
+      const post = await storage.updatePost(id, { frozen });
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      res.status(200).json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update post freeze status" });
+    }
+  });
+
   app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

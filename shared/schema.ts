@@ -34,6 +34,7 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  frozen: boolean("frozen").notNull().default(false),
 });
 
 export const insertPostSchema = createInsertSchema(posts).omit({
