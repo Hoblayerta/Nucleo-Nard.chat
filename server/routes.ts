@@ -290,10 +290,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUser(post.userId);
       
-      // Count likes
-      const likes = Array.from((await storage.getLikesByUserId(post.userId)).values())
-        .filter(like => like.postId === post.id)
-        .length;
+      // Calculate upvotes with multipliers
+      const likes = Array.from(storage.likes.values());
+      const upvotes = likes
+        .filter(like => like.postId === id && like.isUpvote)
+        .reduce((total, like) => {
+          const user = storage.users.get(like.userId);
+          return total + (user?.likeMultiplier || 1);
+        }, 0);
+      
+      // Calculate downvotes with multipliers
+      const downvotes = likes
+        .filter(like => like.postId === id && !like.isUpvote)
+        .reduce((total, like) => {
+          const user = storage.users.get(like.userId);
+          return total + (user?.likeMultiplier || 1);
+        }, 0);
+      
+      // Check for user's vote
+      const userVote = req.session.userId 
+        ? await storage.getUserVote(req.session.userId, undefined, id)
+        : null;
+      
+      // Count comments
+      const comments = Array.from(storage.comments.values())
+        .filter(comment => comment.postId === id).length;
       
       res.status(200).json({
         ...post,
@@ -302,7 +323,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user?.username || "unknown",
           role: user?.role || "user",
         },
-        likes
+        upvotes,
+        downvotes,
+        voteScore: upvotes - downvotes,
+        userVote,
+        comments
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch post" });
