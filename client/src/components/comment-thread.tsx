@@ -29,8 +29,6 @@ interface CommentItemProps {
 }
 
 function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId }: CommentItemProps) {
-  // Añadir una clase para identificar nivel de anidación
-  const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -39,10 +37,16 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   
+  const colorLevelClass = `comment-line-level-${level % 12}`; // Usamos módulo 12 para ciclar entre los colores definidos
+  
   // Determina si este comentario debería estar resaltado
-  const shouldHighlight = 
+  const isHighlighted = 
     highlightedCommentId === comment.id.toString() || 
     (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('comment') === comment.id.toString());
+    
+  // Variables necesarias para la renderización
+  const nestingClass = `nesting-level-${level}`;
+  const shouldHighlight = isHighlighted;
     
   // Determina si el usuario ha votado en este comentario
   const userVoteStatus = comment.userVote || null;
@@ -61,12 +65,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
       // Añadir un pequeño delay para asegurar que el DOM está listo
       setTimeout(() => {
         commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Añadir una clase para destacar brevemente el comentario
-        commentRef.current?.classList.add('highlight-comment');
-        setTimeout(() => {
-          commentRef.current?.classList.remove('highlight-comment');
-        }, 2000);
       }, 500);
     }
   }, [comment.id, expanded, highlightedCommentId]);
@@ -131,93 +129,103 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   };
     
   return (
-    <div ref={commentRef} className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
-      {isMobile && level > 0 && (
-        <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
-          <CornerDownRight className="h-3 w-3 mr-1" />
-          <span>Nivel {level}{index ? ` - #${index}` : ''}</span>
-        </div>
+    <div className="comment-container">
+      {/* Línea vertical que conecta con los comentarios hijos */}
+      {level > 0 && (
+        <div className={`comment-line ${colorLevelClass}`}></div>
       )}
       
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center flex-wrap gap-1 mb-0">
-          {/* Panel de votos a la altura del nombre */}
-          <div className="flex items-center mr-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`px-1 py-0 h-5 ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
-              onClick={() => handleVote(true)}
-              disabled={voteMutation.isPending}
-            >
-              <ArrowUp className="h-3 w-3" />
-            </Button>
-            <span className="text-xs mx-px">{comment.voteScore || 0}</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`px-1 py-0 h-5 ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
-              onClick={() => handleVote(false)}
-              disabled={voteMutation.isPending}
-            >
-              <ArrowDown className="h-3 w-3" />
-            </Button>
-          </div>
-          
+      <div
+        ref={commentRef}
+        className={`comment-content ${isHighlighted ? 'highlighted' : ''}`}
+      >
+        {/* Cabecera del comentario */}
+        <div className="comment-head">
+          {/* Número de índice */}
           {index && (
-            <Badge variant="outline" className="mr-1 text-xs bg-muted/30 h-5 px-1">
-              #{index}
-            </Badge>
+            <span className="comment-index">#{index}</span>
           )}
           
-          <a href={`/profile/${comment.user.id}`} className="font-medium text-primary hover:underline text-sm">
+          {/* Nombre de usuario con estilo según rol */}
+          <a 
+            href={`/profile/${comment.user.id}`} 
+            className={`comment-username ${comment.user.role}`}
+          >
             {comment.user.username}
           </a>
           
+          {/* Insignias del usuario */}
+          {comment.user.badges && comment.user.badges.length > 0 && (
+            <div className="user-badges">
+              {comment.user.badges.map((badge, i) => (
+                <span key={i} className={`badge ${badge.toLowerCase()}`}>
+                  {badge}
+                </span>
+              ))}
+            </div>
+          )}
+          
+          {/* Rol especial */}
           {comment.user.role === "admin" && (
-            <Badge variant="outline" className="bg-success/20 text-success border-success/30 h-5 text-xs">
-              <Shield className="h-2.5 w-2.5 mr-0.5" /> Admin
-            </Badge>
+            <span className="badge admin">Admin</span>
           )}
           
           {comment.user.role === "moderator" && (
-            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 h-5 text-xs">
-              <Shield className="h-2.5 w-2.5 mr-0.5" /> Mod
-            </Badge>
+            <span className="badge moderator">Mod</span>
           )}
           
-          <span className="text-xs text-success flex items-center h-5">
-            <Flame className="h-2.5 w-2.5 mr-0.5" />
+          {/* Multiplicador de likes */}
+          <span className="badge">
             x{comment.user.likeMultiplier}
           </span>
           
-          <span className="text-xs text-muted-foreground">•</span>
-          
-          <span className="text-xs text-muted-foreground">
+          {/* Tiempo */}
+          <span className="comment-time">
             {timeAgo(new Date(comment.createdAt))}
           </span>
         </div>
         
-        <p className="text-sm mb-1 mt-1">{comment.content}</p>
+        {/* Contenido del comentario */}
+        <div className="comment-body">
+          {comment.content}
+        </div>
         
-        <div className="flex items-center text-xs text-muted-foreground">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="px-1 py-0 h-5 hover:text-primary mr-2"
+        {/* Acciones del comentario */}
+        <div className="comment-actions">
+          {/* Controles de votación */}
+          <div className="vote-controls">
+            <button 
+              className={`vote-btn ${userVoteStatus === 'upvote' ? 'upvoted' : ''}`}
+              onClick={() => handleVote(true)}
+              disabled={voteMutation.isPending}
+            >
+              <ArrowUp className="h-3 w-3" />
+            </button>
+            <span className="vote-count">{comment.voteScore || 0}</span>
+            <button 
+              className={`vote-btn ${userVoteStatus === 'downvote' ? 'downvoted' : ''}`}
+              onClick={() => handleVote(false)}
+              disabled={voteMutation.isPending}
+            >
+              <ArrowDown className="h-3 w-3" />
+            </button>
+          </div>
+          
+          {/* Botón de respuesta */}
+          <button 
+            className="reply-btn"
             onClick={() => setReplyOpen(!replyOpen)}
           >
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Reply
-          </Button>
+            <MessageSquare className="h-3 w-3 inline mr-1" />
+            Responder
+          </button>
           
+          {/* Botón de compartir */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="px-1 py-0 h-5 hover:text-primary"
+                <button 
+                  className="reply-btn"
                   onClick={() => {
                     const commentUrl = `${window.location.origin}/posts/${postId}?comment=${comment.id}`;
                     navigator.clipboard.writeText(commentUrl)
@@ -236,9 +244,9 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                       });
                   }}
                 >
-                  <Share2 className="h-3 w-3 mr-1" />
+                  <Share2 className="h-3 w-3 inline mr-1" />
                   Compartir
-                </Button>
+                </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Copiar enlace al comentario {index ? `#${index}` : ""}</p>
@@ -247,6 +255,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
           </TooltipProvider>
         </div>
         
+        {/* Formulario de respuesta */}
         {replyOpen && (
           <div className="mt-2">
             <CommentForm 
@@ -256,79 +265,50 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             />
           </div>
         )}
-        
-        {comment.replies && comment.replies.length > 0 && (
-          <div className="mt-2 relative comment-replies-container">
-            {isMobile && (
-              <div className="mb-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs flex items-center text-muted-foreground hover:text-primary w-full justify-start h-6 px-1"
-                  onClick={() => setExpanded(!expanded)}
-                >
-                  {expanded ? (
-                    <>
-                      <MinusSquare className="h-3 w-3 mr-1" />
-                      Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
-                    </>
-                  ) : (
-                    <>
-                      <PlusSquare className="h-3 w-3 mr-1" />
-                      Mostrar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-            
-            {(!isMobile || expanded) && (
-              <div 
-                className={`space-y-2 nested-comment ${isMobile ? 'mobile-nested-comment' : ''}`}
-                style={{ 
-                  marginLeft: '0.125rem',
-                  minWidth: 'calc(100% - 0.25rem)',
-                  position: 'relative',
-                  paddingLeft: '8px' // Reducido el espacio para la línea vertical
-                }}
-              >
-                {/* Línea vertical de color según el nivel de anidación */}
-                <div 
-                  className="lemmy-vertical-line" 
-                  style={{ 
-                    backgroundColor: [
-                      '#3b82f6', // Azul
-                      '#06b6d4', // Turquesa
-                      '#10b981', // Verde
-                      '#84cc16', // Verde limón
-                      '#eab308', // Amarillo
-                      '#f59e0b', // Amarillo naranja
-                      '#f97316', // Naranja
-                      '#ef4444', // Rojo
-                      '#ec4899', // Magenta
-                      '#d946ef', // Violeta
-                      '#8b5cf6', // Morado
-                      '#0ea5e9', // Azul cyan
-                      '#3b82f6'  // Azul (repetido)
-                    ][level % 13]
-                  }}
-                />
-                
-                {comment.replies.map((reply, replyIndex) => (
-                  <CommentItem 
-                    key={reply.id} 
-                    comment={reply} 
-                    postId={postId}
-                    level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
-                    index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
-                    highlightedCommentId={highlightedCommentId}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+      
+      {/* Comentarios anidados */}
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="child-comments">
+          {/* Control de expansión para móviles */}
+          {isMobile && (
+            <div className="mb-1">
+              <button
+                className="reply-btn w-full text-left"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? (
+                  <>
+                    <MinusSquare className="h-3 w-3 inline mr-1" />
+                    Ocultar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                  </>
+                ) : (
+                  <>
+                    <PlusSquare className="h-3 w-3 inline mr-1" />
+                    Mostrar {comment.replies.length} {comment.replies.length === 1 ? 'respuesta' : 'respuestas'}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+          
+          {/* Comentarios hijos */}
+          {(!isMobile || expanded) && (
+            <>
+              {comment.replies.map((reply, replyIndex) => (
+                <CommentItem 
+                  key={reply.id} 
+                  comment={reply} 
+                  postId={postId}
+                  level={(level + 1) % 12} // Usar módulo 12 para ciclar entre los colores
+                  index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
+                  highlightedCommentId={highlightedCommentId}
+                />
+              ))}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

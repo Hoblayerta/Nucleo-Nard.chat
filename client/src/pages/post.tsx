@@ -118,10 +118,26 @@ export default function Post() {
       </article>
       
       {/* Sección de formulario de comentario principal */}
-      <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
-        <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
-        <CommentForm postId={post.id} />
-      </section>
+      {!post.locked && (
+        <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
+          {post.canComment ? (
+            <CommentForm postId={post.id} />
+          ) : (
+            <div className="p-3 bg-destructive/10 text-destructive rounded-md">
+              <p>Este post tiene activado el modo lento. Debes esperar {post.slowModeTimeRemaining} segundos antes de poder comentar de nuevo.</p>
+            </div>
+          )}
+        </section>
+      )}
+      
+      {post.locked && (
+        <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
+          <div className="p-3 bg-destructive/10 text-destructive rounded-md">
+            <p>Este post ha sido bloqueado por un administrador. No se pueden añadir nuevos comentarios.</p>
+          </div>
+        </section>
+      )}
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">

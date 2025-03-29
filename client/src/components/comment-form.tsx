@@ -78,40 +78,51 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
 
   if (!user) {
     return (
-      <div className="text-center py-2">
-        <p className="text-muted-foreground mb-2">Log in to join the conversation</p>
-        <Button variant="outline" size="sm" className="mr-2">Log In</Button>
-        <Button size="sm">Sign Up</Button>
+      <div className="comment-form-container">
+        <div className="comment-form-header">
+          <span className="comment-form-title">Participa en la conversación</span>
+        </div>
+        <div className="comment-form-body text-center py-3">
+          <p className="text-muted-foreground mb-3">Debes iniciar sesión para poder comentar en este post</p>
+          <div className="flex justify-center gap-3">
+            <Button variant="outline" size="sm">Iniciar sesión</Button>
+            <Button size="sm">Registrarse</Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <form className="comment-form-container" onSubmit={handleSubmit}>
-      <Avatar className="comment-form-avatar">
-        <AvatarFallback className="bg-primary/20 text-primary">
-          {user.username.substring(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-
-      <div className="flex-1">
-        <Textarea
-          className="comment-form-textarea"
-          placeholder={parentId ? "Write a reply..." : "Write a comment..."}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-
-        <div className="flex justify-end mt-2">
-          <Button 
-            type="submit" 
-            className="comment-form-button"
-            disabled={createCommentMutation.isPending}
-          >
-            {createCommentMutation.isPending ? "Posting..." : parentId ? "Reply" : "Comment"}
-          </Button>
+    <div className={`comment-form ${parentId ? 'is-reply' : ''}`}>
+      <form onSubmit={handleSubmit}>
+        <div className="comment-form-container">
+          <div className="comment-form-header">
+            <span className="comment-form-title">
+              {parentId ? "Escribe una respuesta" : "Escribe un comentario"}
+            </span>
+          </div>
+          
+          <div className="comment-form-body">
+            <textarea
+              className="comment-form-textarea"
+              placeholder={parentId ? "Tu respuesta..." : "Tu comentario..."}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            
+            <div className="comment-form-actions">
+              <button
+                type="submit"
+                className="comment-form-submit"
+                disabled={createCommentMutation.isPending}
+              >
+                {createCommentMutation.isPending ? "Enviando..." : parentId ? "Responder" : "Comentar"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

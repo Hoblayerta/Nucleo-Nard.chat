@@ -1,248 +1,174 @@
-.comment-thread-container {
-  max-width: 100%;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  scrollbar-width: thin;
-}
-
-.comment-thread-main {
-  width: max-content;
-  min-width: 100%;
-}
-
-.comment-replies-container {
-  overflow-x: visible;
-  width: auto;
+.comment-container {
+  margin: 0.75rem 0;
   position: relative;
-}
-
-.nested-comment {
-  position: relative;
-  padding-left: 8px;
-  min-width: fit-content;
-  margin-top: 4px;
-}
-
-/* Colores de líneas de anidación al estilo Lemmy */
-.nesting-level-0 .nested-comment {
-  border-left: 2px solid #3b82f6; /* Azul */
-}
-
-.nesting-level-1 .nested-comment {
-  border-left: 2px solid #06b6d4; /* Turquesa */
-}
-
-.nesting-level-2 .nested-comment {
-  border-left: 2px solid #10b981; /* Verde */
-}
-
-.nesting-level-3 .nested-comment {
-  border-left: 2px solid #84cc16; /* Verde limón */
-}
-
-.nesting-level-4 .nested-comment {
-  border-left: 2px solid #eab308; /* Amarillo */
-}
-
-.nesting-level-5 .nested-comment {
-  border-left: 2px solid #f59e0b; /* Amarillo naranja */
-}
-
-.nesting-level-6 .nested-comment {
-  border-left: 2px solid #f97316; /* Naranja */
-}
-
-.nesting-level-7 .nested-comment {
-  border-left: 2px solid #ef4444; /* Rojo */
-}
-
-.nesting-level-8 .nested-comment {
-  border-left: 2px solid #ec4899; /* Magenta */
-}
-
-.nesting-level-9 .nested-comment {
-  border-left: 2px solid #d946ef; /* Violeta */
-}
-
-.nesting-level-10 .nested-comment {
-  border-left: 2px solid #8b5cf6; /* Morado */
-}
-
-.nesting-level-11 .nested-comment {
-  border-left: 2px solid #0ea5e9; /* Azul cyan */
-}
-
-.nesting-level-12 .nested-comment {
-  border-left: 2px solid #3b82f6; /* Azul (repetido) */
-}
-
-.comment-item {
-  font-size: 14px;
-  margin-bottom: 6px;
-  /* Agregamos un borde lateral sutil solo para el primer nivel */
-  border-radius: 2px;
-  overflow: hidden;
 }
 
 .comment-content {
-  background-color: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 8px;
-  margin-bottom: 4px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  position: relative;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
 }
 
-.comment-header {
+.comment-content.highlighted {
+  border: 1px solid hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.05);
+}
+
+/* Estilos para las líneas de conexión de comentarios */
+.comment-line {
+  position: absolute;
+  width: 2px;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+}
+
+/* Colores de las líneas de guía para los diferentes niveles de anidamiento */
+.comment-line-level-0 { background-color: #3b82f6; /* blue */ }
+.comment-line-level-1 { background-color: #06b6d4; /* turquoise */ }
+.comment-line-level-2 { background-color: #10b981; /* green */ }
+.comment-line-level-3 { background-color: #84cc16; /* lime */ }
+.comment-line-level-4 { background-color: #eab308; /* yellow */ }
+.comment-line-level-5 { background-color: #f59e0b; /* orange-yellow */ }
+.comment-line-level-6 { background-color: #f97316; /* orange */ }
+.comment-line-level-7 { background-color: #ef4444; /* red */ }
+.comment-line-level-8 { background-color: #ec4899; /* magenta */ }
+.comment-line-level-9 { background-color: #d946ef; /* violet */ }
+.comment-line-level-10 { background-color: #8b5cf6; /* purple */ }
+.comment-line-level-11 { background-color: #0ea5e9; /* cyan */ }
+
+.comment-head {
   display: flex;
   align-items: center;
-  margin-bottom: 6px;
-  flex-wrap: wrap;
-  gap: 4px;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
-.comment-username {
-  font-weight: 500;
-  color: var(--primary);
-  text-decoration: none;
-  margin-right: 4px;
-}
-
-.comment-username:hover {
-  text-decoration: underline;
-}
-
-.comment-timestamp {
-  font-size: 12px;
-  color: var(--muted-foreground);
+.comment-body {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .comment-actions {
   display: flex;
-  align-items: center;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin-top: 4px;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
 }
 
-.comment-action-button {
+.vote-controls {
   display: flex;
   align-items: center;
-  background: transparent;
+  gap: 0.25rem;
+}
+
+.vote-btn {
+  background: none;
   border: none;
-  padding: 4px 8px;
-  margin-right: 8px;
   cursor: pointer;
-  color: var(--muted-foreground);
-  border-radius: 4px;
-}
-
-.comment-action-button:hover {
-  background-color: var(--muted-foreground/10);
-  color: var(--primary);
-}
-
-.comment-vote-container {
+  font-size: 0.875rem;
   display: flex;
   align-items: center;
-  margin-right: 12px;
+  padding: 0;
+  color: hsl(var(--muted-foreground));
 }
 
-.vote-button {
-  background: transparent;
-  border: none;
-  padding: 2px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
+.vote-btn.upvoted {
+  color: hsl(var(--primary));
 }
 
-.upvote-button {
-  color: var(--muted-foreground);
+.vote-btn.downvoted {
+  color: hsl(var(--destructive));
 }
 
-.upvote-button:hover, .upvote-button.active {
-  color: #22c55e; /* Verde para upvotes */
-}
-
-.downvote-button {
-  color: var(--muted-foreground);
-}
-
-.downvote-button:hover, .downvote-button.active {
-  color: #ef4444; /* Rojo para downvotes */
-}
-
-.vote-score {
-  margin: 0 4px;
-  min-width: 20px;
+.vote-count {
+  min-width: 1.5rem;
   text-align: center;
 }
 
-/* Estilo específico para el estilo de línea vertical de Lemmy */
-.lemmy-vertical-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 2px;
-  z-index: 1;
-  /* Agregamos un ligero efecto de degradado para una mejor visualización */
-  opacity: 0.8;
-  border-radius: 1px;
+.child-comments {
+  margin-left: 1.5rem;
+  position: relative;
 }
 
-/* Estilo para comentario resaltado */
-.highlight-comment {
-  animation: highlight-pulse 2s ease-in-out;
+.comment-index {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-right: 0.5rem;
 }
 
-@keyframes highlight-pulse {
-  0% {
-    background-color: transparent;
-  }
-  25% {
-    background-color: rgba(59, 130, 246, 0.15);
-  }
-  50% {
-    background-color: rgba(59, 130, 246, 0.2);
-  }
-  75% {
-    background-color: rgba(59, 130, 246, 0.15);
-  }
-  100% {
-    background-color: transparent;
-  }
+.comment-username {
+  font-weight: 500;
 }
 
-/* Mejoras para móvil */
-@media (max-width: 768px) {
-  .nested-comment {
-    padding-left: 8px;
-    margin-top: 4px;
+.comment-username.admin {
+  color: hsl(var(--destructive));
+}
+
+.comment-username.moderator {
+  color: hsl(var(--primary));
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.reply-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.reply-btn:hover {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.badge {
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  margin-right: 0.25rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+.badge.director { background-color: #ef4444; color: white; }
+.badge.guionista { background-color: #f97316; color: white; }
+.badge.novato { background-color: #84cc16; color: white; }
+.badge.spamero { background-color: #808080; color: white; }
+.badge.dibujante { background-color: #06b6d4; color: white; }
+.badge.animador { background-color: #8b5cf6; color: white; }
+.badge.hacker { background-color: #171717; color: white; }
+.badge.superfan { background-color: #eab308; color: black; }
+.badge.fan { background-color: #d1d5db; color: black; }
+.badge.masteranimador { background-color: #ec4899; color: white; }
+
+/* Vista móvil */
+@media (max-width: 640px) {
+  .child-comments {
+    margin-left: 1rem;
   }
   
   .comment-content {
-    padding: 6px;
+    padding: 0.375rem 0.5rem;
   }
   
-  .comment-header {
-    margin-bottom: 4px;
-  }
-  
-  .comment-actions {
-    margin-top: 2px;
-  }
-  
-  .comment-action-button {
-    padding: 2px 4px;
-    margin-right: 4px;
-  }
-  
-  .mobile-collapsed-indicator {
-    font-size: 10px;
-    color: var(--muted-foreground);
-    display: flex;
-    align-items: center;
-    margin-bottom: 2px;
+  .comment-line {
+    left: 6px;
   }
 }
