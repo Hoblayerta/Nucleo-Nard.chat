@@ -18,7 +18,6 @@ import "./comment-thread.css"; // Importar los estilos CSS específicos
 interface CommentThreadProps {
   postId: number;
   highlightedCommentId?: string | null;
-  showCommentForm?: boolean;
 }
 
 interface CommentItemProps {
@@ -334,7 +333,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   );
 }
 
-export default function CommentThread({ postId, highlightedCommentId, showCommentForm = true }: CommentThreadProps) {
+export default function CommentThread({ postId, highlightedCommentId }: CommentThreadProps) {
   const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
   });
@@ -355,11 +354,7 @@ export default function CommentThread({ postId, highlightedCommentId, showCommen
   if (comments.length === 0) {
     return (
       <div className="text-center py-4">
-        {showCommentForm ? (
-          <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
-        ) : (
-          <p className="text-muted-foreground">No comments yet.</p>
-        )}
+        <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
       </div>
     );
   }
@@ -380,18 +375,14 @@ export default function CommentThread({ postId, highlightedCommentId, showCommen
         </div>
       )}
       
-      {/* Agregar formulario de comentario al inicio, como en Lemmy (solo si showCommentForm es true) */}
-      {showCommentForm && (
-        <>
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
-            <CommentForm postId={postId} />
-          </div>
-          
-          {/* Separador entre formulario y comentarios */}
-          <Separator className="my-6" />
-        </>
-      )}
+      {/* Agregar formulario de comentario al inicio, como en Lemmy */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
+        <CommentForm postId={postId} />
+      </div>
+      
+      {/* Separador entre formulario y comentarios */}
+      <Separator className="my-6" />
       
       {/* Título de la sección de comentarios */}
       <h3 className="text-lg font-medium mb-4">
