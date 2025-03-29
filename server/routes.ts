@@ -338,6 +338,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId
       });
       
+      // Verificar si el post está congelado
+      const post = await storage.getPost(data.postId);
+      if (post?.frozen) {
+        return res.status(403).json({ message: "No se pueden añadir comentarios a un post congelado" });
+      }
+      
       const comment = await storage.createComment(data);
       const user = await storage.getUser(userId);
       
@@ -386,6 +392,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isUpvote === undefined) {
         return res.status(400).json({ message: "Vote type (isUpvote) is required" });
+      }
+      
+      // Verificar si se está votando directamente en un post congelado
+      if (postId) {
+        const post = await storage.getPost(postId);
+        if (post?.frozen) {
+          return res.status(403).json({ message: "No se pueden añadir votos a un post congelado" });
+        }
+      }
+      
+      // Verificar si se está votando en un comentario de un post congelado
+      if (commentId) {
+        const comment = await storage.getComment(commentId);
+        if (comment) {
+          const post = await storage.getPost(comment.postId);
+          if (post?.frozen) {
+            return res.status(403).json({ message: "No se pueden añadir votos a comentarios de un post congelado" });
+          }
+        }
       }
       
       // Check if already voted on this item

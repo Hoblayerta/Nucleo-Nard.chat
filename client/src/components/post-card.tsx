@@ -57,6 +57,15 @@ export default function PostCard({ post }: PostCardProps) {
   });
 
   const handleVote = (isUpvote: boolean) => {
+    if (post.frozen) {
+      toast({
+        title: "Post bloqueado",
+        description: "No se pueden realizar votos en un post congelado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!user) {
       toast({
         title: "Authentication required",
@@ -183,7 +192,7 @@ export default function PostCard({ post }: PostCardProps) {
                       aria-label="Freeze post interactions"
                     />
                     <span className="text-sm text-muted-foreground">
-                      {post.frozen ? "Bloquear" : "Active"} {/* Changed "Frozen" to "Bloquear" */}
+                      {post.frozen ? "Bloqueado" : "No Bloqueado"}
                     </span>
                   </div>
                 )}
@@ -201,7 +210,6 @@ export default function PostCard({ post }: PostCardProps) {
                       });
                     });
                   }}
-                  disabled={post.frozen} //Disable if frozen
                 >
                   <Share2 className="h-4 w-4 mr-1" />
                   <span>Share</span>
@@ -216,14 +224,14 @@ export default function PostCard({ post }: PostCardProps) {
             <Separator />
 
             <div className="bg-background p-4 border-t border-border">
-              <CommentForm postId={post.id} disabled={post.frozen}/> {/* Pass disabled prop */}
+              <CommentForm postId={post.id} isFrozen={post.frozen}/>
             </div>
 
             <Separator />
 
             <div className="bg-background p-4 border-t border-border">
               <h3 className="font-medium mb-4">Comments ({post.comments})</h3>
-              <CommentThread postId={post.id} />
+              <CommentThread postId={post.id} isFrozen={post.frozen} />
             </div>
           </>
         )}
