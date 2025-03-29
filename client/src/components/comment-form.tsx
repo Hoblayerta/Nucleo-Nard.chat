@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Lock } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +13,10 @@ interface CommentFormProps {
   postId: number;
   parentId?: number;
   onSuccess?: () => void;
+  isFrozen?: boolean;
 }
 
-export default function CommentForm({ postId, parentId, onSuccess }: CommentFormProps) {
+export default function CommentForm({ postId, parentId, onSuccess, isFrozen = false }: CommentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -82,6 +84,18 @@ export default function CommentForm({ postId, parentId, onSuccess }: CommentForm
         <p className="text-muted-foreground mb-2">Log in to join the conversation</p>
         <Button variant="outline" size="sm" className="mr-2">Log In</Button>
         <Button size="sm">Sign Up</Button>
+      </div>
+    );
+  }
+
+  // Si el post está congelado, mostrar mensaje de bloqueo
+  if (isFrozen) {
+    return (
+      <div className="p-3 bg-muted/20 rounded-md">
+        <p className="flex items-center text-muted-foreground text-sm">
+          <Lock className="h-4 w-4 mr-2 text-destructive" />
+          Este post está bloqueado. No se pueden añadir nuevos comentarios.
+        </p>
       </div>
     );
   }

@@ -21,6 +21,7 @@ export interface IStorage {
   getPost(id: number): Promise<Post | undefined>;
   getPosts(): Promise<PostWithDetails[]>;
   getTopPosts(limit: number): Promise<PostWithDetails[]>;
+  updatePost(id: number, data: { frozen?: boolean }): Promise<Post | undefined>;
   
   // Comment operations
   createComment(comment: InsertComment): Promise<Comment>;
@@ -176,7 +177,12 @@ export class MemStorage implements IStorage {
   async createPost(insertPost: InsertPost): Promise<Post> {
     const id = this.currentIds.post++;
     const now = new Date();
-    const post: Post = { ...insertPost, id, createdAt: now };
+    const post: Post = { 
+      ...insertPost, 
+      id, 
+      createdAt: now,
+      frozen: insertPost.frozen || false
+    };
     this.posts.set(id, post);
     return post;
   }
@@ -227,6 +233,7 @@ export class MemStorage implements IStorage {
         voteScore: postUpvotes - postDownvotes,
         userVote,
         comments: postComments,
+        frozen: post.frozen || false,
       };
     }));
   }
@@ -238,6 +245,19 @@ export class MemStorage implements IStorage {
     return posts
       .sort((a, b) => b.voteScore - a.voteScore)
       .slice(0, limit);
+  }
+  
+  async updatePost(id: number, data: { frozen?: boolean }): Promise<Post | undefined> {
+    const post = await this.getPost(id);
+    if (!post) return undefined;
+    
+    const updatedPost: Post = {
+      ...post,
+      ...(data.frozen !== undefined ? { frozen: data.frozen } : {}),
+    };
+    
+    this.posts.set(id, updatedPost);
+    return updatedPost;
   }
 
   // Comment operations

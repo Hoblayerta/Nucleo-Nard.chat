@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowUp, ArrowDown, MessageSquare, Share2, Shield, Flame, CornerDownRight, ChevronRight, MinusSquare, PlusSquare, Link } from "lucide-react";
+import { ArrowUp, ArrowDown, MessageSquare, Share2, Shield, Flame, CornerDownRight, ChevronRight, MinusSquare, PlusSquare, Link, Lock as LockIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import "./comment-thread.css"; // Importar los estilos CSS específicos
 interface CommentThreadProps {
   postId: number;
   highlightedCommentId?: string | null;
+  isFrozen?: boolean;
 }
 
 interface CommentItemProps {
@@ -26,9 +27,10 @@ interface CommentItemProps {
   level?: number;
   index?: string; // Índice para la enumeración del hilo, ej: "1", "1.2", "1.2.3"
   highlightedCommentId?: string | null;
+  isFrozen?: boolean; // Indica si el post está congelado
 }
 
-function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId }: CommentItemProps) {
+function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId, isFrozen = false }: CommentItemProps) {
   // Añadir una clase para identificar nivel de anidación
   const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -146,9 +148,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             <Button 
               variant="ghost" 
               size="sm" 
-              className={`px-1 py-0 h-5 ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'}`}
+              className={`px-1 py-0 h-5 ${userVoteStatus === 'upvote' ? 'text-success hover:text-success/80' : 'hover:text-success'} ${isFrozen ? 'opacity-60 cursor-not-allowed' : ''}`}
               onClick={() => handleVote(true)}
-              disabled={voteMutation.isPending}
+              disabled={voteMutation.isPending || isFrozen}
+              title={isFrozen ? "Post bloqueado: no se pueden votar comentarios" : ""}
             >
               <ArrowUp className="h-3 w-3" />
             </Button>
@@ -156,9 +159,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             <Button 
               variant="ghost" 
               size="sm" 
-              className={`px-1 py-0 h-5 ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'}`}
+              className={`px-1 py-0 h-5 ${userVoteStatus === 'downvote' ? 'text-destructive hover:text-destructive/80' : 'hover:text-destructive'} ${isFrozen ? 'opacity-60 cursor-not-allowed' : ''}`}
               onClick={() => handleVote(false)}
-              disabled={voteMutation.isPending}
+              disabled={voteMutation.isPending || isFrozen}
+              title={isFrozen ? "Post bloqueado: no se pueden votar comentarios" : ""}
             >
               <ArrowDown className="h-3 w-3" />
             </Button>
@@ -204,8 +208,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
           <Button 
             variant="ghost" 
             size="sm" 
-            className="px-1 py-0 h-5 hover:text-primary mr-2"
+            className={`px-1 py-0 h-5 hover:text-primary mr-2 ${isFrozen ? 'opacity-60 cursor-not-allowed' : ''}`}
             onClick={() => setReplyOpen(!replyOpen)}
+            disabled={isFrozen}
+            title={isFrozen ? "Post bloqueado: no se pueden añadir respuestas" : ""}
           >
             <MessageSquare className="h-3 w-3 mr-1" />
             Reply
@@ -247,13 +253,21 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
           </TooltipProvider>
         </div>
         
-        {replyOpen && (
+        {replyOpen && !isFrozen && (
           <div className="mt-2">
             <CommentForm 
               postId={postId} 
               parentId={comment.id} 
               onSuccess={() => setReplyOpen(false)}
             />
+          </div>
+        )}
+        {replyOpen && isFrozen && (
+          <div className="mt-2 p-3 bg-muted/20 rounded-md">
+            <p className="text-sm text-muted-foreground flex items-center">
+              <LockIcon className="h-4 w-4 mr-2 text-destructive" />
+              Este post está bloqueado. No se pueden añadir nuevos comentarios.
+            </p>
           </div>
         )}
         
@@ -322,6 +336,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                     level={(level + 1) % 13} // Usar módulo 13 para ciclar entre los 13 colores
                     index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
                     highlightedCommentId={highlightedCommentId}
+                    isFrozen={isFrozen}
                   />
                 ))}
               </div>
@@ -333,7 +348,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   );
 }
 
-export default function CommentThread({ postId, highlightedCommentId }: CommentThreadProps) {
+export default function CommentThread({ postId, highlightedCommentId, isFrozen = false }: CommentThreadProps) {
   const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
   });
@@ -375,11 +390,19 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
         </div>
       )}
       
-      {/* Solo mostramos el formulario de comentario cuando no hay comentarios todavía */}
-      {comments.length === 0 && (
+      {/* Solo mostramos el formulario de comentario cuando no hay comentarios todavía y el post no está congelado */}
+      {comments.length === 0 && !isFrozen && (
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
           <CommentForm postId={postId} />
+        </div>
+      )}
+      {comments.length === 0 && isFrozen && (
+        <div className="mb-6 p-4 bg-muted/20 rounded-md">
+          <p className="flex items-center text-muted-foreground">
+            <LockIcon className="h-4 w-4 mr-2 text-destructive" />
+            Este post está bloqueado. No se pueden añadir comentarios.
+          </p>
         </div>
       )}
       
@@ -399,6 +422,7 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
               postId={postId} 
               index={`${index + 1}`}
               highlightedCommentId={highlightedCommentId}
+              isFrozen={isFrozen}
             />
           ))}
           

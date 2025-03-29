@@ -113,6 +113,7 @@ export type PostWithDetails = Post & {
   voteScore: number; // net score = upvotes - downvotes
   userVote?: 'upvote' | 'downvote' | null; // for logged in user
   comments: number;
+  frozen: boolean;
 };
 
 export type UserStats = {

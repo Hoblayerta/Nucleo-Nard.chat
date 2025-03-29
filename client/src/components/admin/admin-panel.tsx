@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserManagement from "./user-management";
+import PostManagement from "./post-management";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -60,13 +61,8 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
               <UserManagement />
             </TabsContent>
             
-            <TabsContent value="posts" className="p-4 m-0">
-              <div className="text-center py-12">
-                <h3 className="text-xl font-medium mb-2">Post Management</h3>
-                <p className="text-muted-foreground">
-                  Manage and moderate posts in your community.
-                </p>
-              </div>
+            <TabsContent value="posts" className="p-0 m-0 h-full">
+              <PostManagement />
             </TabsContent>
             
             <TabsContent value="moderation" className="p-4 m-0">

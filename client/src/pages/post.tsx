@@ -117,15 +117,28 @@ export default function Post() {
         </div>
       </article>
       
-      {/* Sección de formulario de comentario principal */}
-      <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
-        <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
-        <CommentForm postId={post.id} />
-      </section>
+      {/* Mostrar un aviso si el post está congelado */}
+      {post.frozen && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mr-2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <p className="font-medium">Este post ha sido bloqueado por un administrador.</p>
+          </div>
+          <p className="text-sm mt-1">No se pueden añadir nuevos comentarios ni votar en este post.</p>
+        </div>
+      )}
+      
+      {/* Sección de formulario de comentario principal - solo si no está congelado */}
+      {!post.frozen && (
+        <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
+          <CommentForm postId={post.id} />
+        </section>
+      )}
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
-        <CommentThread postId={post.id} highlightedCommentId={commentId} />
+        <CommentThread postId={post.id} highlightedCommentId={commentId} isFrozen={post.frozen} />
       </section>
     </div>
   );
