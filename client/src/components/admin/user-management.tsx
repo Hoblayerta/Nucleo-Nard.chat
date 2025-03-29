@@ -30,9 +30,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
 import { Search, ChevronLeft, ChevronRight, UserPlus, Edit, Trash2, Save, X, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { User } from "@shared/schema";
+
+// Esquema de validación para creación de usuario
+const createUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(4, "Password must be at least 4 characters"),
+  role: z.enum(["user", "moderator", "admin"]).default("user"),
+  likeMultiplier: z.number().min(1).max(10).default(1)
+});
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -42,9 +62,44 @@ export default function UserManagement() {
   const [tempRole, setTempRole] = useState<string>("");
   const [tempMultiplier, setTempMultiplier] = useState<number>(1);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [addUserOpen, setAddUserOpen] = useState(false);
   
   const { data: allUsers = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
+  });
+  
+  const createUserForm = useForm<z.infer<typeof createUserSchema>>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      role: "user",
+      likeMultiplier: 1
+    },
+  });
+  
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
+      const res = await apiRequest("POST", `/api/auth/register`, userData);
+      if (!res.ok) throw new Error("Failed to create user");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setAddUserOpen(false);
+      createUserForm.reset();
+      toast({
+        title: "User created",
+        description: "New user has been added successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Creation failed",
+        description: "Failed to create user. Username may already be taken.",
+        variant: "destructive",
+      });
+    }
   });
   
   // Filter users based on search query
@@ -126,6 +181,10 @@ export default function UserManagement() {
     if (confirmDelete) {
       deleteUserMutation.mutate(confirmDelete);
     }
+  };
+  
+  const handleAddUser = (values: z.infer<typeof createUserSchema>) => {
+    createUserMutation.mutate(values);
   };
   
   if (isLoading) {
@@ -308,7 +367,11 @@ export default function UserManagement() {
       </div>
       
       <div className="flex justify-between mt-4">
-        <Button variant="outline" className="text-primary">
+        <Button 
+          variant="outline" 
+          className="text-primary"
+          onClick={() => setAddUserOpen(true)}
+        >
           <UserPlus className="h-4 w-4 mr-2" />
           Add User
         </Button>
@@ -324,6 +387,109 @@ export default function UserManagement() {
         </div>
       </div>
 
+      {/* Dialog para crear usuario */}
+      <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Add a new user to the platform. Only administrators can create new accounts.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...createUserForm}>
+            <form onSubmit={createUserForm.handleSubmit(handleAddUser)} className="space-y-4">
+              <FormField
+                control={createUserForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} autoComplete="username" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={createUserForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} autoComplete="new-password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={createUserForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="moderator">Moderator</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={createUserForm.control}
+                name="likeMultiplier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Like Multiplier</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        max="10" 
+                        {...field} 
+                        value={field.value.toString()}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 1)}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="submit" 
+                  disabled={createUserMutation.isPending}
+                  className="bg-success hover:bg-success/90"
+                >
+                  {createUserMutation.isPending ? "Creating..." : "Create User"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para confirmar eliminación */}
       <AlertDialog open={confirmDelete !== null} onOpenChange={() => setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
