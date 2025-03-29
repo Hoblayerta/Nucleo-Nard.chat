@@ -1,6 +1,6 @@
 import { 
   users, posts, comments, likes, 
-  type User, type InsertUser, type Post, type InsertPost, type UpdatePost,
+  type User, type InsertUser, type Post, type InsertPost,
   type Comment, type InsertComment, type Like, type InsertLike,
   type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats
 } from "@shared/schema";
@@ -18,7 +18,6 @@ export interface IStorage {
   
   // Post operations
   createPost(post: InsertPost): Promise<Post>;
-  updatePost(id: number, data: UpdatePost): Promise<Post | undefined>;
   getPost(id: number): Promise<Post | undefined>;
   getPosts(): Promise<PostWithDetails[]>;
   getTopPosts(limit: number): Promise<PostWithDetails[]>;
@@ -33,7 +32,6 @@ export interface IStorage {
   removeLike(userId: number, commentId?: number, postId?: number): Promise<boolean>;
   getLikesByUserId(userId: number): Promise<Like[]>;
   checkLikeExists(userId: number, commentId?: number, postId?: number): Promise<boolean>;
-  getUserVote(userId: number, commentId?: number, postId?: number): Promise<'upvote' | 'downvote' | null>;
   
   // Combined operations
   getTopComments(limit: number): Promise<CommentWithUser[]>;
@@ -41,10 +39,10 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  public users: Map<number, User>;
-  public posts: Map<number, Post>;
-  public comments: Map<number, Comment>;
-  public likes: Map<number, Like>;
+  private users: Map<number, User>;
+  private posts: Map<number, Post>;
+  private comments: Map<number, Comment>;
+  private likes: Map<number, Like>;
   private currentIds: {
     user: number;
     post: number;
@@ -178,27 +176,9 @@ export class MemStorage implements IStorage {
   async createPost(insertPost: InsertPost): Promise<Post> {
     const id = this.currentIds.post++;
     const now = new Date();
-    const post: Post = { 
-      ...insertPost, 
-      id, 
-      createdAt: now,
-      isLocked: false // Por defecto, los posts no están bloqueados
-    };
+    const post: Post = { ...insertPost, id, createdAt: now };
     this.posts.set(id, post);
     return post;
-  }
-  
-  async updatePost(id: number, data: UpdatePost): Promise<Post | undefined> {
-    const post = await this.getPost(id);
-    if (!post) return undefined;
-    
-    const updatedPost: Post = {
-      ...post,
-      ...(data.isLocked !== undefined ? { isLocked: data.isLocked } : {})
-    };
-    
-    this.posts.set(id, updatedPost);
-    return updatedPost;
   }
 
   async getPost(id: number): Promise<Post | undefined> {

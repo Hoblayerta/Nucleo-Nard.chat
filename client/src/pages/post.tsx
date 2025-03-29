@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/lib/auth";
-import { apiRequest } from "@/lib/queryClient";
 import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
-import { Button } from "@/components/ui/button";
-import { LockIcon, UnlockIcon } from "lucide-react";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -16,8 +12,6 @@ export default function Post() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { isAdmin } = useAuth();
-  const queryClient = useQueryClient();
   
   // Obtener el ID del comentario de los parámetros de consulta si existe
   const [commentId, setCommentId] = useState<string | null>(null);
@@ -43,31 +37,6 @@ export default function Post() {
   const { data: post, isLoading, isError } = useQuery<PostWithDetails>({
     queryKey: [`/api/posts/${postId}`],
     enabled: postId > 0,
-  });
-  
-  // Mutation para alternar el estado de bloqueo del post
-  const toggleLockMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("PATCH", `/api/posts/${postId}/lock`, {});
-      return res.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: data.isLocked ? "Post bloqueado" : "Post desbloqueado",
-        description: data.message,
-        duration: 3000,
-      });
-      
-      // Invalidar caché para refrescar los datos
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}`] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "No se pudo cambiar el estado de bloqueo del post.",
-        variant: "destructive",
-      });
-    }
   });
   
   useEffect(() => {
@@ -98,32 +67,7 @@ export default function Post() {
     <div className="container max-w-4xl mx-auto p-4 my-8">
       <article className="bg-card rounded-lg shadow-sm p-6 mb-6">
         <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <h1 className="text-2xl font-bold">{post.title}</h1>
-            
-            {isAdmin && (
-              <Button
-                variant={post.isLocked ? "outline" : "destructive"} 
-                size="sm"
-                onClick={() => toggleLockMutation.mutate()}
-                disabled={toggleLockMutation.isPending}
-              >
-                {toggleLockMutation.isPending ? (
-                  <span className="animate-pulse">Actualizando...</span>
-                ) : post.isLocked ? (
-                  <>
-                    <UnlockIcon className="h-4 w-4 mr-1" />
-                    <span>Desbloquear</span>
-                  </>
-                ) : (
-                  <>
-                    <LockIcon className="h-4 w-4 mr-1" />
-                    <span>Bloquear</span>
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          <h1 className="text-2xl font-bold mb-2">{post.title}</h1>
           
           <div className="flex items-center mb-4">
             <div>
@@ -135,15 +79,6 @@ export default function Post() {
               </span>
             </div>
           </div>
-          
-          {post.isLocked && (
-            <div className="bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 p-3 rounded-md mb-4 flex items-center">
-              <LockIcon className="h-5 w-5 mr-2 flex-shrink-0" />
-              <p className="text-sm">
-                Este post ha sido bloqueado por un administrador. No se permiten nuevos comentarios ni valoraciones.
-              </p>
-            </div>
-          )}
           
           <div className="prose max-w-none">
             <div dangerouslySetInnerHTML={{ __html: post.content }} />
@@ -182,23 +117,14 @@ export default function Post() {
         </div>
       </article>
       
-      {/* Sección de formulario de comentario principal - solo si el post no está bloqueado */}
-      {!post.isLocked && (
-        <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
-          <CommentForm postId={post.id} />
-        </section>
-      )}
+      {/* Sección de formulario de comentario principal */}
+      <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
+        <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
+        <CommentForm postId={post.id} />
+      </section>
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
-        {post.isLocked && (
-          <div className="border-l-4 border-amber-400 pl-3 py-2 mb-4 bg-amber-50 dark:bg-amber-950/30">
-            <p className="text-amber-800 dark:text-amber-300 text-sm">
-              Este post está bloqueado. La discusión ha sido cerrada.
-            </p>
-          </div>
-        )}
         <CommentThread postId={post.id} highlightedCommentId={commentId} />
       </section>
     </div>

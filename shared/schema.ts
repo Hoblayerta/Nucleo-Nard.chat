@@ -34,17 +34,11 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  isLocked: boolean("is_locked").default(false).notNull(),
 });
 
 export const insertPostSchema = createInsertSchema(posts).omit({
   id: true,
   createdAt: true,
-  isLocked: true,
-});
-
-export const updatePostSchema = z.object({
-  isLocked: z.boolean(),
 });
 
 // Comment model
@@ -85,7 +79,6 @@ export type UpdateUser = z.infer<typeof updateUserSchema>;
 
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
-export type UpdatePost = z.infer<typeof updatePostSchema>;
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;

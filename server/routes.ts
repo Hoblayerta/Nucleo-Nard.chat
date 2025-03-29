@@ -290,31 +290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUser(post.userId);
       
-      // Calculate upvotes with multipliers
-      const likes = Array.from(storage.likes.values());
-      const upvotes = likes
-        .filter(like => like.postId === id && like.isUpvote)
-        .reduce((total, like) => {
-          const user = storage.users.get(like.userId);
-          return total + (user?.likeMultiplier || 1);
-        }, 0);
-      
-      // Calculate downvotes with multipliers
-      const downvotes = likes
-        .filter(like => like.postId === id && !like.isUpvote)
-        .reduce((total, like) => {
-          const user = storage.users.get(like.userId);
-          return total + (user?.likeMultiplier || 1);
-        }, 0);
-      
-      // Check for user's vote
-      const userVote = req.session.userId 
-        ? await storage.getUserVote(req.session.userId, undefined, id)
-        : null;
-      
-      // Count comments
-      const comments = Array.from(storage.comments.values())
-        .filter(comment => comment.postId === id).length;
+      // Count likes
+      const likes = Array.from((await storage.getLikesByUserId(post.userId)).values())
+        .filter(like => like.postId === post.id)
+        .length;
       
       res.status(200).json({
         ...post,
@@ -323,11 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user?.username || "unknown",
           role: user?.role || "user",
         },
-        upvotes,
-        downvotes,
-        voteScore: upvotes - downvotes,
-        userVote,
-        comments
+        likes
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch post" });
@@ -342,12 +317,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId
       });
-      
-      // Verificar si el post está bloqueado
-      const post = await storage.getPost(data.postId);
-      if (post?.isLocked) {
-        return res.status(403).json({ message: "This post is locked and does not allow new comments" });
-      }
       
       const comment = await storage.createComment(data);
       const user = await storage.getUser(userId);
@@ -397,25 +366,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isUpvote === undefined) {
         return res.status(400).json({ message: "Vote type (isUpvote) is required" });
-      }
-      
-      // Verificar si se está votando en un post bloqueado
-      if (postId) {
-        const post = await storage.getPost(postId);
-        if (post?.isLocked) {
-          return res.status(403).json({ message: "This post is locked and does not allow votes" });
-        }
-      }
-      
-      // Verificar si se está votando en un comentario de un post bloqueado
-      if (commentId) {
-        const comment = await storage.getComment(commentId);
-        if (comment) {
-          const post = await storage.getPost(comment.postId);
-          if (post?.isLocked) {
-            return res.status(403).json({ message: "This post is locked and does not allow votes on comments" });
-          }
-        }
       }
       
       // Check if already voted on this item
@@ -499,35 +449,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(topComments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch leaderboard" });
-    }
-  });
-  
-  // Ruta para actualizar el estado de bloqueo de un post (solo admins)
-  app.patch("/api/posts/:id/lock", requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid post ID" });
-      }
-      
-      const post = await storage.getPost(id);
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
-      
-      // Alternar el estado de bloqueo
-      const updatedPost = await storage.updatePost(id, { 
-        isLocked: !post.isLocked 
-      });
-      
-      res.status(200).json({
-        ...updatedPost,
-        message: updatedPost?.isLocked 
-          ? "Post has been locked" 
-          : "Post has been unlocked"
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update post lock status" });
     }
   });
   
