@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSlowMode } from "@/hooks/use-slow-mode";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import CreatePostModal from "./create-post-modal";
 export default function PostManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { updateSlowModeInterval } = useSlowMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [confirmFreezeId, setConfirmFreezeId] = useState<number | null>(null);
@@ -168,6 +170,10 @@ export default function PostManagement() {
         return;
       }
       
+      // Actualizar el intervalo en el contexto de SlowMode
+      updateSlowModeInterval(interval);
+      
+      // Enviar la actualización al servidor
       slowModeMutation.mutate({ 
         id: selectedPostId, 
         interval

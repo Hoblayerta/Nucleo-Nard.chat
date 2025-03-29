@@ -67,13 +67,13 @@ export default function Post() {
   }
 
   // Actualizar el contexto de SlowMode cuando cambie el intervalo
-  const { setSlowModeInterval } = useSlowMode();
+  const { updateSlowModeInterval } = useSlowMode();
   
   useEffect(() => {
-    if (post?.slowModeInterval > 0) {
-      setSlowModeInterval(post.slowModeInterval);
+    if (post?.slowModeInterval >= 0) {
+      updateSlowModeInterval(post.slowModeInterval);
     }
-  }, [post?.slowModeInterval, setSlowModeInterval]);
+  }, [post?.slowModeInterval, updateSlowModeInterval]);
 
   return (
     <div className="container max-w-4xl mx-auto p-4 my-8">

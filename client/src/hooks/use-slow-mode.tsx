@@ -7,6 +7,7 @@ interface SlowModeContextType {
   cooldownProgress: number;
   slowModeInterval: number;
   setSlowModeInterval: (interval: number) => void;
+  updateSlowModeInterval: (interval: number) => void;
 }
 
 const SlowModeContext = createContext<SlowModeContextType | null>(null);
@@ -23,6 +24,15 @@ export function SlowModeProvider({
   const [countdown, setCountdown] = useState(0);
   const [slowModeInterval, setSlowModeInterval] = useState(initialInterval);
   const [intervalId, setIntervalId] = useState<number | null>(null);
+  
+  // Función personalizada para actualizar el intervalo y posiblemente iniciar la cuenta regresiva
+  const updateSlowModeInterval = (newInterval: number) => {
+    // Si el modo lento se ha activado o aumentado, y no hay una cuenta regresiva activa
+    if (newInterval > 0 && newInterval !== slowModeInterval && countdown === 0) {
+      startCountdown(newInterval);
+    }
+    setSlowModeInterval(newInterval);
+  };
   
   // Limpiar el intervalo cuando el componente se desmonte
   useEffect(() => {
@@ -69,7 +79,8 @@ export function SlowModeProvider({
         startCountdown, 
         cooldownProgress,
         slowModeInterval,
-        setSlowModeInterval
+        setSlowModeInterval,
+        updateSlowModeInterval
       }}
     >
       {children}
