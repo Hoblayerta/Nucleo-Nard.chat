@@ -22,7 +22,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, ChevronLeft, ChevronRight, PlusCircle, Eye, Lock, Unlock } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, ChevronLeft, ChevronRight, PlusCircle, Eye, Lock, Unlock, Clock, AlarmClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { PostWithDetails } from "@shared/schema";
@@ -37,6 +54,11 @@ export default function PostManagement() {
   const [freezeAction, setFreezeAction] = useState<"freeze" | "unfreeze">("freeze");
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 10;
+  
+  // Estado para el diálogo de modo lento
+  const [slowModeDialogOpen, setSlowModeDialogOpen] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [slowModeInterval, setSlowModeInterval] = useState<string>("0");
   
   const { data: allPosts = [], isLoading } = useQuery<PostWithDetails[]>({
     queryKey: ["/api/posts"],
@@ -95,6 +117,60 @@ export default function PostManagement() {
       freezePostMutation.mutate({ 
         id: confirmFreezeId, 
         frozen: freezeAction === "freeze"
+      });
+    }
+  };
+  
+  // Mutación para actualizar el modo lento de un post
+  const slowModeMutation = useMutation({
+    mutationFn: async ({ id, interval }: { id: number, interval: number }) => {
+      const res = await apiRequest("PUT", `/api/posts/${id}/slow-mode`, {
+        slowModeInterval: interval
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      toast({
+        title: "Slow mode updated",
+        description: `The slow mode interval has been updated successfully.`
+      });
+      setSlowModeDialogOpen(false);
+      setSelectedPostId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update slow mode interval. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Manejador para abrir el diálogo de modo lento
+  const handleSlowModeClick = (postId: number, currentInterval: number) => {
+    setSelectedPostId(postId);
+    setSlowModeInterval(currentInterval.toString());
+    setSlowModeDialogOpen(true);
+  };
+  
+  // Manejador para guardar los cambios de modo lento
+  const handleSaveSlowMode = () => {
+    if (selectedPostId !== null) {
+      const interval = parseInt(slowModeInterval, 10);
+      
+      if (isNaN(interval) || interval < 0) {
+        toast({
+          title: "Invalid interval",
+          description: "Please enter a valid interval in seconds (0 or greater).",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      slowModeMutation.mutate({ 
+        id: selectedPostId, 
+        interval
       });
     }
   };
@@ -177,17 +253,30 @@ export default function PostManagement() {
                       {format(new Date(post.createdAt), 'MMM d, yyyy')}
                     </TableCell>
                     <TableCell>
-                      {post.frozen ? (
-                        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
-                          <Lock className="mr-1 h-3 w-3" />
-                          Frozen
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                          <Unlock className="mr-1 h-3 w-3" />
-                          Not Frozen
-                        </Badge>
-                      )}
+                      <div className="flex flex-col space-y-1">
+                        {post.frozen ? (
+                          <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                            <Lock className="mr-1 h-3 w-3" />
+                            Frozen
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                            <Unlock className="mr-1 h-3 w-3" />
+                            Not Frozen
+                          </Badge>
+                        )}
+                        {post.slowModeInterval > 0 ? (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                            <Clock className="mr-1 h-3 w-3" />
+                            Slow Mode: {post.slowModeInterval}s
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                            <AlarmClock className="mr-1 h-3 w-3" />
+                            No Slow Mode
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -207,6 +296,15 @@ export default function PostManagement() {
                           className={post.frozen ? "text-green-600 hover:text-green-700" : "text-red-600 hover:text-red-700"}
                         >
                           {post.frozen ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          variant={post.slowModeInterval > 0 ? "outline" : "ghost"}
+                          size="icon"
+                          onClick={() => handleSlowModeClick(post.id, post.slowModeInterval)}
+                          title="Configure slow mode"
+                          className={post.slowModeInterval > 0 ? "text-yellow-600 hover:text-yellow-700" : "text-blue-600 hover:text-blue-700"}
+                        >
+                          <Clock className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -296,6 +394,60 @@ export default function PostManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Slow Mode Configuration Dialog */}
+      <Dialog open={slowModeDialogOpen} onOpenChange={setSlowModeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configure Slow Mode</DialogTitle>
+            <DialogDescription>
+              Set the time interval (in seconds) that users must wait between comments. Set to 0 to disable slow mode.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <label className="block text-sm font-medium mb-2">Select Interval</label>
+            <Select
+              value={slowModeInterval}
+              onValueChange={setSlowModeInterval}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select interval..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Common intervals</SelectLabel>
+                  <SelectItem value="0">No slow mode</SelectItem>
+                  <SelectItem value="30">30 seconds</SelectItem>
+                  <SelectItem value="60">1 minute</SelectItem>
+                  <SelectItem value="120">2 minutes</SelectItem>
+                  <SelectItem value="300">5 minutes</SelectItem>
+                  <SelectItem value="600">10 minutes</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            <p className="mt-2 text-sm text-muted-foreground">
+              {slowModeInterval === "0" 
+                ? "Users can comment without delay." 
+                : `Users must wait ${parseInt(slowModeInterval, 10)} seconds between comments.`}
+            </p>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSlowModeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveSlowMode}
+              disabled={slowModeMutation.isPending}
+              className={parseInt(slowModeInterval, 10) > 0 ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+            >
+              {slowModeMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
