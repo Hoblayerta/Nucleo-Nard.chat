@@ -50,9 +50,8 @@ export function SlowModeProvider({
     const newIntervalId = window.setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          if (intervalId !== null) {
-            window.clearInterval(intervalId);
-          }
+          window.clearInterval(newIntervalId);
+          setIntervalId(null);
           return 0;
         }
         return prev - 1;

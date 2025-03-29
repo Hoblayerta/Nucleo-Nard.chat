@@ -195,7 +195,7 @@ export default function CommentForm({
         <div className="flex justify-end mt-2">
           <Button 
             type="submit" 
-            className="comment-form-button"
+            className={`comment-form-button ${slowModeCountdown > 0 ? 'bg-yellow-600 hover:bg-yellow-700' : ''}`}
             disabled={createCommentMutation.isPending || slowModeCountdown > 0}
           >
             {createCommentMutation.isPending 

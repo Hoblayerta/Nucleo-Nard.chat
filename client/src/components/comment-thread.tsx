@@ -43,7 +43,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   // Usar el contexto SlowMode para tener acceso a los valores globales
-  const { slowModeInterval } = useSlowMode();
+  const { slowModeInterval, countdown: slowModeCountdown } = useSlowMode();
   
   // Determina si este comentario debería estar resaltado
   const shouldHighlight = 
@@ -221,13 +221,21 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
           <Button 
             variant="ghost" 
             size="sm" 
-            className={`px-1 py-0 h-5 hover:text-primary mr-2 ${isFrozen ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`px-1 py-0 h-5 hover:text-primary mr-2 ${isFrozen ? 'opacity-60 cursor-not-allowed' : ''} ${slowModeCountdown > 0 && !isFrozen ? 'text-yellow-600' : ''}`}
             onClick={() => setReplyOpen(!replyOpen)}
-            disabled={isFrozen}
-            title={isFrozen ? "Post bloqueado: no se pueden añadir respuestas" : ""}
+            disabled={isFrozen || (slowModeCountdown > 0)}
+            title={
+              isFrozen 
+                ? "Post bloqueado: no se pueden añadir respuestas" 
+                : slowModeCountdown > 0
+                  ? `Modo lento activado: espera ${slowModeCountdown}s para responder`
+                  : ""
+            }
           >
             <MessageSquare className="h-3 w-3 mr-1" />
-            Reply
+            {slowModeCountdown > 0 && !isFrozen 
+              ? `Espera ${slowModeCountdown}s` 
+              : "Reply"}
           </Button>
           
           <TooltipProvider>
