@@ -183,7 +183,7 @@ export default function PostCard({ post }: PostCardProps) {
                       aria-label="Freeze post interactions"
                     />
                     <span className="text-sm text-muted-foreground">
-                      {post.frozen ? "Frozen" : "Active"}
+                      {post.frozen ? "Bloquear" : "Active"} {/* Changed "Frozen" to "Bloquear" */}
                     </span>
                   </div>
                 )}
