@@ -35,7 +35,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [replyOpen, setReplyOpen] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   
@@ -201,16 +200,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         <p className="text-sm mb-1 mt-1">{comment.content}</p>
         
         <div className="flex items-center text-xs text-muted-foreground">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="px-1 py-0 h-5 hover:text-primary mr-2"
-            onClick={() => setReplyOpen(!replyOpen)}
-          >
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Reply
-          </Button>
-          
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -246,16 +235,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             </Tooltip>
           </TooltipProvider>
         </div>
-        
-        {replyOpen && (
-          <div className="mt-2">
-            <CommentForm 
-              postId={postId} 
-              parentId={comment.id} 
-              onSuccess={() => setReplyOpen(false)}
-            />
-          </div>
-        )}
         
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-2 relative comment-replies-container">
