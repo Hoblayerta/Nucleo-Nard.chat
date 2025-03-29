@@ -318,6 +318,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId
       });
       
+      // Verificar si el post está bloqueado
+      const post = await storage.getPost(data.postId);
+      if (post?.isLocked) {
+        return res.status(403).json({ message: "This post is locked and does not allow new comments" });
+      }
+      
       const comment = await storage.createComment(data);
       const user = await storage.getUser(userId);
       
@@ -366,6 +372,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isUpvote === undefined) {
         return res.status(400).json({ message: "Vote type (isUpvote) is required" });
+      }
+      
+      // Verificar si se está votando en un post bloqueado
+      if (postId) {
+        const post = await storage.getPost(postId);
+        if (post?.isLocked) {
+          return res.status(403).json({ message: "This post is locked and does not allow votes" });
+        }
+      }
+      
+      // Verificar si se está votando en un comentario de un post bloqueado
+      if (commentId) {
+        const comment = await storage.getComment(commentId);
+        if (comment) {
+          const post = await storage.getPost(comment.postId);
+          if (post?.isLocked) {
+            return res.status(403).json({ message: "This post is locked and does not allow votes on comments" });
+          }
+        }
       }
       
       // Check if already voted on this item
@@ -449,6 +474,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(topComments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch leaderboard" });
+    }
+  });
+  
+  // Ruta para actualizar el estado de bloqueo de un post (solo admins)
+  app.patch("/api/posts/:id/lock", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      const post = await storage.getPost(id);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      // Alternar el estado de bloqueo
+      const updatedPost = await storage.updatePost(id, { 
+        isLocked: !post.isLocked 
+      });
+      
+      res.status(200).json({
+        ...updatedPost,
+        message: updatedPost?.isLocked 
+          ? "Post has been locked" 
+          : "Post has been unlocked"
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update post lock status" });
     }
   });
   
