@@ -33,13 +33,10 @@ const loginSchema = z.object({
   password: z.string().min(4, "Password must be at least 4 characters"),
 });
 
-const registerSchema = loginSchema;
-
 export default function Header() {
   const [location, setLocation] = useLocation();
-  const { user, isAdmin, login, logout, register } = useAuth();
+  const { user, isAdmin, login, logout } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
-  const [registerOpen, setRegisterOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,14 +44,6 @@ export default function Header() {
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
-
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -79,23 +68,7 @@ export default function Header() {
     }
   };
 
-  const handleRegister = async (values: z.infer<typeof registerSchema>) => {
-    try {
-      await register(values.username, values.password);
-      setRegisterOpen(false);
-      toast({
-        title: "Registration successful",
-        description: `Welcome, ${values.username}!`,
-      });
-      registerForm.reset();
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: "Username may already be taken",
-        variant: "destructive",
-      });
-    }
-  };
+  // La función handleRegister se ha eliminado ya que solo los administradores pueden crear usuarios
 
   const handleLogout = async () => {
     await logout();
@@ -184,9 +157,6 @@ export default function Header() {
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setLoginOpen(true)}>
                   Log In
-                </Button>
-                <Button size="sm" onClick={() => setRegisterOpen(true)}>
-                  Sign Up
                 </Button>
               </div>
             )}
@@ -285,17 +255,7 @@ export default function Header() {
                 )}
               />
               
-              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => {
-                    setLoginOpen(false);
-                    setRegisterOpen(true);
-                  }}
-                >
-                  Create Account
-                </Button>
+              <DialogFooter className="flex justify-end">
                 <Button type="submit" disabled={loginForm.formState.isSubmitting}>
                   {loginForm.formState.isSubmitting ? "Logging in..." : "Log In"}
                 </Button>
@@ -305,65 +265,7 @@ export default function Header() {
         </DialogContent>
       </Dialog>
       
-      {/* Register Dialog */}
-      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Account</DialogTitle>
-            <DialogDescription>
-              Enter your details to create a new account
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...registerForm}>
-            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-              <FormField
-                control={registerForm.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input {...field} autoComplete="username" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={registerForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} autoComplete="new-password" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => {
-                    setRegisterOpen(false);
-                    setLoginOpen(true);
-                  }}
-                >
-                  Already have an account
-                </Button>
-                <Button type="submit" disabled={registerForm.formState.isSubmitting}>
-                  {registerForm.formState.isSubmitting ? "Creating account..." : "Create Account"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      {/* El diálogo de registro se ha eliminado ya que solo los administradores pueden crear usuarios */}
       
       {/* Admin Panel */}
       {isAdmin && adminPanelOpen && (

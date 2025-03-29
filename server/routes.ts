@@ -47,7 +47,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Authentication Routes
-  app.post("/api/auth/register", async (req, res) => {
+  // Solo los administradores pueden registrar nuevos usuarios
+  app.post("/api/auth/register", requireAdmin, async (req, res) => {
     try {
       const data = insertUserSchema.parse(req.body);
       
@@ -59,10 +60,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(data);
       
-      // Set session
-      req.session.userId = user.id;
-      req.session.username = user.username;
-      req.session.role = user.role;
+      // No establecemos la sesión ya que el administrador está creando el usuario
+      // y no debería iniciar sesión como ese usuario
       
       // Remove password from response
       const { password, ...userWithoutPassword } = user;
