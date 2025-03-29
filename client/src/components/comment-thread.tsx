@@ -375,14 +375,13 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
         </div>
       )}
       
-      {/* Agregar formulario de comentario al inicio, como en Lemmy */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
-        <CommentForm postId={postId} />
-      </div>
-      
-      {/* Separador entre formulario y comentarios */}
-      <Separator className="my-6" />
+      {/* Solo mostramos el formulario de comentario cuando no hay comentarios todavía */}
+      {comments.length === 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
+          <CommentForm postId={postId} />
+        </div>
+      )}
       
       {/* Título de la sección de comentarios */}
       <h3 className="text-lg font-medium mb-4">

@@ -4,6 +4,7 @@ import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CommentThread from "@/components/comment-thread";
+import CommentForm from "@/components/comment-form";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -116,6 +117,13 @@ export default function Post() {
         </div>
       </article>
       
+      {/* Sección de formulario de comentario principal */}
+      <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
+        <h3 className="text-lg font-bold mb-3">Deja un comentario</h3>
+        <CommentForm postId={post.id} />
+      </section>
+      
+      {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
         <CommentThread postId={post.id} highlightedCommentId={commentId} />
       </section>
