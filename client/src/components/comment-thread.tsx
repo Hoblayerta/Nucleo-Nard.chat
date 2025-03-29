@@ -341,6 +341,7 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
   // Importante: declarar los hooks ANTES de cualquier condicional
   // para evitar errores con las reglas de hooks
   const isMobile = useIsMobile();
+  const [showMainCommentForm, setShowMainCommentForm] = useState(false);
 
   if (isLoading) {
     return (
@@ -352,9 +353,16 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
   }
 
   if (comments.length === 0) {
+    // Si no hay comentarios, siempre mostrar el formulario principal
     return (
-      <div className="text-center py-4">
-        <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
+      <div>
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
+          <CommentForm postId={postId} />
+        </div>
+        <div className="text-center py-4">
+          <p className="text-muted-foreground mt-4">No comments yet. Be the first to comment!</p>
+        </div>
       </div>
     );
   }
@@ -375,14 +383,29 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
         </div>
       )}
       
-      {/* Agregar formulario de comentario al inicio, como en Lemmy */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
-        <CommentForm postId={postId} />
+      {/* Botón para mostrar/ocultar el formulario principal de comentarios */}
+      <div className="mb-4">
+        <Button 
+          variant="outline"
+          onClick={() => setShowMainCommentForm(!showMainCommentForm)}
+          className="w-full"
+        >
+          {showMainCommentForm ? "Ocultar formulario" : "Escribir un nuevo comentario"}
+        </Button>
+        
+        {/* Formulario de comentario condicional */}
+        {showMainCommentForm && (
+          <div className="mt-4">
+            <CommentForm 
+              postId={postId} 
+              onSuccess={() => setShowMainCommentForm(false)} 
+            />
+          </div>
+        )}
       </div>
       
       {/* Separador entre formulario y comentarios */}
-      <Separator className="my-6" />
+      <Separator className="my-4" />
       
       {/* Título de la sección de comentarios */}
       <h3 className="text-lg font-medium mb-4">
