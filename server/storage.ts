@@ -41,10 +41,10 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private posts: Map<number, Post>;
-  private comments: Map<number, Comment>;
-  private likes: Map<number, Like>;
+  public users: Map<number, User>;
+  public posts: Map<number, Post>;
+  public comments: Map<number, Comment>;
+  public likes: Map<number, Like>;
   private currentIds: {
     user: number;
     post: number;
