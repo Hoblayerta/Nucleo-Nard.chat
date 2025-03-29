@@ -41,6 +41,35 @@
   cursor: not-allowed;
 }
 
+/* Estilos para el modo lento */
+.slow-mode-container {
+  background-color: rgba(255, 240, 200, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 200, 0, 0.2);
+}
+
+.slow-mode-active {
+  background-color: rgba(255, 230, 180, 0.3);
+  border: 1px solid rgba(255, 180, 0, 0.3);
+}
+
+.slow-mode-countdown {
+  font-weight: 600;
+  color: var(--yellow-600);
+}
+
+.slow-mode-progress {
+  height: 4px !important;
+  border-radius: 2px;
+  margin-top: 6px;
+}
+
+.slow-mode-progress-active {
+  background: linear-gradient(90deg, var(--yellow-500), var(--yellow-300)) !important;
+}
+
 @media (max-width: 768px) {
   .comment-form-container {
     flex-direction: column;

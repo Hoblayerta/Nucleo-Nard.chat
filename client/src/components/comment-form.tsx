@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useSlowMode } from "@/hooks/use-slow-mode";
 import { Lock, Clock } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,56 +16,30 @@ interface CommentFormProps {
   parentId?: number;
   onSuccess?: () => void;
   isFrozen?: boolean;
-  slowModeInterval?: number;
 }
 
 export default function CommentForm({ 
   postId, 
   parentId, 
   onSuccess, 
-  isFrozen = false, 
-  slowModeInterval = 0 
+  isFrozen = false
 }: CommentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
-  const [slowModeCountdown, setSlowModeCountdown] = useState(0);
-  const countdownInterval = useRef<number | null>(null);
+  
+  // Usar el contexto de SlowMode para sincronizar la cuenta atrás entre todos los formularios
+  const { 
+    countdown: slowModeCountdown, 
+    startCountdown, 
+    cooldownProgress, 
+    slowModeInterval,
+    setSlowModeInterval 
+  } = useSlowMode();
 
-  // Limpiar el intervalo cuando el componente se desmonte
-  useEffect(() => {
-    return () => {
-      if (countdownInterval.current) {
-        window.clearInterval(countdownInterval.current);
-      }
-    };
-  }, []);
-
-  // Progreso del cooldown (0-100%)
-  const cooldownProgress = slowModeCountdown > 0 
-    ? 100 - (slowModeCountdown / slowModeInterval) * 100 
-    : 100;
-
-  const startCountdown = (seconds: number) => {
-    setSlowModeCountdown(seconds);
-    
-    if (countdownInterval.current) {
-      window.clearInterval(countdownInterval.current);
-    }
-    
-    countdownInterval.current = window.setInterval(() => {
-      setSlowModeCountdown(prev => {
-        if (prev <= 1) {
-          if (countdownInterval.current) {
-            window.clearInterval(countdownInterval.current);
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
+  // Ya no necesitamos actualizar el intervalo de modo lento basado en props
+  // ya que ahora se maneja globalmente desde el contexto de SlowMode
 
   const createCommentMutation = useMutation({
     mutationFn: async () => {
@@ -163,7 +138,7 @@ export default function CommentForm({
   // Si el post está congelado, mostrar mensaje de bloqueo
   if (isFrozen) {
     return (
-      <div className="p-3 bg-muted/20 rounded-md">
+      <div className="p-3 bg-muted/20 rounded-md border border-muted/30">
         <p className="flex items-center text-muted-foreground text-sm">
           <Lock className="h-4 w-4 mr-2 text-destructive" />
           Este post está bloqueado. No se pueden añadir nuevos comentarios.
@@ -171,6 +146,9 @@ export default function CommentForm({
       </div>
     );
   }
+  
+  // Si el modo lento está activado y el contador aún no ha terminado, inhabilitar la entrada de texto
+  const isSlowModeActive = slowModeInterval > 0 && slowModeCountdown > 0;
 
   return (
     <form className="comment-form-container" onSubmit={handleSubmit}>
@@ -183,21 +161,26 @@ export default function CommentForm({
       <div className="flex-1">
         {/* Barra de progreso para el modo lento si está activo */}
         {slowModeInterval > 0 && (
-          <div className="mb-2">
+          <div className={`slow-mode-container ${slowModeCountdown > 0 ? 'slow-mode-active' : ''}`}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs flex items-center text-muted-foreground">
-                <Clock className="h-3 w-3 mr-1" />
-                {slowModeCountdown > 0 
-                  ? `Puedes comentar en ${slowModeCountdown} segundos` 
-                  : 'Puedes comentar ahora'}
+              <span className="text-sm flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-yellow-600" />
+                {slowModeCountdown > 0 ? (
+                  <span>
+                    Podrás comentar en <span className="slow-mode-countdown">{slowModeCountdown}</span> segundos
+                  </span>
+                ) : (
+                  <span className="text-green-600 font-medium">Puedes comentar ahora</span>
+                )}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {slowModeInterval > 0 
-                  ? `Modo lento: ${slowModeInterval} segundos`
-                  : ''}
+              <span className="text-xs text-muted-foreground font-medium">
+                Intervalo: {slowModeInterval}s
               </span>
             </div>
-            <Progress value={cooldownProgress} className="h-1" />
+            <Progress 
+              value={cooldownProgress} 
+              className={`slow-mode-progress ${slowModeCountdown > 0 ? 'slow-mode-progress-active' : ''}`} 
+            />
           </div>
         )}
         

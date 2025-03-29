@@ -3,8 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSlowMode } from "@/hooks/use-slow-mode";
 import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
+import { Progress } from "@/components/ui/progress";
+import { Clock } from "lucide-react";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -63,6 +66,15 @@ export default function Post() {
     );
   }
 
+  // Actualizar el contexto de SlowMode cuando cambie el intervalo
+  const { setSlowModeInterval } = useSlowMode();
+  
+  useEffect(() => {
+    if (post?.slowModeInterval > 0) {
+      setSlowModeInterval(post.slowModeInterval);
+    }
+  }, [post?.slowModeInterval, setSlowModeInterval]);
+
   return (
     <div className="container max-w-4xl mx-auto p-4 my-8">
       <article className="bg-card rounded-lg shadow-sm p-6 mb-6">
@@ -96,6 +108,13 @@ export default function Post() {
               <span className="font-medium text-foreground">{post.comments}</span>
               <span className="ml-1">comentarios</span>
             </div>
+            
+            {post.slowModeInterval > 0 && (
+              <div className="ml-4 flex items-center text-yellow-600">
+                <Clock className="h-4 w-4 mr-1" />
+                <span className="font-medium">Modo lento: {post.slowModeInterval}s</span>
+              </div>
+            )}
           </div>
           
           <button 
@@ -128,20 +147,26 @@ export default function Post() {
         </div>
       )}
       
+      {/* Barra de estado para el modo lento global si está activo */}
+      {post.slowModeInterval > 0 && (
+        <div className="mt-4 mb-6 p-3 bg-yellow-50/30 border border-yellow-200/50 rounded-md">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm flex items-center">
+              <Clock className="h-4 w-4 mr-2 text-yellow-600" />
+              <span>Modo lento: intervalo de {post.slowModeInterval} segundos entre comentarios</span>
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* Sección de formulario de comentario principal - solo si no está congelado */}
       {!post.frozen && (
         <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
           <h3 className="text-lg font-bold mb-3">
             Deja un comentario
-            {post.slowModeInterval > 0 && (
-              <span className="ml-2 text-sm text-muted-foreground font-normal">
-                (Modo lento: {post.slowModeInterval} segundos)
-              </span>
-            )}
           </h3>
           <CommentForm 
             postId={post.id} 
-            slowModeInterval={post.slowModeInterval} 
           />
         </section>
       )}
@@ -152,7 +177,7 @@ export default function Post() {
           postId={post.id} 
           highlightedCommentId={commentId} 
           isFrozen={post.frozen}
-          slowModeInterval={post.slowModeInterval}  
+          slowModeInterval={post.slowModeInterval}
         />
       </section>
     </div>

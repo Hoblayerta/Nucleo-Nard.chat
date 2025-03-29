@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSlowMode } from "@/hooks/use-slow-mode"; 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +30,9 @@ interface CommentItemProps {
   index?: string; // Índice para la enumeración del hilo, ej: "1", "1.2", "1.2.3"
   highlightedCommentId?: string | null;
   isFrozen?: boolean; // Indica si el post está congelado
-  slowModeInterval?: number; // Indica el intervalo de tiempo para el modo lento
 }
 
-function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId, isFrozen = false, slowModeInterval = 0 }: CommentItemProps) {
+function CommentItem({ comment, postId, level = 0, index = "", highlightedCommentId, isFrozen = false }: CommentItemProps) {
   // Añadir una clase para identificar nivel de anidación
   const nestingClass = `nesting-level-${level}`;
   const commentRef = useRef<HTMLDivElement>(null);
@@ -42,6 +42,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const [replyOpen, setReplyOpen] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
+  // Usar el contexto SlowMode para tener acceso a los valores globales
+  const { slowModeInterval } = useSlowMode();
   
   // Determina si este comentario debería estar resaltado
   const shouldHighlight = 
@@ -270,7 +272,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
               postId={postId} 
               parentId={comment.id} 
               onSuccess={() => setReplyOpen(false)}
-              slowModeInterval={slowModeInterval}
             />
           </div>
         )}
@@ -349,7 +350,6 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
                     index={index ? `${index}.${replyIndex + 1}` : `${replyIndex + 1}`}
                     highlightedCommentId={highlightedCommentId}
                     isFrozen={isFrozen}
-                    slowModeInterval={slowModeInterval}
                   />
                 ))}
               </div>
@@ -369,6 +369,14 @@ export default function CommentThread({ postId, highlightedCommentId, isFrozen =
   // Importante: declarar los hooks ANTES de cualquier condicional
   // para evitar errores con las reglas de hooks
   const isMobile = useIsMobile();
+  const { setSlowModeInterval } = useSlowMode();
+  
+  // Actualizar el intervalo de modo lento en el contexto cuando cambie la prop
+  useEffect(() => {
+    if (slowModeInterval > 0) {
+      setSlowModeInterval(slowModeInterval);
+    }
+  }, [slowModeInterval, setSlowModeInterval]);
 
   if (isLoading) {
     return (
@@ -407,7 +415,7 @@ export default function CommentThread({ postId, highlightedCommentId, isFrozen =
       {comments.length === 0 && !isFrozen && (
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
-          <CommentForm postId={postId} slowModeInterval={slowModeInterval} />
+          <CommentForm postId={postId} />
         </div>
       )}
       {comments.length === 0 && isFrozen && (
@@ -436,7 +444,6 @@ export default function CommentThread({ postId, highlightedCommentId, isFrozen =
               index={`${index + 1}`}
               highlightedCommentId={highlightedCommentId}
               isFrozen={isFrozen}
-              slowModeInterval={slowModeInterval}
             />
           ))}
           
