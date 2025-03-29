@@ -35,6 +35,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [replyOpen, setReplyOpen] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
   
@@ -200,6 +201,16 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         <p className="text-sm mb-1 mt-1">{comment.content}</p>
         
         <div className="flex items-center text-xs text-muted-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="px-1 py-0 h-5 hover:text-primary mr-2"
+            onClick={() => setReplyOpen(!replyOpen)}
+          >
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Reply
+          </Button>
+          
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -235,6 +246,16 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             </Tooltip>
           </TooltipProvider>
         </div>
+        
+        {replyOpen && (
+          <div className="mt-2">
+            <CommentForm 
+              postId={postId} 
+              parentId={comment.id} 
+              onSuccess={() => setReplyOpen(false)}
+            />
+          </div>
+        )}
         
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-2 relative comment-replies-container">
@@ -320,7 +341,6 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
   // Importante: declarar los hooks ANTES de cualquier condicional
   // para evitar errores con las reglas de hooks
   const isMobile = useIsMobile();
-  const [showMainCommentForm, setShowMainCommentForm] = useState(false);
 
   if (isLoading) {
     return (
@@ -332,16 +352,9 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
   }
 
   if (comments.length === 0) {
-    // Si no hay comentarios, siempre mostrar el formulario principal
     return (
-      <div>
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
-          <CommentForm postId={postId} />
-        </div>
-        <div className="text-center py-4">
-          <p className="text-muted-foreground mt-4">No comments yet. Be the first to comment!</p>
-        </div>
+      <div className="text-center py-4">
+        <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
       </div>
     );
   }
@@ -362,29 +375,14 @@ export default function CommentThread({ postId, highlightedCommentId }: CommentT
         </div>
       )}
       
-      {/* Botón para mostrar/ocultar el formulario principal de comentarios */}
-      <div className="mb-4">
-        <Button 
-          variant="outline"
-          onClick={() => setShowMainCommentForm(!showMainCommentForm)}
-          className="w-full"
-        >
-          {showMainCommentForm ? "Ocultar formulario" : "Escribir un nuevo comentario"}
-        </Button>
-        
-        {/* Formulario de comentario condicional */}
-        {showMainCommentForm && (
-          <div className="mt-4">
-            <CommentForm 
-              postId={postId} 
-              onSuccess={() => setShowMainCommentForm(false)} 
-            />
-          </div>
-        )}
+      {/* Agregar formulario de comentario al inicio, como en Lemmy */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Escribe un comentario</h3>
+        <CommentForm postId={postId} />
       </div>
       
       {/* Separador entre formulario y comentarios */}
-      <Separator className="my-4" />
+      <Separator className="my-6" />
       
       {/* Título de la sección de comentarios */}
       <h3 className="text-lg font-medium mb-4">
