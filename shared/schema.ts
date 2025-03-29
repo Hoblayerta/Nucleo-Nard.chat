@@ -1,20 +1,6 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-// Definición de insignias disponibles
-export const BADGES = [
-  "director",
-  "guionista",
-  "novato",
-  "spamero",
-  "dibujante",
-  "animador",
-  "hacker",
-  "superfan",
-  "fan",
-  "masteranimador"
-] as const;
 
 // User model
 export const users = pgTable("users", {
@@ -24,13 +10,11 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("user"),
   likeMultiplier: integer("like_multiplier").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  badges: json("badges").$type<string[]>().default([]),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
-  badges: true,
 });
 
 export const loginUserSchema = z.object({
@@ -41,7 +25,6 @@ export const loginUserSchema = z.object({
 export const updateUserSchema = z.object({
   role: z.enum(["user", "moderator", "admin"]).optional(),
   likeMultiplier: z.number().min(1).max(20).optional(),
-  badges: z.array(z.enum(BADGES)).optional(),
 });
 
 // Post model
@@ -51,22 +34,11 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  locked: boolean("locked").default(false), // Para bloquear likes/dislikes
-  slowMode: integer("slow_mode").default(0), // Tiempo en segundos para el modo lento
-  lastCommentTime: timestamp("last_comment_time"), // Para implementar slowmode
 });
 
 export const insertPostSchema = createInsertSchema(posts).omit({
   id: true,
   createdAt: true,
-  locked: true,
-  slowMode: true,
-  lastCommentTime: true,
-});
-
-export const updatePostSchema = z.object({
-  locked: z.boolean().optional(),
-  slowMode: z.number().min(0).max(600).optional(), // Máximo 10 minutos
 });
 
 // Comment model
@@ -121,7 +93,6 @@ export type CommentWithUser = Comment & {
     username: string;
     role: string;
     likeMultiplier: number;
-    badges?: string[];
   };
   upvotes: number;
   downvotes: number;
@@ -135,17 +106,12 @@ export type PostWithDetails = Post & {
     id: number;
     username: string;
     role: string;
-    badges?: string[];
   };
   upvotes: number;
   downvotes: number;
   voteScore: number; // net score = upvotes - downvotes
   userVote?: 'upvote' | 'downvote' | null; // for logged in user
   comments: number;
-  locked: boolean;
-  slowMode: number;
-  canComment?: boolean; // Indica si el usuario puede comentar debido al slowmode
-  slowModeTimeRemaining?: number; // Tiempo restante en segundos para poder comentar
 };
 
 export type UserStats = {

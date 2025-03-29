@@ -1,5 +1,5 @@
 import { 
-  users, posts, comments, likes, updatePostSchema,
+  users, posts, comments, likes, 
   type User, type InsertUser, type Post, type InsertPost,
   type Comment, type InsertComment, type Like, type InsertLike,
   type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats
@@ -15,27 +15,23 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
   getUsers(): Promise<User[]>;
   getTopUsers(limit: number): Promise<(User & { stats: UserStats })[]>;
-  updateUserBadges(userId: number, badges: string[]): Promise<User | undefined>;
   
   // Post operations
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: number): Promise<Post | undefined>;
   getPosts(): Promise<PostWithDetails[]>;
   getTopPosts(limit: number): Promise<PostWithDetails[]>;
-  updatePostSettings(id: number, settings: { locked?: boolean, slowMode?: number }): Promise<Post | undefined>;
   
   // Comment operations
   createComment(comment: InsertComment): Promise<Comment>;
   getComment(id: number): Promise<Comment | undefined>;
   getCommentsByPostId(postId: number): Promise<CommentWithUser[]>;
-  checkSlowMode(postId: number, userId: number): Promise<{ canComment: boolean, timeRemaining?: number }>;
   
   // Like operations
   createLike(like: InsertLike): Promise<Like>;
   removeLike(userId: number, commentId?: number, postId?: number): Promise<boolean>;
   getLikesByUserId(userId: number): Promise<Like[]>;
   checkLikeExists(userId: number, commentId?: number, postId?: number): Promise<boolean>;
-  checkPostLocked(postId: number): Promise<boolean>;
   
   // Combined operations
   getTopComments(limit: number): Promise<CommentWithUser[]>;
@@ -94,8 +90,7 @@ export class MemStorage implements IStorage {
       id, 
       role: insertUser.role || "user",
       likeMultiplier: insertUser.likeMultiplier || 1,
-      createdAt: now,
-      badges: [],
+      createdAt: now
     };
     this.users.set(id, user);
     return user;
@@ -181,14 +176,7 @@ export class MemStorage implements IStorage {
   async createPost(insertPost: InsertPost): Promise<Post> {
     const id = this.currentIds.post++;
     const now = new Date();
-    const post: Post = { 
-      ...insertPost, 
-      id, 
-      createdAt: now,
-      locked: false,
-      slowMode: 0,
-      lastCommentTime: null
-    };
+    const post: Post = { ...insertPost, id, createdAt: now };
     this.posts.set(id, post);
     return post;
   }
@@ -227,26 +215,18 @@ export class MemStorage implements IStorage {
       const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
       const userVote = await this.getUserVote(sessionUserId, undefined, post.id);
       
-      const locked = post.locked || false;
-      const slowMode = post.slowMode || 0;
-      const canComment = true; // Esto se calculará en tiempo real con el ID del usuario autenticado
-      
       return {
         ...post,
         user: {
           id: user?.id || 0,
           username: user?.username || "unknown",
           role: user?.role || "user",
-          badges: user?.badges || [],
         },
         upvotes: postUpvotes,
         downvotes: postDownvotes,
         voteScore: postUpvotes - postDownvotes,
         userVote,
         comments: postComments,
-        locked,
-        slowMode,
-        canComment
       };
     }));
   }
@@ -525,83 +505,6 @@ export class MemStorage implements IStorage {
       downvotesReceived,
       netScore: upvotesReceived - downvotesReceived
     };
-  }
-
-  // Implementaciones para las nuevas funcionalidades de administración
-  
-  // Actualizar insignias de un usuario
-  async updateUserBadges(userId: number, badges: string[]): Promise<User | undefined> {
-    const user = await this.getUser(userId);
-    if (!user) return undefined;
-    
-    const updatedUser: User = {
-      ...user,
-      badges: badges,
-    };
-    
-    this.users.set(userId, updatedUser);
-    return updatedUser;
-  }
-  
-  // Actualizar configuraciones de un post (bloqueo y modo lento)
-  async updatePostSettings(id: number, settings: { locked?: boolean, slowMode?: number }): Promise<Post | undefined> {
-    const post = await this.getPost(id);
-    if (!post) return undefined;
-    
-    const updatedPost: Post = {
-      ...post,
-      locked: settings.locked !== undefined ? settings.locked : post.locked,
-      slowMode: settings.slowMode !== undefined ? settings.slowMode : post.slowMode,
-    };
-    
-    this.posts.set(id, updatedPost);
-    return updatedPost;
-  }
-  
-  // Verificar si un post está bloqueado para votos
-  async checkPostLocked(postId: number): Promise<boolean> {
-    const post = await this.getPost(postId);
-    return post?.locked || false;
-  }
-  
-  // Verificar si un usuario puede comentar en un post con slow mode
-  async checkSlowMode(postId: number, userId: number): Promise<{ canComment: boolean, timeRemaining?: number }> {
-    const post = await this.getPost(postId);
-    if (!post) return { canComment: false };
-    
-    // Si no hay slow mode, siempre puede comentar
-    if (!post.slowMode || post.slowMode <= 0) {
-      return { canComment: true };
-    }
-    
-    // Verificar si el usuario es admin (los admins no tienen restricciones)
-    const user = await this.getUser(userId);
-    if (user?.role === 'admin') {
-      return { canComment: true };
-    }
-    
-    // Buscar el último comentario del usuario en este post
-    const userComments = Array.from(this.comments.values())
-      .filter(comment => comment.postId === postId && comment.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    if (userComments.length === 0) {
-      return { canComment: true }; // No ha comentado antes, puede comentar
-    }
-    
-    const lastCommentTime = new Date(userComments[0].createdAt).getTime();
-    const now = Date.now();
-    const elapsedSeconds = Math.floor((now - lastCommentTime) / 1000);
-    
-    if (elapsedSeconds >= post.slowMode) {
-      return { canComment: true };
-    } else {
-      const timeRemaining = post.slowMode - elapsedSeconds;
-      return { 
-        canComment: false,
-        timeRemaining
-      };
-    }
   }
 }
 
