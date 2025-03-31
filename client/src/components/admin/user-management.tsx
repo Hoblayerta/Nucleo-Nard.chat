@@ -43,11 +43,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
-import { Search, ChevronLeft, ChevronRight, UserPlus, Edit, Trash2, Save, X, Ban } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, UserPlus, Edit, Trash2, Save, X, Ban, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { User } from "@shared/schema";
 import { BADGES } from "@shared/schema";
+import * as XLSX from 'xlsx';
 
 // Esquema de validación para creación de usuario
 const createUserSchema = z.object({
@@ -229,6 +230,44 @@ export default function UserManagement() {
   
   const handleAddUser = (values: z.infer<typeof createUserSchema>) => {
     createUserMutation.mutate(values);
+  };
+  
+  // Función para exportar los datos de usuarios a Excel
+  const exportToExcel = () => {
+    try {
+      // Preparar los datos para Excel
+      const workbook = XLSX.utils.book_new();
+      
+      // Formatear los datos para que sean exportables
+      const data = filteredUsers.map(user => ({
+        ID: user.id,
+        Username: user.username,
+        Role: user.role,
+        Multiplier: user.likeMultiplier,
+        Badges: user.badges ? user.badges.join(", ") : "",
+        Joined: new Date(user.createdAt).toLocaleDateString()
+      }));
+      
+      // Crear la hoja de cálculo
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      
+      // Añadir la hoja al libro
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+      
+      // Generar el archivo y descargarlo
+      XLSX.writeFile(workbook, "users_data.xlsx");
+      
+      toast({
+        title: "Exportación exitosa",
+        description: "Los datos de usuarios se han exportado a Excel correctamente.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error en la exportación",
+        description: "No se pudieron exportar los datos. Intente nuevamente.",
+        variant: "destructive",
+      });
+    }
   };
   
   if (isLoading) {
@@ -441,16 +480,27 @@ export default function UserManagement() {
       </div>
       
       <div className="flex justify-between mt-4">
-        {isAdmin && (
+        <div className="flex space-x-2">
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              className="text-primary"
+              onClick={() => setAddUserOpen(true)}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          )}
+          
           <Button 
             variant="outline" 
-            className="text-primary"
-            onClick={() => setAddUserOpen(true)}
+            className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+            onClick={exportToExcel}
           >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add User
+            <FileDown className="h-4 w-4 mr-2" />
+            Exportar a Excel
           </Button>
-        )}
+        </div>
         
         <div className={`flex items-center ${isAdmin ? '' : 'ml-auto'}`}>
           <Button variant="outline" size="icon" className="h-8 w-8 mr-2">
