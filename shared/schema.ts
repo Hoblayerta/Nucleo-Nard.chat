@@ -42,7 +42,7 @@ export const loginUserSchema = z.object({
 export const updateUserSchema = z.object({
   role: z.enum(["user", "moderator", "admin"]).optional(),
   likeMultiplier: z.number().min(1).max(20).optional(),
-  badges: z.array(z.enum(BADGES)).optional(),
+  badges: z.array(z.string()).optional(),
 });
 
 // Post model

@@ -183,8 +183,14 @@ export default function UserManagement() {
   };
 
   const handleBadgeEdit = (userId: number) => {
-    setEditingUser(userId);
-    setBadgeDialogOpen(true);
+    const user = allUsers.find(u => u.id === userId);
+    if (user) {
+      setEditingUser(userId);
+      setTempRole(user.role);
+      setTempMultiplier(user.likeMultiplier);
+      setTempBadges(user.badges || []);
+      setBadgeDialogOpen(true);
+    }
   };
 
   const handleBadgeChange = (badge: string) => {
