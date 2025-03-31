@@ -196,7 +196,6 @@ export default function PostCard({ post }: PostCardProps) {
                   size="sm" 
                   className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
                   onClick={() => setShowComments(!showComments)}
-                  disabled={post.frozen} // Disable if frozen
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
                   <span className="md:inline">
