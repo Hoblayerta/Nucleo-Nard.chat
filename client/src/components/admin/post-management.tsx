@@ -403,15 +403,15 @@ export default function PostManagement() {
       
       {/* Slow Mode Configuration Dialog */}
       <Dialog open={slowModeDialogOpen} onOpenChange={setSlowModeDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Configure Slow Mode</DialogTitle>
-            <DialogDescription>
-              Set the time interval (in seconds) that users must wait between comments. Set to 0 to disable slow mode.
+            <DialogDescription className="text-xs md:text-sm">
+              Set the time interval that users must wait between comments. Set to 0 to disable slow mode.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
+          <div className="py-2 md:py-4">
             <label className="block text-sm font-medium mb-2">Select Interval</label>
             <Select
               value={slowModeInterval}
@@ -433,21 +433,25 @@ export default function PostManagement() {
               </SelectContent>
             </Select>
             
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-xs md:text-sm text-muted-foreground">
               {slowModeInterval === "0" 
                 ? "Users can comment without delay." 
                 : `Users must wait ${parseInt(slowModeInterval, 10)} seconds between comments.`}
             </p>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSlowModeDialogOpen(false)}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setSlowModeDialogOpen(false)}
+              className="sm:mr-2 order-2 sm:order-1"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleSaveSlowMode}
               disabled={slowModeMutation.isPending}
-              className={parseInt(slowModeInterval, 10) > 0 ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+              className={`order-1 sm:order-2 ${parseInt(slowModeInterval, 10) > 0 ? "bg-yellow-600 hover:bg-yellow-700" : ""}`}
             >
               {slowModeMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>

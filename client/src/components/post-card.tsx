@@ -147,20 +147,24 @@ export default function PostCard({ post }: PostCardProps) {
             </div>
 
             <div className="flex-1">
-              <div className="flex items-center text-sm text-muted-foreground mb-2">
-                {post.user.role === "admin" && (
-                  <Badge variant="outline" className="bg-success/20 text-success border-success/30 mr-2">
-                    <Shield className="h-3 w-3 mr-1" /> Admin
-                  </Badge>
-                )}
+              <div className="flex md:items-center text-sm text-muted-foreground mb-2 flex-wrap md:flex-nowrap">
+                <div className="flex items-center w-full md:w-auto">
+                  {post.user.role === "admin" && (
+                    <Badge variant="outline" className="bg-success/20 text-success border-success/30 mr-2">
+                      <Shield className="h-3 w-3 mr-1" /> Admin
+                    </Badge>
+                  )}
+                  {post.user.role === "moderator" && (
+                    <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 mr-2">
+                      <Shield className="h-3 w-3 mr-1" /> Mod
+                    </Badge>
+                  )}
 
-                <span>Posted by</span>
-                <a href={`/profile/${post.user.id}`} className="text-primary hover:underline mx-1">
-                  {post.user.username}
-                </a>
-                <span className="mx-1">•</span>
-                <span className="flex items-center">
-                  {timeAgo(new Date(post.createdAt))}
+                  <span className="hidden md:inline">Posted by</span>
+                  <span className="md:hidden">Por:</span>
+                  <a href={`/profile/${post.user.id}`} className="text-primary hover:underline mx-1 font-medium">
+                    {post.user.username}
+                  </a>
                   
                   {post.user.badges && post.user.badges.length > 0 && (
                     <span className="inline-flex items-center ml-1">
@@ -169,7 +173,15 @@ export default function PostCard({ post }: PostCardProps) {
                       ))}
                     </span>
                   )}
-                </span>
+                </div>
+                
+                <div className="w-full md:w-auto md:ml-1 text-xs md:text-sm text-muted-foreground/80 md:flex md:items-center">
+                  <span className="md:hidden"></span>
+                  <span className="hidden md:inline">•</span>
+                  <span className="flex items-center">
+                    {timeAgo(new Date(post.createdAt))}
+                  </span>
+                </div>
               </div>
 
               <h2 className="text-xl font-medium mb-2">{post.title}</h2>
@@ -178,40 +190,33 @@ export default function PostCard({ post }: PostCardProps) {
                 <div dangerouslySetInnerHTML={{ __html: post.content }} />
               </div>
 
-              <div className="flex items-center text-sm text-muted-foreground">
+              <div className="flex items-center text-sm text-muted-foreground flex-wrap">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="hover:text-primary mr-4"
+                  className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
                   onClick={() => setShowComments(!showComments)}
                   disabled={post.frozen} // Disable if frozen
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
-                  <span>{post.comments} comment{post.comments !== 1 ? 's' : ''}</span>
+                  <span className="md:inline">
+                    {post.comments} <span className="hidden md:inline">comment{post.comments !== 1 ? 's' : ''}</span>
+                  </span>
                 </Button>
-
-                <Button variant="ghost" size="sm" className="hover:text-primary mr-4">
-                  <Bookmark className="h-4 w-4 mr-1" />
-                  <span>Save</span>
-                </Button>
-
-                {user?.role === "admin" && (
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={post.frozen}
-                      onCheckedChange={handleFreeze}
-                      aria-label="Freeze post interactions"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {post.frozen ? "Bloqueado" : "No Bloqueado"}
-                    </span>
-                  </div>
-                )}
 
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="hover:text-primary"
+                  className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
+                >
+                  <Bookmark className="h-4 w-4 mr-1" />
+                  <span className="md:inline">Save</span>
+                </Button>
+
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
                   onClick={() => {
                     const url = `${window.location.origin}/posts/${post.id}`;
                     navigator.clipboard.writeText(url).then(() => {
@@ -223,8 +228,21 @@ export default function PostCard({ post }: PostCardProps) {
                   }}
                 >
                   <Share2 className="h-4 w-4 mr-1" />
-                  <span>Share</span>
+                  <span className="md:inline">Share</span>
                 </Button>
+
+                {(user?.role === "admin" || user?.role === "moderator") && (
+                  <div className="flex items-center space-x-1 md:space-x-2 ml-auto mr-0">
+                    <Switch
+                      checked={post.frozen}
+                      onCheckedChange={handleFreeze}
+                      aria-label="Freeze post interactions"
+                    />
+                    <span className="text-xs md:text-sm text-muted-foreground">
+                      {post.frozen ? "Block" : "Unblock"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
