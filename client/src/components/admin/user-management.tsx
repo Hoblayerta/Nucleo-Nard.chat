@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ const createUserSchema = z.object({
 export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [tempRole, setTempRole] = useState<string>("");
@@ -167,6 +169,11 @@ export default function UserManagement() {
     setTempRole(user.role);
     setTempMultiplier(user.likeMultiplier);
     setTempBadges(user.badges || []);
+    
+    // Si es moderador y está editando un usuario normal, solo deja editar badges
+    if (!isAdmin && user.role === "user") {
+      setBadgeDialogOpen(true);
+    }
   };
   
   const handleCancelEdit = () => {
@@ -174,12 +181,21 @@ export default function UserManagement() {
   };
   
   const handleSaveEdit = (id: number) => {
-    updateUserMutation.mutate({
-      id,
-      role: tempRole,
-      likeMultiplier: tempMultiplier,
-      badges: tempBadges
-    });
+    // Si es moderador, solo puede editar badges de usuarios normales
+    if (!isAdmin) {
+      updateUserMutation.mutate({
+        id,
+        badges: tempBadges
+      });
+    } else {
+      // Admins pueden modificar todo
+      updateUserMutation.mutate({
+        id,
+        role: tempRole,
+        likeMultiplier: tempMultiplier,
+        badges: tempBadges
+      });
+    }
   };
 
   const handleBadgeEdit = (userId: number) => {
@@ -370,30 +386,43 @@ export default function UserManagement() {
                     </>
                   ) : (
                     <>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="mr-2 h-8 w-8"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <Edit className="h-4 w-4 text-primary" />
-                      </Button>
+                      {/* Limitaciones para moderadores:
+                          - No pueden editar a otros moderadores o admins
+                          - No pueden modificar roles o multiplicadores */}
+                      {(isAdmin || user.role === "user") && (
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="mr-2 h-8 w-8"
+                          onClick={() => handleEdit(user)}
+                          title={isAdmin ? "Edit user" : "Edit badges only"}
+                        >
+                          <Edit className="h-4 w-4 text-primary" />
+                        </Button>
+                      )}
+                      
                       <Button 
                         variant="outline" 
                         size="icon"
                         className="mr-2 h-8 w-8 bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
                         onClick={() => handleBadgeEdit(user.id)}
+                        title="Edit badges"
                       >
                         <span className="text-xs font-bold">B</span>
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        className="h-8 w-8 bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30"
-                        onClick={() => handleDelete(user.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      
+                      {/* Solo los admins pueden eliminar usuarios */}
+                      {isAdmin && (
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="h-8 w-8 bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30"
+                          onClick={() => handleDelete(user.id)}
+                          title="Delete user"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </TableCell>
@@ -412,16 +441,18 @@ export default function UserManagement() {
       </div>
       
       <div className="flex justify-between mt-4">
-        <Button 
-          variant="outline" 
-          className="text-primary"
-          onClick={() => setAddUserOpen(true)}
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add User
-        </Button>
+        {isAdmin && (
+          <Button 
+            variant="outline" 
+            className="text-primary"
+            onClick={() => setAddUserOpen(true)}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add User
+          </Button>
+        )}
         
-        <div className="flex items-center">
+        <div className={`flex items-center ${isAdmin ? '' : 'ml-auto'}`}>
           <Button variant="outline" size="icon" className="h-8 w-8 mr-2">
             <ChevronLeft className="h-4 w-4" />
           </Button>

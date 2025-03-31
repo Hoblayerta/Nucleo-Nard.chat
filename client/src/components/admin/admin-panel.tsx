@@ -5,6 +5,7 @@ import UserManagement from "./user-management";
 import PostManagement from "./post-management";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 
 interface AdminPanelProps {
   open: boolean;
@@ -12,13 +13,14 @@ interface AdminPanelProps {
 }
 
 export default function AdminPanel({ open, onClose }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState("users");
+  const { isAdmin, isModerator } = useAuth();
+  const [activeTab, setActiveTab] = useState("posts"); // Los moderadores empiezan en la pestaña de posts
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-bold">Admin Panel</h2>
+          <h2 className="text-xl font-bold">{isAdmin ? "Admin Panel" : "Moderator Panel"}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -30,12 +32,14 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
           className="flex flex-col flex-1 overflow-hidden"
         >
           <TabsList className="bg-background border-b border-border rounded-none px-2 h-12">
-            <TabsTrigger 
-              value="users" 
-              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-            >
-              User Management
-            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger 
+                value="users" 
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+              >
+                User Management
+              </TabsTrigger>
+            )}
             <TabsTrigger 
               value="posts" 
               className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
@@ -48,12 +52,14 @@ export default function AdminPanel({ open, onClose }: AdminPanelProps) {
             >
               Moderation
             </TabsTrigger>
-            <TabsTrigger 
-              value="settings" 
-              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-            >
-              Settings
-            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger 
+                value="settings" 
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+              >
+                Settings
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <div className="flex-1 overflow-y-auto">

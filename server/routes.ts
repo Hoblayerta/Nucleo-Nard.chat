@@ -45,6 +45,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   };
+  
+  const requireModerator = (req: Request, res: Response, next: Function) => {
+    if (!req.session.userId || (req.session.role !== "admin" && req.session.role !== "moderator")) {
+      return res.status(403).json({ message: "Moderator access required" });
+    }
+    next();
+  };
 
   // Authentication Routes
   // Solo los administradores pueden registrar nuevos usuarios
@@ -213,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/posts/:id/freeze", requireAdmin, async (req, res) => {
+  app.put("/api/posts/:id/freeze", requireModerator, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { frozen } = req.body;
@@ -233,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/posts/:id/slow-mode", requireAdmin, async (req, res) => {
+  app.put("/api/posts/:id/slow-mode", requireModerator, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { slowModeInterval } = req.body;
@@ -282,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Post Routes
-  app.post("/api/posts", requireAdmin, async (req, res) => {
+  app.post("/api/posts", requireModerator, async (req, res) => {
     try {
       const userId = req.session.userId!;
       const data = insertPostSchema.parse({

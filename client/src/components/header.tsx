@@ -35,7 +35,7 @@ const loginSchema = z.object({
 
 export default function Header() {
   const [location, setLocation] = useLocation();
-  const { user, isAdmin, login, logout } = useAuth();
+  const { user, isAdmin, isModerator, login, logout } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
@@ -129,7 +129,7 @@ export default function Header() {
                         <User className="mr-2 h-4 w-4" /> Profile
                       </Link>
                     </DropdownMenuItem>
-                    {isAdmin && (
+                    {isModerator && (
                       <DropdownMenuItem onClick={() => setAdminPanelOpen(true)} className="cursor-pointer">
                         <Shield className="mr-2 h-4 w-4" /> Admin Panel
                       </DropdownMenuItem>
@@ -141,7 +141,7 @@ export default function Header() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 
-                {isAdmin && (
+                {isModerator && (
                   <Button 
                     variant="default" 
                     size="sm" 
@@ -149,7 +149,7 @@ export default function Header() {
                     onClick={() => setAdminPanelOpen(true)}
                   >
                     <Shield className="mr-2 h-4 w-4" />
-                    <span>Admin</span>
+                    <span>{isAdmin ? "Admin" : "Mod"}</span>
                   </Button>
                 )}
               </div>
@@ -197,7 +197,7 @@ export default function Header() {
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               </div>
               
-              {isAdmin && (
+              {isModerator && (
                 <Button 
                   variant="default" 
                   className="w-full"
@@ -207,7 +207,7 @@ export default function Header() {
                   }}
                 >
                   <Shield className="mr-2 h-4 w-4" />
-                  <span>Admin Panel</span>
+                  <span>{isAdmin ? "Admin Panel" : "Moderator Panel"}</span>
                 </Button>
               )}
             </div>
@@ -267,8 +267,8 @@ export default function Header() {
       
       {/* El diálogo de registro se ha eliminado ya que solo los administradores pueden crear usuarios */}
       
-      {/* Admin Panel */}
-      {isAdmin && adminPanelOpen && (
+      {/* Admin/Moderator Panel */}
+      {isModerator && adminPanelOpen && (
         <AdminPanel open={adminPanelOpen} onClose={() => setAdminPanelOpen(false)} />
       )}
     </>

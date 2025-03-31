@@ -9,6 +9,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isModerator: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -86,14 +87,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
-  // Check if user is admin
+  // Check if user is admin or moderator
   const isAdmin = user?.role === "admin";
+  const isModerator = user?.role === "moderator" || user?.role === "admin";
 
   // Context value
   const value = {
     user,
     isLoading: isLoading || loginMutation.isPending || registerMutation.isPending || logoutMutation.isPending,
     isAdmin,
+    isModerator,
     login,
     register,
     logout,
