@@ -129,8 +129,6 @@ export default function CommentForm({
     return (
       <div className="text-center py-2">
         <p className="text-muted-foreground mb-2">Log in to join the conversation</p>
-        <Button variant="outline" size="sm" className="mr-2">Log In</Button>
-        <Button size="sm">Sign Up</Button>
       </div>
     );
   }
