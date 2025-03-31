@@ -68,7 +68,8 @@ export class MemStorage implements IStorage {
       username: "admin",
       password: "admin123",
       role: "admin",
-      likeMultiplier: 10
+      likeMultiplier: 10,
+      badges: ["director", "masteranimador"]
     });
   }
 
@@ -91,6 +92,7 @@ export class MemStorage implements IStorage {
       id, 
       role: insertUser.role || "user",
       likeMultiplier: insertUser.likeMultiplier || 1,
+      badges: insertUser.badges || [],
       createdAt: now
     };
     this.users.set(id, user);
@@ -105,6 +107,7 @@ export class MemStorage implements IStorage {
       ...user,
       ...(data.role ? { role: data.role } : {}),
       ...(data.likeMultiplier !== undefined ? { likeMultiplier: data.likeMultiplier } : {}),
+      ...(data.badges ? { badges: data.badges } : {}),
     };
     
     this.users.set(id, updatedUser);
@@ -228,6 +231,7 @@ export class MemStorage implements IStorage {
           id: user?.id || 0,
           username: user?.username || "unknown",
           role: user?.role || "user",
+          badges: user?.badges || [],
         },
         upvotes: postUpvotes,
         downvotes: postDownvotes,
@@ -314,6 +318,7 @@ export class MemStorage implements IStorage {
             username: user?.username || "unknown",
             role: user?.role || "user",
             likeMultiplier: user?.likeMultiplier || 1,
+            badges: user?.badges || [],
           },
           upvotes: commentUpvotes,
           downvotes: commentDownvotes,
@@ -446,6 +451,7 @@ export class MemStorage implements IStorage {
             username: user?.username || "unknown",
             role: user?.role || "user",
             likeMultiplier: user?.likeMultiplier || 1,
+            badges: user?.badges || [],
           },
           upvotes: commentUpvotes,
           downvotes: commentDownvotes,

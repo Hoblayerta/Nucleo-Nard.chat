@@ -44,14 +44,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { z } from "zod";
 import { Search, ChevronLeft, ChevronRight, UserPlus, Edit, Trash2, Save, X, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { User } from "@shared/schema";
+import { BADGES } from "@shared/schema";
 
 // Esquema de validación para creación de usuario
 const createUserSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(4, "Password must be at least 4 characters"),
   role: z.enum(["user", "moderator", "admin"]).default("user"),
-  likeMultiplier: z.number().min(1).max(10).default(1)
+  likeMultiplier: z.number().min(1).max(10).default(1),
+  badges: z.array(z.string()).default([])
 });
 
 export default function UserManagement() {
@@ -61,8 +64,10 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [tempRole, setTempRole] = useState<string>("");
   const [tempMultiplier, setTempMultiplier] = useState<number>(1);
+  const [tempBadges, setTempBadges] = useState<string[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [addUserOpen, setAddUserOpen] = useState(false);
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   
   const { data: allUsers = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -74,7 +79,8 @@ export default function UserManagement() {
       username: "",
       password: "",
       role: "user",
-      likeMultiplier: 1
+      likeMultiplier: 1,
+      badges: []
     },
   });
   
@@ -108,10 +114,11 @@ export default function UserManagement() {
   );
   
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, role, likeMultiplier }: { id: number, role?: string, likeMultiplier?: number }) => {
+    mutationFn: async ({ id, role, likeMultiplier, badges }: { id: number, role?: string, likeMultiplier?: number, badges?: string[] }) => {
       const res = await apiRequest("PATCH", `/api/users/${id}`, {
         role,
-        likeMultiplier
+        likeMultiplier,
+        badges
       });
       return res.json();
     },
@@ -159,6 +166,7 @@ export default function UserManagement() {
     setEditingUser(user.id);
     setTempRole(user.role);
     setTempMultiplier(user.likeMultiplier);
+    setTempBadges(user.badges || []);
   };
   
   const handleCancelEdit = () => {
@@ -169,8 +177,22 @@ export default function UserManagement() {
     updateUserMutation.mutate({
       id,
       role: tempRole,
-      likeMultiplier: tempMultiplier
+      likeMultiplier: tempMultiplier,
+      badges: tempBadges
     });
+  };
+
+  const handleBadgeEdit = (userId: number) => {
+    setEditingUser(userId);
+    setBadgeDialogOpen(true);
+  };
+
+  const handleBadgeChange = (badge: string) => {
+    if (tempBadges.includes(badge)) {
+      setTempBadges(tempBadges.filter(b => b !== badge));
+    } else {
+      setTempBadges([...tempBadges, badge]);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -240,6 +262,15 @@ export default function UserManagement() {
                     <div>
                       <div className="font-medium">{user.username}</div>
                       <div className="text-xs text-muted-foreground">ID: {user.id}</div>
+                      {user.badges && user.badges.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {user.badges.map((badge) => (
+                            <Badge key={badge} variant="secondary" className="text-xs px-1">
+                              {badge}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TableCell>
@@ -340,6 +371,14 @@ export default function UserManagement() {
                         onClick={() => handleEdit(user)}
                       >
                         <Edit className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        className="mr-2 h-8 w-8 bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
+                        onClick={() => handleBadgeEdit(user.id)}
+                      >
+                        <span className="text-xs font-bold">B</span>
                       </Button>
                       <Button 
                         variant="outline" 
@@ -475,6 +514,42 @@ export default function UserManagement() {
                 )}
               />
               
+              <FormField
+                control={createUserForm.control}
+                name="badges"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Badges</FormLabel>
+                    <div className="border rounded-md p-3 space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        {BADGES.map((badge) => (
+                          <div className="flex items-center space-x-2" key={badge}>
+                            <Checkbox
+                              id={`create-badge-${badge}`}
+                              checked={field.value.includes(badge)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.onChange([...field.value, badge]);
+                                } else {
+                                  field.onChange(field.value.filter(b => b !== badge));
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`create-badge-${badge}`}
+                              className="text-sm font-medium leading-none cursor-pointer"
+                            >
+                              {badge}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <DialogFooter>
                 <Button 
                   type="submit" 
@@ -509,6 +584,54 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Dialog para editar insignias */}
+      <Dialog open={badgeDialogOpen} onOpenChange={setBadgeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage User Badges</DialogTitle>
+            <DialogDescription>
+              Assign badges to recognize user contributions and status.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="grid grid-cols-2 gap-4">
+              {BADGES.map((badge) => (
+                <div 
+                  key={badge} 
+                  className="flex items-center space-x-2 border rounded-md p-2 hover:bg-accent/50 transition-colors"
+                >
+                  <Checkbox 
+                    id={`badge-${badge}`} 
+                    checked={tempBadges.includes(badge)}
+                    onCheckedChange={() => handleBadgeChange(badge)}
+                  />
+                  <label 
+                    htmlFor={`badge-${badge}`}
+                    className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {badge}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                handleSaveEdit(editingUser!);
+                setBadgeDialogOpen(false);
+              }}
+              className="bg-success hover:bg-success/90"
+              disabled={updateUserMutation.isPending}
+            >
+              Save Badges
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

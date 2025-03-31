@@ -2,6 +2,22 @@ import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Definir los tipos de insignias disponibles
+export const BADGES = [
+  "director",
+  "guionista",
+  "novato",
+  "spamero",
+  "dibujante",
+  "animador",
+  "hacker",
+  "superfan",
+  "fan",
+  "masteranimador"
+] as const;
+
+export type Badge = typeof BADGES[number];
+
 // User model
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -9,6 +25,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
   likeMultiplier: integer("like_multiplier").notNull().default(1),
+  badges: text("badges").array().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -25,6 +42,7 @@ export const loginUserSchema = z.object({
 export const updateUserSchema = z.object({
   role: z.enum(["user", "moderator", "admin"]).optional(),
   likeMultiplier: z.number().min(1).max(20).optional(),
+  badges: z.array(z.enum(BADGES)).optional(),
 });
 
 // Post model
@@ -95,6 +113,7 @@ export type CommentWithUser = Comment & {
     username: string;
     role: string;
     likeMultiplier: number;
+    badges: string[];
   };
   upvotes: number;
   downvotes: number;
@@ -108,6 +127,7 @@ export type PostWithDetails = Post & {
     id: number;
     username: string;
     role: string;
+    badges: string[];
   };
   upvotes: number;
   downvotes: number;
