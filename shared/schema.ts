@@ -145,3 +145,18 @@ export type UserStats = {
   downvotesReceived: number;
   netScore: number; // upvotes - downvotes
 };
+
+export type PostBoardUser = {
+  id: number;
+  username: string;
+  role: string;
+  badges: string[];
+  commentCount: number;
+  upvotes: number;
+  downvotes: number;
+  netScore: number;
+  isIRL: boolean;
+  isHandmade: boolean;
+  irlVerifiedBy?: string; // nombre del admin/mod que verificó
+  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+};

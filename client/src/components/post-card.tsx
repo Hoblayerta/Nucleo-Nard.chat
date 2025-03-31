@@ -6,7 +6,8 @@ import {
   MessageSquare,
   Bookmark,
   Share2,
-  Shield
+  Shield,
+  FileSpreadsheet
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import CommentThread from "./comment-thread";
 import CommentForm from "./comment-form";
 import BadgeIcon from "./badge-icon";
+import PostBoard from "./post-board";
 import type { PostWithDetails } from "@shared/schema";
 import { Switch } from "@/components/ui/switch"; // Import the Switch component
 
@@ -33,6 +35,7 @@ export default function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
+  const [showPostBoard, setShowPostBoard] = useState(false);
 
   // Determina si el usuario ha votado en este post
   const userVoteStatus = post.userVote || null;
@@ -230,6 +233,16 @@ export default function PostCard({ post }: PostCardProps) {
                   <span className="md:inline">Share</span>
                 </Button>
 
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
+                  onClick={() => setShowPostBoard(true)}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  <span className="md:inline">Post Board</span>
+                </Button>
+
                 {(user?.role === "admin" || user?.role === "moderator") && (
                   <div className="flex items-center space-x-1 md:space-x-2 ml-auto mr-0">
                     <Switch
@@ -264,6 +277,13 @@ export default function PostCard({ post }: PostCardProps) {
           </>
         )}
       </CardContent>
+      
+      {/* Post Board componente (tabla tipo Excel) */}
+      <PostBoard 
+        postId={post.id} 
+        isOpen={showPostBoard} 
+        onClose={() => setShowPostBoard(false)} 
+      />
     </Card>
   );
 }

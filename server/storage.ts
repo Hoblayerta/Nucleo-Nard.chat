@@ -2,7 +2,8 @@ import {
   users, posts, comments, likes, 
   type User, type InsertUser, type Post, type InsertPost,
   type Comment, type InsertComment, type Like, type InsertLike,
-  type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats
+  type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats,
+  type PostBoardUser
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -34,16 +35,28 @@ export interface IStorage {
   getLikesByUserId(userId: number): Promise<Like[]>;
   checkLikeExists(userId: number, commentId?: number, postId?: number): Promise<boolean>;
   
+  // PostBoard operations
+  getPostBoardUsers(postId: number): Promise<PostBoardUser[]>;
+  updateUserVerification(userId: number, postId: number, verificationType: 'irl' | 'handmade', value: boolean, verifiedBy: string): Promise<boolean>;
+  
   // Combined operations
   getTopComments(limit: number): Promise<CommentWithUser[]>;
   getUserStats(userId: number): Promise<UserStats>;
 }
+
+type UserVerification = {
+  isIRL: boolean;
+  isHandmade: boolean;
+  irlVerifiedBy?: string;
+  handmadeVerifiedBy?: string;
+};
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private posts: Map<number, Post>;
   private comments: Map<number, Comment>;
   private likes: Map<number, Like>;
+  private postVerifications: Map<number, Map<number, UserVerification>> = new Map(); // postId -> (userId -> verification)
   private currentIds: {
     user: number;
     post: number;
@@ -534,6 +547,184 @@ export class MemStorage implements IStorage {
       downvotesReceived,
       netScore: upvotesReceived - downvotesReceived
     };
+  }
+
+  // PostBoard operations
+  async getPostBoardUsers(postId: number): Promise<PostBoardUser[]> {
+    // Este método obtiene datos sobre los usuarios que han interactuado con un post específico
+    const post = await this.getPost(postId);
+    if (!post) return [];
+    
+    // Obtener todos los comentarios de este post
+    const postComments = Array.from(this.comments.values()).filter(
+      (comment) => comment.postId === postId
+    );
+    
+    // Obtener todos los likes de este post
+    const postLikes = Array.from(this.likes.values()).filter(
+      (like) => like.postId === postId || postComments.some(c => c.id === like.commentId)
+    );
+    
+    // Obtener verificaciones para este post
+    const postVerificationsMap = this.postVerifications.get(postId) || new Map<number, UserVerification>();
+    
+    // Crear un mapa para el seguimiento de usuarios únicos
+    const userMap = new Map<number, {
+      user: User,
+      commentCount: number,
+      upvotes: number,
+      downvotes: number,
+      isIRL: boolean,
+      isHandmade: boolean,
+      irlVerifiedBy?: string,
+      handmadeVerifiedBy?: string
+    }>();
+    
+    // Añadir el autor del post si no está ya en el mapa
+    const postAuthor = this.users.get(post.userId);
+    if (postAuthor) {
+      // Obtener verificaciones de este usuario si existen
+      const userVerif = postVerificationsMap.get(postAuthor.id);
+      
+      userMap.set(postAuthor.id, {
+        user: postAuthor,
+        commentCount: 0,
+        upvotes: 0,
+        downvotes: 0,
+        isIRL: userVerif?.isIRL || false,
+        isHandmade: userVerif?.isHandmade || false,
+        irlVerifiedBy: userVerif?.irlVerifiedBy,
+        handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+      });
+    }
+    
+    // Añadir los autores de los comentarios
+    postComments.forEach(comment => {
+      const commentUser = this.users.get(comment.userId);
+      if (commentUser) {
+        if (userMap.has(commentUser.id)) {
+          // Incrementar el contador de comentarios
+          const userData = userMap.get(commentUser.id)!;
+          userData.commentCount += 1;
+        } else {
+          // Añadir nuevo usuario
+          const userVerif = postVerificationsMap.get(commentUser.id);
+          
+          userMap.set(commentUser.id, {
+            user: commentUser,
+            commentCount: 1,
+            upvotes: 0,
+            downvotes: 0,
+            isIRL: userVerif?.isIRL || false,
+            isHandmade: userVerif?.isHandmade || false,
+            irlVerifiedBy: userVerif?.irlVerifiedBy,
+            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+          });
+        }
+      }
+    });
+    
+    // Procesar los votos en el post y comentarios
+    postLikes.forEach(like => {
+      const likeUser = this.users.get(like.userId);
+      if (likeUser) {
+        if (!userMap.has(likeUser.id)) {
+          // Añadir nuevo usuario que solo ha votado
+          const userVerif = postVerificationsMap.get(likeUser.id);
+          
+          userMap.set(likeUser.id, {
+            user: likeUser,
+            commentCount: 0,
+            upvotes: 0,
+            downvotes: 0,
+            isIRL: userVerif?.isIRL || false,
+            isHandmade: userVerif?.isHandmade || false,
+            irlVerifiedBy: userVerif?.irlVerifiedBy,
+            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+          });
+        }
+      }
+    });
+    
+    // Convertir los datos de usuarios a formato PostBoardUser
+    const result = Array.from(userMap.values()).map(item => {
+      // Asegurarnos de que badges siempre sea un array
+      const userBadges = Array.isArray(item.user.badges) ? item.user.badges : [];
+      
+      return {
+        id: item.user.id,
+        username: item.user.username,
+        role: item.user.role,
+        badges: userBadges,
+        commentCount: item.commentCount,
+        upvotes: item.upvotes,
+        downvotes: item.downvotes,
+        netScore: item.upvotes - item.downvotes,
+        isIRL: item.isIRL,
+        isHandmade: item.isHandmade,
+        irlVerifiedBy: item.irlVerifiedBy,
+        handmadeVerifiedBy: item.handmadeVerifiedBy
+      } as PostBoardUser;
+    });
+    
+    // Ordenar por puntuación neta (descendente)
+    return result.sort((a, b) => b.netScore - a.netScore);
+  }
+  
+  async updateUserVerification(
+    userId: number, 
+    postId: number, 
+    verificationType: 'irl' | 'handmade', 
+    value: boolean, 
+    verifiedBy: string
+  ): Promise<boolean> {
+    // Comprobar si el usuario existe
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    // Comprobar si el post existe
+    const post = await this.getPost(postId);
+    if (!post) return false;
+    
+    // Para implementar esta funcionalidad de manera más robusta, necesitaríamos
+    // una tabla de verificaciones en la base de datos.
+    // Aquí simulamos esta tabla con información en memoria:
+    
+    // Estructura para guardar las verificaciones
+    // No es necesario verificar si this.postVerifications existe ya que lo inicializamos como propiedad de clase
+    
+    if (!this.postVerifications.has(postId)) {
+      this.postVerifications.set(postId, new Map());
+    }
+    
+    const postVerifications = this.postVerifications.get(postId)!;
+    
+    // Si no hay verificaciones para este usuario, creamos la entrada
+    if (!postVerifications.has(userId)) {
+      postVerifications.set(userId, {
+        isIRL: false,
+        isHandmade: false,
+        irlVerifiedBy: undefined,
+        handmadeVerifiedBy: undefined
+      });
+    }
+    
+    const userVerification = postVerifications.get(userId)!;
+    
+    // Actualizar la verificación correspondiente
+    if (verificationType === 'irl') {
+      userVerification.isIRL = value;
+      userVerification.irlVerifiedBy = value ? verifiedBy : undefined;
+    } else {
+      userVerification.isHandmade = value;
+      userVerification.handmadeVerifiedBy = value ? verifiedBy : undefined;
+    }
+    
+    // Guardar las actualizaciones
+    postVerifications.set(userId, userVerification);
+    this.postVerifications.set(postId, postVerifications);
+    
+    return true;
   }
 }
 

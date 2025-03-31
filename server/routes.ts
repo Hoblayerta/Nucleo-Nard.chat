@@ -444,6 +444,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch comments" });
     }
   });
+  
+  // PostBoard routes
+  app.get("/api/posts/:postId/board", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      const boardUsers = await storage.getPostBoardUsers(postId);
+      res.json(boardUsers);
+    } catch (error) {
+      console.error("Error fetching post board data:", error);
+      res.status(500).json({ message: "Failed to fetch post board data" });
+    }
+  });
+  
+  app.put("/api/posts/:postId/verify", requireModerator, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { userId, verificationType, value } = req.body;
+      
+      if (isNaN(postId) || !userId || !verificationType) {
+        return res.status(400).json({ message: "Invalid request parameters" });
+      }
+      
+      if (verificationType !== 'irl' && verificationType !== 'handmade') {
+        return res.status(400).json({ message: "Invalid verification type" });
+      }
+      
+      const success = await storage.updateUserVerification(
+        userId, 
+        postId, 
+        verificationType, 
+        value, 
+        req.session.username || "unknown"
+      );
+      
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: "User or post not found" });
+      }
+    } catch (error) {
+      console.error("Error updating verification:", error);
+      res.status(500).json({ message: "Failed to update verification status" });
+    }
+  });
 
   // Vote Routes
   app.post("/api/votes", requireAuth, async (req, res) => {
