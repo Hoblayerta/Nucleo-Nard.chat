@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CommentForm from "./comment-form";
+import BadgeIcon from "./badge-icon";
 import type { CommentWithUser } from "@shared/schema";
 import "./comment-thread.css"; // Importar los estilos CSS específicos
 
@@ -210,8 +211,16 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
           
           <span className="text-xs text-muted-foreground">•</span>
           
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground flex items-center">
             {timeAgo(new Date(comment.createdAt))}
+            
+            {comment.user.badges && comment.user.badges.length > 0 && (
+              <span className="inline-flex items-center ml-1">
+                {comment.user.badges.map((badge, idx) => (
+                  <BadgeIcon key={`${comment.id}-${badge}-${idx}`} badge={badge} size={14} />
+                ))}
+              </span>
+            )}
           </span>
         </div>
         

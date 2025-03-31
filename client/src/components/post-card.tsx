@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import CommentThread from "./comment-thread";
 import CommentForm from "./comment-form";
+import BadgeIcon from "./badge-icon";
 import type { PostWithDetails } from "@shared/schema";
 import { Switch } from "@/components/ui/switch"; // Import the Switch component
 
@@ -158,7 +159,17 @@ export default function PostCard({ post }: PostCardProps) {
                   {post.user.username}
                 </a>
                 <span className="mx-1">•</span>
-                <span>{timeAgo(new Date(post.createdAt))}</span>
+                <span className="flex items-center">
+                  {timeAgo(new Date(post.createdAt))}
+                  
+                  {post.user.badges && post.user.badges.length > 0 && (
+                    <span className="inline-flex items-center ml-1">
+                      {post.user.badges.map((badge, idx) => (
+                        <BadgeIcon key={`${post.id}-${badge}-${idx}`} badge={badge} size={14} />
+                      ))}
+                    </span>
+                  )}
+                </span>
               </div>
 
               <h2 className="text-xl font-medium mb-2">{post.title}</h2>

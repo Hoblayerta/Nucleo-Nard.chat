@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MessageSquare, ArrowUp, Calendar, Shield, Flame, X } from "lucide-react";
+import { FileText, MessageSquare, ArrowUp, Calendar, Shield, Flame, X, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BadgeIcon from "./badge-icon";
 import type { User, UserStats } from "@shared/schema";
 
 interface UserWithStats extends User {
@@ -71,6 +72,18 @@ export default function ProfileModal({ userId, open, onClose }: ProfileModalProp
               <span className="text-xs mt-1 text-muted-foreground">
                 Like Multiplier
               </span>
+              
+              {/* Sección de insignias */}
+              {user.badges && user.badges.length > 0 && (
+                <div className="mt-4 w-full">
+                  <h4 className="text-sm font-medium mb-2 text-center">Insignias</h4>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {user.badges.map((badge, index) => (
+                      <BadgeIcon key={`badge-${index}`} badge={badge} showLabel={true} size={16} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex-1 w-full">

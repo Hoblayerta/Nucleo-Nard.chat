@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, Trophy, Flame, MessageSquare, User, Users, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BadgeIcon from "@/components/badge-icon";
 import type { CommentWithUser, User as UserType, UserStats, PostWithDetails } from "@shared/schema";
 
 interface UserWithStats extends UserType {
@@ -102,6 +103,14 @@ export default function Leaderboard() {
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(comment.createdAt), "PP")}
                             </span>
+                            
+                            {comment.user.badges && comment.user.badges.length > 0 && (
+                              <div className="flex items-center gap-1 ml-1">
+                                {comment.user.badges.map((badge, idx) => (
+                                  <BadgeIcon key={`${comment.id}-${badge}-${idx}`} badge={badge} size={14} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -181,6 +190,14 @@ export default function Leaderboard() {
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(post.createdAt), "PP")}
                             </span>
+                            
+                            {post.user.badges && post.user.badges.length > 0 && (
+                              <div className="flex items-center gap-1 ml-1">
+                                {post.user.badges.map((badge, idx) => (
+                                  <BadgeIcon key={`${post.id}-${badge}-${idx}`} badge={badge} size={14} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -250,6 +267,14 @@ export default function Leaderboard() {
                             <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-xs">
                               Mod
                             </Badge>
+                          )}
+                          
+                          {user.badges && user.badges.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              {user.badges.map((badge, idx) => (
+                                <BadgeIcon key={`${user.id}-${badge}-${idx}`} badge={badge} size={14} />
+                              ))}
+                            </div>
                           )}
                         </div>
                         

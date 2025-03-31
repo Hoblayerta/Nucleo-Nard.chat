@@ -116,6 +116,13 @@
   color: var(--muted-foreground);
 }
 
+/* Estilo para las insignias en los comentarios */
+.badge-icon {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .comment-actions {
   display: flex;
   align-items: center;
