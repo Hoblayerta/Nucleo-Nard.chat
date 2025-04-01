@@ -64,16 +64,13 @@ interface PostBoardUser {
   role: string;
   badges: string[];
   commentCount: number;
-  replyCount: number;
-  totalComments: number;
-  totalLikes: number;
   upvotes: number;
   downvotes: number;
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVotes: string[]; // Array de nombres de admin/mod que votaron
-  handmadeVotes: string[]; // Array de nombres de admin/mod que votaron
+  irlVerifiedBy?: string; // nombre del admin/mod que verificó
+  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
 }
 
 interface PostBoardProps {
@@ -187,40 +184,19 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
 
   // Función para exportar a Excel
   const exportToExcel = () => {
-    // Cabeceras principales
-    const mainHeaders = [
+    // Cabeceras
+    const headers = [
       "Usuario",
       "Rol",
       "Insignias",
-      "Actividad",
-      "",
-      "",
-      "",
-      "Votos",
-      "",
-      "",
-      "Verificaciones",
-      "",
-      "",
-      ""
-    ];
-
-    // Subcabeceras
-    const subHeaders = [
-      "", // Usuario
-      "", // Rol
-      "", // Insignias
       "Comentarios",
-      "Replies",
-      "Total",
-      "Total Likes",
       "Upvotes",
       "Downvotes",
       "Net Score",
       "IRL",
-      "Votos IRL",
+      "IRL Verificado Por",
       "Handmade",
-      "Votos Handmade"
+      "Handmade Verificado Por"
     ];
 
     const rows = filteredUsers.map(user => [
@@ -228,21 +204,17 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
       user.role,
       user.badges.join(", "),
       user.commentCount.toString(),
-      user.replyCount.toString(),
-      user.totalComments.toString(),
-      user.totalLikes.toString(),
       user.upvotes.toString(),
       user.downvotes.toString(),
       user.netScore.toString(),
       user.isIRL ? "Sí" : "No",
-      user.irlVotes.join(", "),
+      user.irlVerifiedBy || "",
       user.isHandmade ? "Sí" : "No",
-      user.handmadeVotes.join(", ")
+      user.handmadeVerifiedBy || ""
     ]);
 
     const csvContent = [
-      mainHeaders.join(","),
-      subHeaders.join(","),
+      headers.join(","),
       ...rows.map(row => row.join(","))
     ].join("\n");
 
@@ -392,9 +364,6 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                     <TableHead className="w-[200px]">Usuario</TableHead>
                     <TableHead>Insignias</TableHead>
                     <TableHead className="text-center">Comentarios</TableHead>
-                    <TableHead className="text-center">Replies</TableHead>
-                    <TableHead className="text-center">Total</TableHead>
-                    <TableHead className="text-center">Total Likes</TableHead>
                     <TableHead className="text-center">Upvotes</TableHead>
                     <TableHead className="text-center">Downvotes</TableHead>
                     <TableHead className="text-center">Net Score</TableHead>
@@ -439,15 +408,6 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                         {boardUser.commentCount}
                       </TableCell>
                       <TableCell className="text-center">
-                        {boardUser.replyCount}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {boardUser.totalComments}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {boardUser.totalLikes}
-                      </TableCell>
-                      <TableCell className="text-center">
                         {boardUser.upvotes}
                       </TableCell>
                       <TableCell className="text-center">
@@ -467,7 +427,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               }
                             >
                               <UserCheck className="h-3 w-3 mr-1" />
-                              IRL ({boardUser.irlVotes.length > 0 ? boardUser.irlVotes.join(', ') : 'No'})
+                              IRL {boardUser.isIRL ? (boardUser.irlVerifiedBy ? `(${boardUser.irlVerifiedBy})` : '') : '(No)'}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1">
@@ -479,7 +439,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               }
                             >
                               <HandMetal className="h-3 w-3 mr-1" />
-                              Handmade ({boardUser.handmadeVotes.length > 0 ? boardUser.handmadeVotes.join(', ') : 'No'})
+                              Handmade {boardUser.isHandmade ? (boardUser.handmadeVerifiedBy ? `(${boardUser.handmadeVerifiedBy})` : '') : '(No)'}
                             </Badge>
                           </div>
                         </div>
