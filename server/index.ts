@@ -1,10 +1,22 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configurar sesiones
+app.use(session({
+  secret: "your-secret-key",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: false, // En desarrollo, no se requiere HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -44,7 +56,7 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error("Error:", err);
   });
 
   // importantly only setup vite in development and after
