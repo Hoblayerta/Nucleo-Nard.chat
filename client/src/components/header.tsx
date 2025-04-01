@@ -26,6 +26,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import AdminPanel from "./admin/admin-panel";
+import NotificationDropdown from "./notification-dropdown";
 import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
@@ -108,6 +109,9 @@ export default function Header() {
             
             {user ? (
               <div className="flex items-center gap-3">
+                {/* Icono de notificaciones */}
+                <NotificationDropdown />
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative rounded-full">

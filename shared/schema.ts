@@ -161,3 +161,31 @@ export type PostBoardUser = {
   handmadeVotes: string[]; // nombres de admin/mod que votaron Handmade
   totalComments: number; // total de comentarios (incluyendo respuestas)
 };
+
+export type NotificationType = 'reply' | 'like';
+
+export type Notification = {
+  id: number;
+  userId: number; // usuario que recibe la notificación
+  triggeredByUserId: number; // usuario que causó la notificación (dio like o respondió)
+  postId: number;
+  commentId?: number; // el comentario al que respondieron o dieron like
+  parentCommentId?: number; // si es una respuesta, el comentario padre
+  type: NotificationType;
+  read: boolean;
+  createdAt: string;
+  // Campos adicionales para mostrar en la interfaz sin necesidad de consultas adicionales
+  triggerUsername?: string; // nombre del usuario que causó la notificación
+  postTitle?: string; // título del post relacionado
+};
+
+export type NotificationWithDetails = Notification & {
+  triggerUser: {
+    username: string;
+    role: string;
+    badges: string[];
+  };
+  post: {
+    title: string;
+  };
+};

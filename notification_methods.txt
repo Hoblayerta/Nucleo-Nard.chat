@@ -1,0 +1,76 @@
+  async createNotification(notification: {
+    userId: number;
+    triggeredByUserId: number;
+    postId: number;
+    commentId?: number;
+    parentCommentId?: number;
+    type: NotificationType;
+  }): Promise<Notification> {
+    const id = this.currentIds.notification++;
+    const now = new Date();
+    
+    // Obtener información adicional para la notificación
+    const triggerUser = await this.getUser(notification.triggeredByUserId);
+    const post = await this.getPost(notification.postId);
+    
+    const newNotification: Notification = { 
+      id, 
+      ...notification, 
+      read: false,
+      createdAt: now.toISOString(),
+      triggerUsername: triggerUser?.username,
+      postTitle: post?.title
+    };
+    
+    this.notifications.set(id, newNotification);
+    return newNotification;
+  }
+  
+  async getUserNotifications(userId: number, limit: number = 15): Promise<NotificationWithDetails[]> {
+    // Obtener las notificaciones del usuario
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+    
+    // Agregar detalles a cada notificación
+    return Promise.all(userNotifications.map(async notification => {
+      const triggerUser = await this.getUser(notification.triggeredByUserId);
+      const post = await this.getPost(notification.postId);
+      
+      return {
+        ...notification,
+        triggerUser: {
+          username: triggerUser?.username || "Usuario eliminado",
+          role: triggerUser?.role || "user",
+          badges: triggerUser?.badges || []
+        },
+        post: {
+          title: post?.title || "Post eliminado"
+        }
+      };
+    }));
+  }
+  
+  async markNotificationAsRead(id: number): Promise<boolean> {
+    const notification = this.notifications.get(id);
+    if (!notification) return false;
+    
+    notification.read = true;
+    this.notifications.set(id, notification);
+    return true;
+  }
+  
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId);
+    
+    if (userNotifications.length === 0) return false;
+    
+    userNotifications.forEach(notification => {
+      notification.read = true;
+      this.notifications.set(notification.id, notification);
+    });
+    
+    return true;
+  }

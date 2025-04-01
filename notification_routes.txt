@@ -1,0 +1,45 @@
+  // Notificaciones
+  
+  // Obtener notificaciones del usuario actual
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.session.userId);
+      res.status(200).json(notifications);
+    } catch (error) {
+      console.error("Error getting notifications:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Marcar una notificación como leída
+  app.put("/api/notifications/:id/read", requireAuth, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id, 10);
+      const result = await storage.markNotificationAsRead(notificationId);
+      
+      if (result) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(404).json({ message: "Notificación no encontrada" });
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Marcar todas las notificaciones como leídas
+  app.put("/api/notifications/read-all", requireAuth, async (req, res) => {
+    try {
+      const result = await storage.markAllNotificationsAsRead(req.session.userId);
+      
+      if (result) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(200).json({ success: false, message: "No hay notificaciones para marcar como leídas" });
+      }
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });

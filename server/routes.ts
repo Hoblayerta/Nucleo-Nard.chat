@@ -419,6 +419,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comment = await storage.createComment(data);
       const user = await storage.getUser(userId);
       
+      // Crear notificación si es una respuesta a otro comentario
+      if (comment.parentId) {
+        const parentComment = await storage.getComment(comment.parentId);
+        if (parentComment && parentComment.userId !== userId) {
+          await storage.createNotification({
+            userId: parentComment.userId,
+            triggeredByUserId: userId,
+            postId: comment.postId,
+            commentId: comment.id,
+            parentCommentId: comment.parentId,
+            type: 'reply'
+          });
+        }
+      }
+      
       res.status(201).json({
         ...comment,
         user: {
@@ -575,6 +590,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       await storage.createLike(data);
+      
+      // Crear notificación si es un like en un comentario
+      if (commentId && isUpvote) {
+        const comment = await storage.getComment(commentId);
+        if (comment && comment.userId !== userId) {
+          await storage.createNotification({
+            userId: comment.userId,
+            triggeredByUserId: userId,
+            postId: comment.postId,
+            commentId: commentId,
+            type: 'like'
+          });
+        }
+      }
+      
       res.status(201).json({ 
         message: isUpvote ? "Upvoted successfully" : "Downvoted successfully", 
         action: "added", 
@@ -627,5 +657,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   const httpServer = createServer(app);
+  // Notificaciones
+  
+  // Obtener notificaciones del usuario actual
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.session.userId);
+      res.status(200).json(notifications);
+    } catch (error) {
+      console.error("Error getting notifications:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Marcar una notificación como leída
+  app.put("/api/notifications/:id/read", requireAuth, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id, 10);
+      const result = await storage.markNotificationAsRead(notificationId);
+      
+      if (result) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(404).json({ message: "Notificación no encontrada" });
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Marcar todas las notificaciones como leídas
+  app.put("/api/notifications/read-all", requireAuth, async (req, res) => {
+    try {
+      const result = await storage.markAllNotificationsAsRead(req.session.userId);
+      
+      if (result) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(200).json({ success: false, message: "No hay notificaciones para marcar como leídas" });
+      }
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }

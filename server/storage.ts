@@ -3,7 +3,7 @@ import {
   type User, type InsertUser, type Post, type InsertPost,
   type Comment, type InsertComment, type Like, type InsertLike,
   type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats,
-  type PostBoardUser
+  type PostBoardUser, type NotificationType, type Notification, type NotificationWithDetails
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -39,6 +39,19 @@ export interface IStorage {
   getPostBoardUsers(postId: number): Promise<PostBoardUser[]>;
   updateUserVerification(userId: number, postId: number, verificationType: 'irl' | 'handmade', value: boolean, verifiedBy: string): Promise<boolean>;
   
+  // Notification operations
+  createNotification(notification: {
+    userId: number;
+    triggeredByUserId: number;
+    postId: number;
+    commentId?: number;
+    parentCommentId?: number;
+    type: NotificationType;
+  }): Promise<Notification>;
+  getUserNotifications(userId: number, limit?: number): Promise<NotificationWithDetails[]>;
+  markNotificationAsRead(id: number): Promise<boolean>;
+  markAllNotificationsAsRead(userId: number): Promise<boolean>;
+  
   // Combined operations
   getTopComments(limit: number, currentUserId?: number): Promise<CommentWithUser[]>;
   getUserStats(userId: number): Promise<UserStats>;
@@ -56,12 +69,14 @@ export class MemStorage implements IStorage {
   private posts: Map<number, Post>;
   private comments: Map<number, Comment>;
   private likes: Map<number, Like>;
+  private notifications: Map<number, Notification>;
   private postVerifications: Map<number, Map<number, UserVerification>> = new Map(); // postId -> (userId -> verification)
   private currentIds: {
     user: number;
     post: number;
     comment: number;
     like: number;
+    notification: number;
   };
 
   constructor() {
@@ -69,11 +84,13 @@ export class MemStorage implements IStorage {
     this.posts = new Map();
     this.comments = new Map();
     this.likes = new Map();
+    this.notifications = new Map();
     this.currentIds = {
       user: 1,
       post: 1,
       comment: 1,
       like: 1,
+      notification: 1,
     };
     
     // Create an initial admin user
@@ -807,6 +824,84 @@ export class MemStorage implements IStorage {
     // Guardar las actualizaciones
     postVerifications.set(userId, userVerification);
     this.postVerifications.set(postId, postVerifications);
+    
+    return true;
+  }
+
+  // Notification operations
+  async createNotification(notification: {
+    userId: number;
+    triggeredByUserId: number;
+    postId: number;
+    commentId?: number;
+    parentCommentId?: number;
+    type: NotificationType;
+  }): Promise<Notification> {
+    const id = this.currentIds.notification++;
+    const now = new Date();
+    
+    // Obtener información adicional para la notificación
+    const triggerUser = await this.getUser(notification.triggeredByUserId);
+    const post = await this.getPost(notification.postId);
+    
+    const newNotification: Notification = { 
+      id, 
+      ...notification, 
+      read: false,
+      createdAt: now.toISOString(),
+      triggerUsername: triggerUser?.username,
+      postTitle: post?.title
+    };
+    
+    this.notifications.set(id, newNotification);
+    return newNotification;
+  }
+  
+  async getUserNotifications(userId: number, limit: number = 15): Promise<NotificationWithDetails[]> {
+    // Obtener las notificaciones del usuario
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+    
+    // Agregar detalles a cada notificación
+    return Promise.all(userNotifications.map(async notification => {
+      const triggerUser = await this.getUser(notification.triggeredByUserId);
+      const post = await this.getPost(notification.postId);
+      
+      return {
+        ...notification,
+        triggerUser: {
+          username: triggerUser?.username || "Usuario eliminado",
+          role: triggerUser?.role || "user",
+          badges: triggerUser?.badges || []
+        },
+        post: {
+          title: post?.title || "Post eliminado"
+        }
+      };
+    }));
+  }
+  
+  async markNotificationAsRead(id: number): Promise<boolean> {
+    const notification = this.notifications.get(id);
+    if (!notification) return false;
+    
+    notification.read = true;
+    this.notifications.set(id, notification);
+    return true;
+  }
+  
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId);
+    
+    if (userNotifications.length === 0) return false;
+    
+    userNotifications.forEach(notification => {
+      notification.read = true;
+      this.notifications.set(notification.id, notification);
+    });
     
     return true;
   }
