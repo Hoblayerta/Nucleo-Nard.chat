@@ -47,8 +47,8 @@ export interface IStorage {
 type UserVerification = {
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string;
-  handmadeVerifiedBy?: string;
+  irlVotes: string[];
+  handmadeVotes: string[];
 };
 
 export class MemStorage implements IStorage {
@@ -711,13 +711,25 @@ export class MemStorage implements IStorage {
     
     const userVerification = postVerifications.get(userId)!;
     
-    // Actualizar la verificación correspondiente
+    // Actualizar los votos de verificación
     if (verificationType === 'irl') {
-      userVerification.isIRL = value;
-      userVerification.irlVerifiedBy = value ? verifiedBy : undefined;
+      if (value) {
+        if (!userVerification.irlVotes.includes(verifiedBy)) {
+          userVerification.irlVotes.push(verifiedBy);
+        }
+      } else {
+        userVerification.irlVotes = userVerification.irlVotes.filter(v => v !== verifiedBy);
+      }
+      userVerification.isIRL = userVerification.irlVotes.length >= 2; // Requiere al menos 2 votos
     } else {
-      userVerification.isHandmade = value;
-      userVerification.handmadeVerifiedBy = value ? verifiedBy : undefined;
+      if (value) {
+        if (!userVerification.handmadeVotes.includes(verifiedBy)) {
+          userVerification.handmadeVotes.push(verifiedBy);
+        }
+      } else {
+        userVerification.handmadeVotes = userVerification.handmadeVotes.filter(v => v !== verifiedBy);
+      }
+      userVerification.isHandmade = userVerification.handmadeVotes.length >= 2; // Requiere al menos 2 votos
     }
     
     // Guardar las actualizaciones

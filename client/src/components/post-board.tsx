@@ -64,13 +64,16 @@ interface PostBoardUser {
   role: string;
   badges: string[];
   commentCount: number;
+  replyCount: number;
+  totalComments: number;
+  totalLikes: number;
   upvotes: number;
   downvotes: number;
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string; // nombre del admin/mod que verificó
-  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+  irlVotes: string[]; // Array de nombres de admin/mod que votaron
+  handmadeVotes: string[]; // Array de nombres de admin/mod que votaron
 }
 
 interface PostBoardProps {
@@ -109,17 +112,20 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
     mutationFn: async ({ 
       userId, 
       verificationType, 
-      value 
+      value,
+      voter 
     }: { 
       userId: number, 
       verificationType: "irl" | "handmade", 
-      value: boolean 
+      value: boolean,
+      voter: string
     }) => {
       // Llamada real a la API
       const response = await apiRequest("PUT", `/api/posts/${postId}/verify`, {
         userId: userId,
         verificationType: verificationType,
         value: value,
+        voter: voter
       });
       return response.json();
     },
@@ -145,13 +151,13 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
   // Filtrar usuarios basado en la búsqueda y filtros
   const filteredUsers = boardUsers.filter(boardUser => {
     const matchesSearch = boardUser.username.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (!matchesSearch) return false;
-    
+
     if (filters.showIRLOnly && !boardUser.isIRL) return false;
     if (filters.showHandmadeOnly && !boardUser.isHandmade) return false;
     if (filters.showVerifiedOnly && !(boardUser.isIRL || boardUser.isHandmade)) return false;
-    
+
     return true;
   });
 
@@ -169,53 +175,77 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
       if (!currentUser) return;
 
       const newValue = verifyType === 'irl' ? !currentUser.isIRL : !currentUser.isHandmade;
-      
+
       verifyUserMutation.mutate({
         userId: selectedUserId,
         verificationType: verifyType,
-        value: newValue
+        value: newValue,
+        voter: user?.username || ""
       });
     }
   };
 
   // Función para exportar a Excel
   const exportToExcel = () => {
-    // En una implementación real, se generaría un archivo Excel
-    // Para este ejemplo, generaremos un CSV simple
-    
-    const headers = [
-      "Username", 
-      "Role", 
-      "Badges", 
-      "Comments", 
-      "Upvotes", 
-      "Downvotes", 
-      "Net Score", 
-      "IRL Verified", 
-      "Handmade Verified", 
-      "IRL Verified By", 
-      "Handmade Verified By"
+    // Cabeceras principales
+    const mainHeaders = [
+      "Usuario",
+      "Rol",
+      "Insignias",
+      "Actividad",
+      "",
+      "",
+      "",
+      "Votos",
+      "",
+      "",
+      "Verificaciones",
+      "",
+      "",
+      ""
     ];
-    
+
+    // Subcabeceras
+    const subHeaders = [
+      "", // Usuario
+      "", // Rol
+      "", // Insignias
+      "Comentarios",
+      "Replies",
+      "Total",
+      "Total Likes",
+      "Upvotes",
+      "Downvotes",
+      "Net Score",
+      "IRL",
+      "Votos IRL",
+      "Handmade",
+      "Votos Handmade"
+    ];
+
     const rows = filteredUsers.map(user => [
       user.username,
       user.role,
       user.badges.join(", "),
       user.commentCount.toString(),
+      user.replyCount.toString(),
+      user.totalComments.toString(),
+      user.totalLikes.toString(),
       user.upvotes.toString(),
       user.downvotes.toString(),
       user.netScore.toString(),
-      user.isIRL ? "Yes" : "No",
-      user.isHandmade ? "Yes" : "No",
-      user.irlVerifiedBy || "",
-      user.handmadeVerifiedBy || ""
+      user.isIRL ? "Sí" : "No",
+      user.irlVotes.join(", "),
+      user.isHandmade ? "Sí" : "No",
+      user.handmadeVotes.join(", ")
     ]);
-    
+
     const csvContent = [
-      headers.join(","),
+      mainHeaders.join(","),
+      subHeaders.join(","),
       ...rows.map(row => row.join(","))
-    ].join("\\n");
-    
+    ].join("\n");
+
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -224,7 +254,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast({
       title: "Exportación completada",
       description: "Los datos han sido exportados a CSV correctamente."
@@ -245,7 +275,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
             Tabla de colaboradores del post con estadísticas y verificaciones.
           </SheetDescription>
         </SheetHeader>
-        
+
         <div className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -257,7 +287,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <DropdownMenu open={showFilterMenu} onOpenChange={setShowFilterMenu}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9">
@@ -337,13 +367,13 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
+
           <Button onClick={exportToExcel} variant="outline" size="sm" className="ml-auto">
             <Download className="h-4 w-4 mr-1" />
             Exportar a Excel
           </Button>
         </div>
-        
+
         <div className="flex-1 overflow-auto p-0">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -362,7 +392,12 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                     <TableHead className="w-[200px]">Usuario</TableHead>
                     <TableHead>Insignias</TableHead>
                     <TableHead className="text-center">Comentarios</TableHead>
-                    <TableHead className="text-center">Puntos</TableHead>
+                    <TableHead className="text-center">Replies</TableHead>
+                    <TableHead className="text-center">Total</TableHead>
+                    <TableHead className="text-center">Total Likes</TableHead>
+                    <TableHead className="text-center">Upvotes</TableHead>
+                    <TableHead className="text-center">Downvotes</TableHead>
+                    <TableHead className="text-center">Net Score</TableHead>
                     <TableHead className="text-center">Verificaciones</TableHead>
                     {canVerify && <TableHead className="text-center">Acciones</TableHead>}
                   </TableRow>
@@ -403,17 +438,23 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                       <TableCell className="text-center">
                         {boardUser.commentCount}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col items-center">
-                          <div className="flex items-center gap-2">
-                            <span className="text-success text-xs">+{boardUser.upvotes}</span>
-                            <span>/</span>
-                            <span className="text-destructive text-xs">-{boardUser.downvotes}</span>
-                          </div>
-                          <div className="text-sm font-medium">
-                            Net: {boardUser.netScore}
-                          </div>
-                        </div>
+                      <TableCell className="text-center">
+                        {boardUser.replyCount}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {boardUser.totalComments}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {boardUser.totalLikes}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {boardUser.upvotes}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {boardUser.downvotes}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {boardUser.netScore}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-center gap-1">
@@ -426,13 +467,8 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               }
                             >
                               <UserCheck className="h-3 w-3 mr-1" />
-                              IRL
+                              IRL ({boardUser.irlVotes.length > 0 ? boardUser.irlVotes.join(', ') : 'No'})
                             </Badge>
-                            {boardUser.isIRL && boardUser.irlVerifiedBy && (
-                              <span className="text-xs text-muted-foreground">
-                                por {boardUser.irlVerifiedBy}
-                              </span>
-                            )}
                           </div>
                           <div className="flex items-center gap-1">
                             <Badge 
@@ -443,13 +479,8 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               }
                             >
                               <HandMetal className="h-3 w-3 mr-1" />
-                              Handmade
+                              Handmade ({boardUser.handmadeVotes.length > 0 ? boardUser.handmadeVotes.join(', ') : 'No'})
                             </Badge>
-                            {boardUser.isHandmade && boardUser.handmadeVerifiedBy && (
-                              <span className="text-xs text-muted-foreground">
-                                por {boardUser.handmadeVerifiedBy}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -490,7 +521,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
           )}
         </div>
       </SheetContent>
-      
+
       {/* Diálogo de confirmación para verificación */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>

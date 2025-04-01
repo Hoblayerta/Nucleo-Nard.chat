@@ -152,11 +152,14 @@ export type PostBoardUser = {
   role: string;
   badges: string[];
   commentCount: number;
+  replyCount: number;
+  totalComments: number;
   upvotes: number;
   downvotes: number;
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string; // nombre del admin/mod que verificó
-  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+  irlVotes: string[]; // nombres de admin/mod que votaron IRL
+  handmadeVotes: string[]; // nombres de admin/mod que votaron Handmade
+  totalLikes: number; // likes totales incluyendo replies
 };
