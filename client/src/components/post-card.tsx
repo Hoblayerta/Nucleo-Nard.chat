@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CommentThread from "./comment-thread";
 import CommentForm from "./comment-form";
 import BadgeIcon from "./badge-icon";
@@ -137,7 +138,32 @@ export default function PostCard({ post }: PostCardProps) {
               >
                 <ArrowUp className="h-5 w-5" />
               </Button>
-              <span className="font-medium">{post.voteScore || 0}</span>
+              <div className="flex flex-col text-center">
+                <span className="font-medium">{post.voteScore || 0}</span>
+                <div className="flex text-xs gap-1 justify-center mt-0.5">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <span className="text-success">+{post.upvotes || 0}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Upvotes (con multiplicadores)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span>/</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <span className="text-destructive">-{post.downvotes || 0}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Downvotes (con multiplicadores)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
               <Button 
                 size="sm" 
                 variant="ghost" 
