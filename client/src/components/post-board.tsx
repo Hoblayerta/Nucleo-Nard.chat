@@ -220,26 +220,57 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
       "Upvotes (con multiplicadores)",
       "Downvotes (con multiplicadores)",
       "Puntuación neta (con multiplicadores)",
-      "Checker IRL",
-      "Checker A mano"
+      "Verificaciones (IRL + Handmade)"
     ];
 
-    const rows = filteredUsers.map(user => [
-      user.username,
-      user.role,
-      user.badges.join(", "),
-      user.commentCount.toString(),
-      user.totalComments.toString(),
-      user.upvotes.toString(),
-      user.downvotes.toString(),
-      user.netScore.toString(),
-      user.isIRL ? `Sí (por: ${user.irlVotes.join(", ")})` : "No",
-      user.isHandmade ? `Sí (por: ${user.handmadeVotes.join(", ")})` : "No"
-    ]);
+    const rows = filteredUsers.map(user => {
+      // Combinar todas las insignias en una sola celda
+      const badgesCell = user.badges.length > 0 ? user.badges.join(", ") : "Sin insignias";
+      
+      // Combinar verificaciones IRL y Handmade en una sola celda
+      let verificationsCell = "";
+      
+      if (user.isIRL || user.isHandmade) {
+        const parts = [];
+        
+        if (user.isIRL) {
+          parts.push(`IRL: Sí (por: ${user.irlVotes.join(", ")})`);
+        }
+        
+        if (user.isHandmade) {
+          parts.push(`Handmade: Sí (por: ${user.handmadeVotes.join(", ")})`);
+        }
+        
+        verificationsCell = parts.join(" | ");
+      } else {
+        verificationsCell = "Sin verificaciones";
+      }
+      
+      return [
+        user.username,
+        user.role,
+        badgesCell,
+        user.commentCount.toString(),
+        user.totalComments.toString(),
+        user.upvotes.toString(),
+        user.downvotes.toString(),
+        user.netScore.toString(),
+        verificationsCell
+      ];
+    });
 
+    // Función para escapar celdas CSV que contienen comas
+    const escapeCsvCell = (cell: string) => {
+      if (cell.includes(",") || cell.includes("\n") || cell.includes('"')) {
+        // Escapa las comillas duplicándolas y encierra todo entre comillas
+        return `"${cell.replace(/"/g, '""')}"`;
+      }
+      return cell;
+    };
+    
     const csvContent = [
       headers.join(","),
-      ...rows.map(row => row.join(","))
+      ...rows.map(row => row.map(escapeCsvCell).join(","))
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
