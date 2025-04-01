@@ -38,6 +38,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -188,20 +194,28 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
     // Cabeceras
     const headers = [
       "Nombre",
+      "Rol",
       "Insignias",
-      "Cant de comentarios",
-      "Cant de puntos",
-      "Checker de IRL",
-      "Checker de A mano"
+      "Comentarios directos",
+      "Total comentarios (con respuestas)",
+      "Upvotes",
+      "Downvotes",
+      "Puntuación neta",
+      "Checker IRL",
+      "Checker A mano"
     ];
 
     const rows = filteredUsers.map(user => [
       user.username,
+      user.role,
       user.badges.join(", "),
+      user.commentCount.toString(),
       user.totalComments.toString(),
-      `${user.netScore}`,
-      user.irlVotes.join(", "),
-      user.handmadeVotes.join(", ")
+      user.upvotes.toString(),
+      user.downvotes.toString(),
+      user.netScore.toString(),
+      user.isIRL ? `Sí (por: ${user.irlVotes.join(", ")})` : "No",
+      user.isHandmade ? `Sí (por: ${user.handmadeVotes.join(", ")})` : "No"
     ]);
 
     const csvContent = [
@@ -396,44 +410,114 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {boardUser.commentCount}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                                {boardUser.commentCount}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Comentarios: {boardUser.commentCount}<br/>
+                              Total (con respuestas): {boardUser.totalComments}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-center">
-                        {boardUser.upvotes}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                                {boardUser.upvotes}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Upvotes (multiplicador del usuario: {user?.likeMultiplier || 1}x)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-center">
-                        {boardUser.downvotes}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
+                                {boardUser.downvotes}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Downvotes (multiplicador del usuario: {user?.likeMultiplier || 1}x)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-center">
-                        {boardUser.netScore}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant={boardUser.netScore >= 0 ? "default" : "destructive"}>
+                                {boardUser.netScore}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Puntuación neta (upvotes - downvotes)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="flex items-center gap-1">
-                            <Badge 
-                              variant={boardUser.isIRL ? "default" : "outline"} 
-                              className={boardUser.isIRL 
-                                ? "bg-blue-500 hover:bg-blue-600" 
-                                : "text-muted-foreground"
-                              }
-                              title={boardUser.irlVotes?.join(", ") || ""}
-                            >
-                              <UserCheck className="h-3 w-3 mr-1" />
-                              IRL {boardUser.isIRL ? `(${boardUser.irlVotes?.length || 0})` : '(No)'}
-                            </Badge>
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-full text-xs mb-1 text-center">
+                            Verificado por:
                           </div>
                           <div className="flex items-center gap-1">
-                            <Badge 
-                              variant={boardUser.isHandmade ? "default" : "outline"} 
-                              className={boardUser.isHandmade 
-                                ? "bg-amber-500 hover:bg-amber-600" 
-                                : "text-muted-foreground"
-                              }
-                              title={boardUser.handmadeVotes?.join(", ") || ""}
-                            >
-                              <HandMetal className="h-3 w-3 mr-1" />
-                              Handmade {boardUser.isHandmade ? `(${boardUser.handmadeVotes?.length || 0})` : '(No)'}
-                            </Badge>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    variant={boardUser.isIRL ? "default" : "outline"} 
+                                    className={boardUser.isIRL 
+                                      ? "bg-blue-500 hover:bg-blue-600" 
+                                      : "text-muted-foreground"
+                                    }
+                                  >
+                                    <UserCheck className="h-3 w-3 mr-1" />
+                                    IRL {boardUser.isIRL ? `(${boardUser.irlVotes?.length || 0})` : '(No)'}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  {boardUser.irlVotes?.length > 0 
+                                    ? <p>Verificado por: {boardUser.irlVotes.join(", ")}</p>
+                                    : <p>No verificado como IRL</p>
+                                  }
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    variant={boardUser.isHandmade ? "default" : "outline"} 
+                                    className={boardUser.isHandmade 
+                                      ? "bg-amber-500 hover:bg-amber-600" 
+                                      : "text-muted-foreground"
+                                    }
+                                  >
+                                    <HandMetal className="h-3 w-3 mr-1" />
+                                    Handmade {boardUser.isHandmade ? `(${boardUser.handmadeVotes?.length || 0})` : '(No)'}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  {boardUser.handmadeVotes?.length > 0 
+                                    ? <p>Verificado por: {boardUser.handmadeVotes.join(", ")}</p>
+                                    : <p>No verificado como Handmade</p>
+                                  }
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </div>
                       </TableCell>
