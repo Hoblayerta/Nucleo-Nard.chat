@@ -157,6 +157,6 @@ export type PostBoardUser = {
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string; // nombre del admin/mod que verificó
-  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+  irlVerifiedBy: string[]; // array de nombres de admins/mods que verificaron
+  handmadeVerifiedBy: string[]; // array de nombres de admins/mods que verificaron
 };

@@ -1,12 +1,14 @@
-import { 
-  users, posts, comments, likes, 
-  type User, type InsertUser, type Post, type InsertPost,
-  type Comment, type InsertComment, type Like, type InsertLike,
-  type UpdateUser, type CommentWithUser, type PostWithDetails, type UserStats,
-  type PostBoardUser
+import type { 
+  User, InsertUser, UpdateUser, 
+  Post, InsertPost,
+  Comment, InsertComment,
+  Like, InsertLike,
+  CommentWithUser,
+  PostWithDetails,
+  UserStats,
+  PostBoardUser
 } from "@shared/schema";
 
-// Interface for storage operations
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -47,8 +49,8 @@ export interface IStorage {
 type UserVerification = {
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string;
-  handmadeVerifiedBy?: string;
+  irlVerifiedBy: string[]; // Array de nombres de moderadores/admins que verificaron
+  handmadeVerifiedBy: string[]; // Array de nombres de moderadores/admins que verificaron
 };
 
 export class MemStorage implements IStorage {
@@ -70,136 +72,170 @@ export class MemStorage implements IStorage {
     this.comments = new Map();
     this.likes = new Map();
     this.currentIds = {
-      user: 1,
-      post: 1,
-      comment: 1,
-      like: 1,
+      user: 0,
+      post: 0,
+      comment: 0,
+      like: 0
     };
     
-    // Create an initial admin user
-    this.createUser({
+    // Inicializar con datos de ejemplo
+    this.initializeData();
+  }
+  
+  private initializeData() {
+    // Admin user 
+    const admin = {
+      id: ++this.currentIds.user,
       username: "admin",
-      password: "admin123",
+      password: "admin123", // En un caso real, esto estaría hasheado
       role: "admin",
       likeMultiplier: 10,
-      badges: ["director", "masteranimador"]
-    });
+      badges: ["director", "guionista"],
+      createdAt: new Date()
+    };
+    this.users.set(admin.id, admin);
+    
+    // Moderator user
+    const moderator = {
+      id: ++this.currentIds.user,
+      username: "moderator",
+      password: "mod123", // En un caso real, esto estaría hasheado
+      role: "moderator",
+      likeMultiplier: 5,
+      badges: ["dibujante", "animador"],
+      createdAt: new Date()
+    };
+    this.users.set(moderator.id, moderator);
+    
+    // Regular user
+    const regularUser = {
+      id: ++this.currentIds.user,
+      username: "user",
+      password: "user123", // En un caso real, esto estaría hasheado
+      role: "user",
+      likeMultiplier: 1,
+      badges: ["novato"],
+      createdAt: new Date()
+    };
+    this.users.set(regularUser.id, regularUser);
+    
+    // Sample post
+    const post = {
+      id: ++this.currentIds.post,
+      title: "Bienvenido a Lemmy Clone",
+      content: "Este es un post de ejemplo para mostrar la funcionalidad básica.",
+      userId: admin.id,
+      createdAt: new Date(),
+      frozen: false,
+      slowModeInterval: 0
+    };
+    this.posts.set(post.id, post);
+    
+    // Sample comment
+    const comment = {
+      id: ++this.currentIds.comment,
+      content: "Este es un comentario de ejemplo.",
+      userId: moderator.id,
+      postId: post.id,
+      parentId: null,
+      createdAt: new Date()
+    };
+    this.comments.set(comment.id, comment);
+    
+    // Sample reply to comment
+    const reply = {
+      id: ++this.currentIds.comment,
+      content: "Esta es una respuesta de ejemplo al comentario anterior.",
+      userId: regularUser.id,
+      postId: post.id,
+      parentId: comment.id,
+      createdAt: new Date()
+    };
+    this.comments.set(reply.id, reply);
+    
+    // Sample upvote from admin to moderator's comment
+    const upvote = {
+      id: ++this.currentIds.like,
+      userId: admin.id,
+      commentId: comment.id,
+      postId: null,
+      isUpvote: true,
+      createdAt: new Date()
+    };
+    this.likes.set(upvote.id, upvote);
   }
 
-  // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
+      (user) => user.username === username
     );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentIds.user++;
-    const now = new Date();
+    const id = ++this.currentIds.user;
+    
     const user: User = { 
       ...insertUser, 
       id, 
-      role: insertUser.role || "user",
-      likeMultiplier: insertUser.likeMultiplier || 1,
-      badges: insertUser.badges || [],
-      createdAt: now
+      createdAt: new Date(),
+      likeMultiplier: 1, // Valor predeterminado para nuevos usuarios
+      badges: insertUser.badges || []
     };
+    
     this.users.set(id, user);
     return user;
   }
 
   async updateUser(id: number, data: UpdateUser): Promise<User | undefined> {
-    const user = await this.getUser(id);
+    const user = this.users.get(id);
     if (!user) return undefined;
     
     const updatedUser: User = {
       ...user,
-      ...(data.role ? { role: data.role } : {}),
-      ...(data.likeMultiplier !== undefined ? { likeMultiplier: data.likeMultiplier } : {}),
-      ...(data.badges ? { badges: data.badges } : {}),
+      ...data
     };
     
     this.users.set(id, updatedUser);
     return updatedUser;
   }
-  
+
   async deleteUser(id: number): Promise<boolean> {
-    // Check if user exists
-    const user = await this.getUser(id);
-    if (!user) return false;
-    
-    // Delete the user
-    this.users.delete(id);
-    
-    // Clean up associated data
-    
-    // 1. Remove user's posts
-    const userPosts = Array.from(this.posts.values())
-      .filter(post => post.userId === id)
-      .map(post => post.id);
-      
-    userPosts.forEach(postId => {
-      this.posts.delete(postId);
-    });
-    
-    // 2. Remove user's comments
-    const userComments = Array.from(this.comments.values())
-      .filter(comment => comment.userId === id)
-      .map(comment => comment.id);
-      
-    userComments.forEach(commentId => {
-      this.comments.delete(commentId);
-    });
-    
-    // 3. Remove user's likes
-    const userLikes = Array.from(this.likes.values())
-      .filter(like => like.userId === id)
-      .map(like => like.id);
-      
-    userLikes.forEach(likeId => {
-      this.likes.delete(likeId);
-    });
-    
-    return true;
+    return this.users.delete(id);
   }
 
   async getUsers(): Promise<User[]> {
     return Array.from(this.users.values());
   }
-  
+
   async getTopUsers(limit: number): Promise<(User & { stats: UserStats })[]> {
     const users = Array.from(this.users.values());
-    const usersWithStats = await Promise.all(
-      users.map(async (user) => {
-        const stats = await this.getUserStats(user.id);
-        return {
-          ...user,
-          stats
-        };
-      })
-    );
+    const usersWithStats: (User & { stats: UserStats })[] = [];
     
-    // Sort by net score (upvotes - downvotes) received (highest first) and take the specified limit
+    for (const user of users) {
+      const stats = await this.getUserStats(user.id);
+      usersWithStats.push({ ...user, stats });
+    }
+    
     return usersWithStats
       .sort((a, b) => b.stats.netScore - a.stats.netScore)
       .slice(0, limit);
   }
 
-  // Post operations
   async createPost(insertPost: InsertPost): Promise<Post> {
-    const id = this.currentIds.post++;
-    const now = new Date();
+    const id = ++this.currentIds.post;
+    
     const post: Post = { 
       ...insertPost, 
       id, 
-      createdAt: now,
-      frozen: insertPost.frozen || false,
-      slowModeInterval: insertPost.slowModeInterval || 0
+      createdAt: new Date(),
+      frozen: false,
+      slowModeInterval: 0
     };
+    
     this.posts.set(id, post);
     return post;
   }
@@ -210,86 +246,81 @@ export class MemStorage implements IStorage {
 
   async getPosts(): Promise<PostWithDetails[]> {
     const posts = Array.from(this.posts.values());
+    const postsWithDetails: PostWithDetails[] = [];
     
-    return Promise.all(posts.map(async (post) => {
-      const user = await this.getUser(post.userId);
+    for (const post of posts) {
+      const user = this.users.get(post.userId);
       
-      // Calculate upvotes with multipliers
-      const postUpvotes = Array.from(this.likes.values())
-        .filter((like) => like.postId === post.id && like.isUpvote)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
-        }, 0);
+      if (!user) continue;
       
-      // Calculate downvotes with multipliers
-      const postDownvotes = Array.from(this.likes.values())
-        .filter((like) => like.postId === post.id && !like.isUpvote)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
-        }, 0);
-        
-      const postComments = Array.from(this.comments.values()).filter(
-        (comment) => comment.postId === post.id
+      // Get upvotes and downvotes
+      const likes = Array.from(this.likes.values()).filter(
+        like => like.postId === post.id
+      );
+      
+      const upvotes = likes.filter(like => like.isUpvote).length;
+      const downvotes = likes.filter(like => !like.isUpvote).length;
+      
+      // Get comments count
+      const comments = Array.from(this.comments.values()).filter(
+        comment => comment.postId === post.id
       ).length;
       
-      // Get logged in user's vote if applicable
-      const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
-      const userVote = await this.getUserVote(sessionUserId, undefined, post.id);
+      // For logged in user, we would check their vote here
+      // but since we don't have the logged in user in this context,
+      // we'll leave userVote as undefined
       
-      return {
+      postsWithDetails.push({
         ...post,
         user: {
-          id: user?.id || 0,
-          username: user?.username || "unknown",
-          role: user?.role || "user",
-          badges: user?.badges || [],
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          badges: user.badges || []
         },
-        upvotes: postUpvotes,
-        downvotes: postDownvotes,
-        voteScore: postUpvotes - postDownvotes,
-        userVote,
-        comments: postComments,
-        frozen: post.frozen || false,
-        slowModeInterval: post.slowModeInterval || 0,
-      };
-    }));
-  }
-  
-  async getTopPosts(limit: number): Promise<PostWithDetails[]> {
-    const posts = await this.getPosts();
+        upvotes,
+        downvotes,
+        voteScore: upvotes - downvotes,
+        comments,
+        frozen: post.frozen,
+        slowModeInterval: post.slowModeInterval
+      });
+    }
     
-    // Sort by vote score (highest first) and take the specified limit
-    return posts
+    return postsWithDetails;
+  }
+
+  async getTopPosts(limit: number): Promise<PostWithDetails[]> {
+    const postsWithDetails = await this.getPosts();
+    
+    return postsWithDetails
       .sort((a, b) => b.voteScore - a.voteScore)
       .slice(0, limit);
   }
-  
+
   async updatePost(id: number, data: { frozen?: boolean, slowModeInterval?: number }): Promise<Post | undefined> {
-    const post = await this.getPost(id);
+    const post = this.posts.get(id);
     if (!post) return undefined;
     
     const updatedPost: Post = {
       ...post,
-      ...(data.frozen !== undefined ? { frozen: data.frozen } : {}),
-      ...(data.slowModeInterval !== undefined ? { slowModeInterval: data.slowModeInterval } : {}),
+      frozen: data.frozen !== undefined ? data.frozen : post.frozen,
+      slowModeInterval: data.slowModeInterval !== undefined ? data.slowModeInterval : post.slowModeInterval
     };
     
     this.posts.set(id, updatedPost);
     return updatedPost;
   }
 
-  // Comment operations
   async createComment(insertComment: InsertComment): Promise<Comment> {
-    const id = this.currentIds.comment++;
-    const now = new Date();
+    const id = ++this.currentIds.comment;
+    
     const comment: Comment = { 
       ...insertComment, 
       id, 
-      createdAt: now,
-      parentId: insertComment.parentId ?? null 
+      createdAt: new Date() 
     };
+    
     this.comments.set(id, comment);
     return comment;
   }
@@ -299,104 +330,89 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentsByPostId(postId: number): Promise<CommentWithUser[]> {
-    const allComments = Array.from(this.comments.values())
-      .filter((comment) => comment.postId === postId)
-      .map(async (comment) => {
-        const user = await this.getUser(comment.userId);
-        
-        // Calculate upvotes with multipliers
-        const commentUpvotes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id && like.isUpvote)
-          .reduce((total, like) => {
-            const likeUser = this.users.get(like.userId);
-            return total + (likeUser?.likeMultiplier || 1);
-          }, 0);
-          
-        // Calculate downvotes with multipliers
-        const commentDownvotes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id && !like.isUpvote)
-          .reduce((total, like) => {
-            const likeUser = this.users.get(like.userId);
-            return total + (likeUser?.likeMultiplier || 1);
-          }, 0);
-        
-        // Get logged in user's vote if applicable
-        const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
-        const userVote = await this.getUserVote(sessionUserId, comment.id);
-        
-        return {
-          ...comment,
-          user: {
-            id: user?.id || 0,
-            username: user?.username || "unknown",
-            role: user?.role || "user",
-            likeMultiplier: user?.likeMultiplier || 1,
-            badges: user?.badges || [],
-          },
-          upvotes: commentUpvotes,
-          downvotes: commentDownvotes,
-          voteScore: commentUpvotes - commentDownvotes,
-          userVote,
-          replies: [],
-        };
-      });
-
-    const comments = await Promise.all(allComments);
-
-    // Build comment tree
+    // Get all comments for this post
+    const comments = Array.from(this.comments.values()).filter(
+      (comment) => comment.postId === postId
+    );
+    
+    // Build a map of comment IDs to CommentWithUser objects
     const commentMap = new Map<number, CommentWithUser>();
-    const rootComments: CommentWithUser[] = [];
-
-    // First pass: Create a map of all comments by ID
-    comments.forEach(comment => {
-      commentMap.set(comment.id, {...comment, replies: []});
-    });
-
-    // Second pass: Arrange comments into a tree structure
-    commentMap.forEach(comment => {
-      if (comment.parentId) {
-        const parent = commentMap.get(comment.parentId);
-        if (parent) {
-          parent.replies = parent.replies || [];
-          parent.replies.push(comment);
-        } else {
-          rootComments.push(comment);
-        }
-      } else {
-        rootComments.push(comment);
+    
+    for (const comment of comments) {
+      const user = this.users.get(comment.userId);
+      if (!user) continue;
+      
+      // Get upvotes and downvotes for this comment
+      const likes = Array.from(this.likes.values()).filter(
+        like => like.commentId === comment.id
+      );
+      
+      const upvotes = likes.filter(like => like.isUpvote).length;
+      const downvotes = likes.filter(like => !like.isUpvote).length;
+      
+      // For logged in user, we would check their vote here
+      // but since we don't have the logged in user in this context, 
+      // we'll leave userVote as undefined
+      
+      const commentWithUser: CommentWithUser = {
+        ...comment,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          likeMultiplier: user.likeMultiplier,
+          badges: user.badges || []
+        },
+        upvotes,
+        downvotes,
+        voteScore: upvotes - downvotes,
+        replies: []
+      };
+      
+      commentMap.set(comment.id, commentWithUser);
+    }
+    
+    // Build the tree structure
+    const result: CommentWithUser[] = [];
+    
+    for (const [id, comment] of commentMap.entries()) {
+      if (comment.parentId === null) {
+        // This is a root comment
+        result.push(comment);
+      } else if (commentMap.has(comment.parentId)) {
+        // This is a reply to another comment
+        const parent = commentMap.get(comment.parentId)!;
+        parent.replies = parent.replies || [];
+        parent.replies.push(comment);
       }
-    });
-
-    return rootComments;
+    }
+    
+    return result;
   }
 
-  // Like operations
   async createLike(insertLike: InsertLike): Promise<Like> {
-    const id = this.currentIds.like++;
-    const now = new Date();
+    const id = ++this.currentIds.like;
+    
     const like: Like = { 
       ...insertLike, 
       id, 
-      createdAt: now,
-      postId: insertLike.postId ?? null,
-      commentId: insertLike.commentId ?? null,
-      isUpvote: insertLike.isUpvote !== undefined ? insertLike.isUpvote : true
+      createdAt: new Date() 
     };
+    
     this.likes.set(id, like);
     return like;
   }
 
   async removeLike(userId: number, commentId?: number, postId?: number): Promise<boolean> {
-    const likeToRemove = Array.from(this.likes.values()).find(
-      (like) => 
-        like.userId === userId && 
-        ((commentId && like.commentId === commentId) || 
-         (postId && like.postId === postId))
-    );
+    const likes = Array.from(this.likes.entries());
     
-    if (likeToRemove) {
-      this.likes.delete(likeToRemove.id);
-      return true;
+    for (const [id, like] of likes) {
+      if (like.userId === userId && 
+          (commentId === undefined || like.commentId === commentId) &&
+          (postId === undefined || like.postId === postId)) {
+        this.likes.delete(id);
+        return true;
+      }
     }
     
     return false;
@@ -410,135 +426,113 @@ export class MemStorage implements IStorage {
 
   async checkLikeExists(userId: number, commentId?: number, postId?: number): Promise<boolean> {
     return Array.from(this.likes.values()).some(
-      (like) => 
-        like.userId === userId && 
-        ((commentId && like.commentId === commentId) || 
-         (postId && like.postId === postId))
+      (like) =>
+        like.userId === userId &&
+        (commentId === undefined || like.commentId === commentId) &&
+        (postId === undefined || like.postId === postId)
     );
   }
   
   async getUserVote(userId: number, commentId?: number, postId?: number): Promise<'upvote' | 'downvote' | null> {
-    const vote = Array.from(this.likes.values()).find(
-      (like) => 
-        like.userId === userId && 
-        ((commentId && like.commentId === commentId) || 
-         (postId && like.postId === postId))
+    const like = Array.from(this.likes.values()).find(
+      (like) =>
+        like.userId === userId &&
+        (commentId === undefined || like.commentId === commentId) &&
+        (postId === undefined || like.postId === postId)
     );
     
-    if (!vote) return null;
-    return vote.isUpvote ? 'upvote' : 'downvote';
+    if (!like) return null;
+    
+    return like.isUpvote ? 'upvote' : 'downvote';
   }
 
-  // Combined operations
   async getTopComments(limit: number): Promise<CommentWithUser[]> {
-    const comments = Array.from(this.comments.values());
+    // Get all comments with their users and vote counts
+    const allComments: CommentWithUser[] = [];
     
-    const commentsWithDetails = await Promise.all(
-      comments.map(async (comment) => {
-        const user = await this.getUser(comment.userId);
-        
-        // Calculate upvotes with multipliers
-        const commentUpvotes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id && like.isUpvote)
-          .reduce((total, like) => {
-            const likeUser = this.users.get(like.userId);
-            return total + (likeUser?.likeMultiplier || 1);
-          }, 0);
-          
-        // Calculate downvotes with multipliers
-        const commentDownvotes = Array.from(this.likes.values())
-          .filter((like) => like.commentId === comment.id && !like.isUpvote)
-          .reduce((total, like) => {
-            const likeUser = this.users.get(like.userId);
-            return total + (likeUser?.likeMultiplier || 1);
-          }, 0);
-          
-        // Get logged in user's vote if applicable
-        const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
-        const userVote = await this.getUserVote(sessionUserId, comment.id);
-        
-        return {
-          ...comment,
-          user: {
-            id: user?.id || 0,
-            username: user?.username || "unknown",
-            role: user?.role || "user",
-            likeMultiplier: user?.likeMultiplier || 1,
-            badges: user?.badges || [],
-          },
-          upvotes: commentUpvotes,
-          downvotes: commentDownvotes,
-          voteScore: commentUpvotes - commentDownvotes,
-          userVote,
-          replies: [], // Will be populated later if needed
-        };
-      })
-    );
+    for (const comment of this.comments.values()) {
+      const user = this.users.get(comment.userId);
+      if (!user) continue;
+      
+      // Get upvotes and downvotes for this comment
+      const likes = Array.from(this.likes.values()).filter(
+        like => like.commentId === comment.id
+      );
+      
+      const upvotes = likes.filter(like => like.isUpvote).length;
+      const downvotes = likes.filter(like => !like.isUpvote).length;
+      
+      allComments.push({
+        ...comment,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          likeMultiplier: user.likeMultiplier,
+          badges: user.badges || []
+        },
+        upvotes,
+        downvotes,
+        voteScore: upvotes - downvotes,
+        replies: []
+      });
+    }
     
-    // Sort by vote score (highest first) and take the specified limit
-    return commentsWithDetails
+    // Sort by vote score (upvotes - downvotes) and return top N
+    return allComments
       .sort((a, b) => b.voteScore - a.voteScore)
       .slice(0, limit);
   }
 
   async getUserStats(userId: number): Promise<UserStats> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return {
+        postCount: 0,
+        commentCount: 0,
+        upvotesReceived: 0,
+        downvotesReceived: 0,
+        netScore: 0
+      };
+    }
+    
+    // Count posts by this user
     const postCount = Array.from(this.posts.values()).filter(
-      (post) => post.userId === userId
+      post => post.userId === userId
     ).length;
     
+    // Count comments by this user
     const commentCount = Array.from(this.comments.values()).filter(
-      (comment) => comment.userId === userId
+      comment => comment.userId === userId
     ).length;
     
-    // Calculate upvotes and downvotes received
-    let upvotesReceived = 0;
-    let downvotesReceived = 0;
+    // Count upvotes/downvotes received on comments
+    const commentIds = Array.from(this.comments.values())
+      .filter(comment => comment.userId === userId)
+      .map(comment => comment.id);
     
-    // Count votes on posts
-    const userPosts = Array.from(this.posts.values()).filter(
-      (post) => post.userId === userId
+    const commentLikes = Array.from(this.likes.values()).filter(
+      like => like.commentId !== null && commentIds.includes(like.commentId!)
     );
     
-    userPosts.forEach(post => {
-      // Count upvotes
-      upvotesReceived += Array.from(this.likes.values())
-        .filter(like => like.postId === post.id && like.isUpvote)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
-        }, 0);
-        
-      // Count downvotes
-      downvotesReceived += Array.from(this.likes.values())
-        .filter(like => like.postId === post.id && !like.isUpvote)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
-        }, 0);
-    });
+    const upvotesFromComments = commentLikes.filter(like => like.isUpvote).length;
+    const downvotesFromComments = commentLikes.filter(like => !like.isUpvote).length;
     
-    // Count votes on comments
-    const userComments = Array.from(this.comments.values()).filter(
-      (comment) => comment.userId === userId
+    // Count upvotes/downvotes received on posts
+    const postIds = Array.from(this.posts.values())
+      .filter(post => post.userId === userId)
+      .map(post => post.id);
+    
+    const postLikes = Array.from(this.likes.values()).filter(
+      like => like.postId !== null && postIds.includes(like.postId!)
     );
     
-    userComments.forEach(comment => {
-      // Count upvotes
-      upvotesReceived += Array.from(this.likes.values())
-        .filter(like => like.commentId === comment.id && like.isUpvote)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
-        }, 0);
-        
-      // Count downvotes
-      downvotesReceived += Array.from(this.likes.values())
-        .filter(like => like.commentId === comment.id && !like.isUpvote)
-        .reduce((total, like) => {
-          const likeUser = this.users.get(like.userId);
-          return total + (likeUser?.likeMultiplier || 1);
-        }, 0);
-    });
+    const upvotesFromPosts = postLikes.filter(like => like.isUpvote).length;
+    const downvotesFromPosts = postLikes.filter(like => !like.isUpvote).length;
+    
+    // Total upvotes and downvotes
+    const upvotesReceived = upvotesFromComments + upvotesFromPosts;
+    const downvotesReceived = downvotesFromComments + downvotesFromPosts;
     
     return {
       postCount,
@@ -576,8 +570,8 @@ export class MemStorage implements IStorage {
       downvotes: number,
       isIRL: boolean,
       isHandmade: boolean,
-      irlVerifiedBy?: string,
-      handmadeVerifiedBy?: string
+      irlVerifiedBy: string[],
+      handmadeVerifiedBy: string[]
     }>();
     
     // Añadir el autor del post si no está ya en el mapa
@@ -593,8 +587,8 @@ export class MemStorage implements IStorage {
         downvotes: 0,
         isIRL: userVerif?.isIRL || false,
         isHandmade: userVerif?.isHandmade || false,
-        irlVerifiedBy: userVerif?.irlVerifiedBy,
-        handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+        irlVerifiedBy: userVerif?.irlVerifiedBy || [],
+        handmadeVerifiedBy: userVerif?.handmadeVerifiedBy || []
       });
     }
     
@@ -617,8 +611,8 @@ export class MemStorage implements IStorage {
             downvotes: 0,
             isIRL: userVerif?.isIRL || false,
             isHandmade: userVerif?.isHandmade || false,
-            irlVerifiedBy: userVerif?.irlVerifiedBy,
-            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+            irlVerifiedBy: userVerif?.irlVerifiedBy || [],
+            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy || []
           });
         }
       }
@@ -639,8 +633,8 @@ export class MemStorage implements IStorage {
             downvotes: 0,
             isIRL: userVerif?.isIRL || false,
             isHandmade: userVerif?.isHandmade || false,
-            irlVerifiedBy: userVerif?.irlVerifiedBy,
-            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+            irlVerifiedBy: userVerif?.irlVerifiedBy || [],
+            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy || []
           });
         }
       }
@@ -704,8 +698,8 @@ export class MemStorage implements IStorage {
       postVerifications.set(userId, {
         isIRL: false,
         isHandmade: false,
-        irlVerifiedBy: undefined,
-        handmadeVerifiedBy: undefined
+        irlVerifiedBy: [],
+        handmadeVerifiedBy: []
       });
     }
     
@@ -713,11 +707,30 @@ export class MemStorage implements IStorage {
     
     // Actualizar la verificación correspondiente
     if (verificationType === 'irl') {
-      userVerification.isIRL = value;
-      userVerification.irlVerifiedBy = value ? verifiedBy : undefined;
+      // Verificamos si el usuario ya ha verificado
+      const hasVerified = userVerification.irlVerifiedBy.includes(verifiedBy);
+      
+      if (value && !hasVerified) {
+        // Agregar el verificador al array
+        userVerification.irlVerifiedBy.push(verifiedBy);
+      } else if (!value && hasVerified) {
+        // Remover el verificador del array
+        userVerification.irlVerifiedBy = userVerification.irlVerifiedBy.filter(v => v !== verifiedBy);
+      }
+      
+      // Actualizar el estado basado en si hay verificadores
+      userVerification.isIRL = userVerification.irlVerifiedBy.length > 0;
     } else {
-      userVerification.isHandmade = value;
-      userVerification.handmadeVerifiedBy = value ? verifiedBy : undefined;
+      // Similar para Handmade
+      const hasVerified = userVerification.handmadeVerifiedBy.includes(verifiedBy);
+      
+      if (value && !hasVerified) {
+        userVerification.handmadeVerifiedBy.push(verifiedBy);
+      } else if (!value && hasVerified) {
+        userVerification.handmadeVerifiedBy = userVerification.handmadeVerifiedBy.filter(v => v !== verifiedBy);
+      }
+      
+      userVerification.isHandmade = userVerification.handmadeVerifiedBy.length > 0;
     }
     
     // Guardar las actualizaciones

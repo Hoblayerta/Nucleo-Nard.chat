@@ -69,8 +69,8 @@ interface PostBoardUser {
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string; // nombre del admin/mod que verificó
-  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+  irlVerifiedBy: string[]; // array de nombres de admins/mods que verificaron
+  handmadeVerifiedBy: string[]; // array de nombres de admins/mods que verificaron
 }
 
 interface PostBoardProps {
@@ -207,8 +207,8 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
       user.netScore.toString(),
       user.isIRL ? "Yes" : "No",
       user.isHandmade ? "Yes" : "No",
-      user.irlVerifiedBy || "",
-      user.handmadeVerifiedBy || ""
+      user.irlVerifiedBy.join(", "),
+      user.handmadeVerifiedBy.join(", ")
     ]);
     
     const csvContent = [
@@ -428,9 +428,9 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               <UserCheck className="h-3 w-3 mr-1" />
                               IRL
                             </Badge>
-                            {boardUser.isIRL && boardUser.irlVerifiedBy && (
+                            {boardUser.isIRL && boardUser.irlVerifiedBy.length > 0 && (
                               <span className="text-xs text-muted-foreground">
-                                por {boardUser.irlVerifiedBy}
+                                por {boardUser.irlVerifiedBy.join(", ")}
                               </span>
                             )}
                           </div>
@@ -445,9 +445,9 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               <HandMetal className="h-3 w-3 mr-1" />
                               Handmade
                             </Badge>
-                            {boardUser.isHandmade && boardUser.handmadeVerifiedBy && (
+                            {boardUser.isHandmade && boardUser.handmadeVerifiedBy.length > 0 && (
                               <span className="text-xs text-muted-foreground">
-                                por {boardUser.handmadeVerifiedBy}
+                                por {boardUser.handmadeVerifiedBy.join(", ")}
                               </span>
                             )}
                           </div>
