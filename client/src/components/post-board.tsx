@@ -44,6 +44,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,6 +108,9 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [verifyType, setVerifyType] = useState<"irl" | "handmade" | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedVerificationType, setSelectedVerificationType] = useState<"irl" | "handmade" | null>(null);
+  const [selectedVerifiers, setSelectedVerifiers] = useState<string[]>([]);
 
   // Mock data - en una aplicación real, esta información vendría de una API
   const { data: boardUsers = [], isLoading } = useQuery<PostBoardUser[]>({
@@ -480,52 +491,54 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                             Verificado por:
                           </div>
                           <div className="flex items-center gap-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge 
-                                    variant={boardUser.isIRL ? "default" : "outline"} 
-                                    className={boardUser.isIRL 
-                                      ? "bg-blue-500 hover:bg-blue-600" 
-                                      : "text-muted-foreground"
-                                    }
-                                  >
-                                    <UserCheck className="h-3 w-3 mr-1" />
-                                    IRL {boardUser.isIRL ? `(${boardUser.irlVotes?.length || 0})` : '(No)'}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  {boardUser.irlVotes?.length > 0 
-                                    ? <p>Verificado por: {boardUser.irlVotes.join(", ")}</p>
-                                    : <p>No verificado como IRL</p>
-                                  }
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Button 
+                              variant="ghost" 
+                              className="p-0 h-auto" 
+                              onClick={() => {
+                                if (boardUser.irlVotes?.length > 0) {
+                                  setSelectedVerificationType("irl");
+                                  setSelectedVerifiers(boardUser.irlVotes);
+                                  setSelectedUserId(boardUser.id);
+                                  setDetailsDialogOpen(true);
+                                }
+                              }}
+                            >
+                              <Badge 
+                                variant={boardUser.isIRL ? "default" : "outline"} 
+                                className={boardUser.isIRL 
+                                  ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" 
+                                  : "text-muted-foreground"
+                                }
+                              >
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                IRL {boardUser.isIRL ? `(${boardUser.irlVotes?.length || 0})` : '(No)'}
+                              </Badge>
+                            </Button>
                           </div>
                           <div className="flex items-center gap-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge 
-                                    variant={boardUser.isHandmade ? "default" : "outline"} 
-                                    className={boardUser.isHandmade 
-                                      ? "bg-amber-500 hover:bg-amber-600" 
-                                      : "text-muted-foreground"
-                                    }
-                                  >
-                                    <HandMetal className="h-3 w-3 mr-1" />
-                                    Handmade {boardUser.isHandmade ? `(${boardUser.handmadeVotes?.length || 0})` : '(No)'}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  {boardUser.handmadeVotes?.length > 0 
-                                    ? <p>Verificado por: {boardUser.handmadeVotes.join(", ")}</p>
-                                    : <p>No verificado como Handmade</p>
-                                  }
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Button 
+                              variant="ghost" 
+                              className="p-0 h-auto" 
+                              onClick={() => {
+                                if (boardUser.handmadeVotes?.length > 0) {
+                                  setSelectedVerificationType("handmade");
+                                  setSelectedVerifiers(boardUser.handmadeVotes);
+                                  setSelectedUserId(boardUser.id);
+                                  setDetailsDialogOpen(true);
+                                }
+                              }}
+                            >
+                              <Badge 
+                                variant={boardUser.isHandmade ? "default" : "outline"} 
+                                className={boardUser.isHandmade 
+                                  ? "bg-amber-500 hover:bg-amber-600 cursor-pointer" 
+                                  : "text-muted-foreground"
+                                }
+                              >
+                                <HandMetal className="h-3 w-3 mr-1" />
+                                Handmade {boardUser.isHandmade ? `(${boardUser.handmadeVotes?.length || 0})` : '(No)'}
+                              </Badge>
+                            </Button>
                           </div>
                         </div>
                       </TableCell>
@@ -613,6 +626,59 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Diálogo de detalles de verificación */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedVerificationType === 'irl' ? (
+                <>
+                  <UserCheck className="h-5 w-5 text-blue-500" />
+                  Detalles de Verificación IRL
+                </>
+              ) : (
+                <>
+                  <HandMetal className="h-5 w-5 text-amber-500" />
+                  Detalles de Verificación Handmade
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedUserId && (
+                <span>
+                  Usuario: <strong>{boardUsers.find(u => u.id === selectedUserId)?.username}</strong>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <h3 className="font-medium mb-2">Verificado por:</h3>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-4">
+              {selectedVerifiers.length === 0 ? (
+                <p className="text-muted-foreground">No hay verificadores</p>
+              ) : (
+                selectedVerifiers.map((verifier, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 border-b last:border-0">
+                    <UserCheck className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{verifier}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {boardUsers.find(u => u.username === verifier)?.role === 'admin' ? 'Administrador' : 'Moderador'}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setDetailsDialogOpen(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
