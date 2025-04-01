@@ -20,14 +20,14 @@ export interface IStorage {
   // Post operations
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: number): Promise<Post | undefined>;
-  getPosts(): Promise<PostWithDetails[]>;
-  getTopPosts(limit: number): Promise<PostWithDetails[]>;
+  getPosts(currentUserId?: number): Promise<PostWithDetails[]>;
+  getTopPosts(limit: number, currentUserId?: number): Promise<PostWithDetails[]>;
   updatePost(id: number, data: { frozen?: boolean, slowModeInterval?: number }): Promise<Post | undefined>;
   
   // Comment operations
   createComment(comment: InsertComment): Promise<Comment>;
   getComment(id: number): Promise<Comment | undefined>;
-  getCommentsByPostId(postId: number): Promise<CommentWithUser[]>;
+  getCommentsByPostId(postId: number, currentUserId?: number): Promise<CommentWithUser[]>;
   
   // Like operations
   createLike(like: InsertLike): Promise<Like>;
@@ -40,7 +40,7 @@ export interface IStorage {
   updateUserVerification(userId: number, postId: number, verificationType: 'irl' | 'handmade', value: boolean, verifiedBy: string): Promise<boolean>;
   
   // Combined operations
-  getTopComments(limit: number): Promise<CommentWithUser[]>;
+  getTopComments(limit: number, currentUserId?: number): Promise<CommentWithUser[]>;
   getUserStats(userId: number): Promise<UserStats>;
 }
 
@@ -208,7 +208,7 @@ export class MemStorage implements IStorage {
     return this.posts.get(id);
   }
 
-  async getPosts(): Promise<PostWithDetails[]> {
+  async getPosts(currentUserId: number = 0): Promise<PostWithDetails[]> {
     const posts = Array.from(this.posts.values());
     
     return Promise.all(posts.map(async (post) => {
@@ -234,9 +234,8 @@ export class MemStorage implements IStorage {
         (comment) => comment.postId === post.id
       ).length;
       
-      // Get logged in user's vote if applicable
-      const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
-      const userVote = await this.getUserVote(sessionUserId, undefined, post.id);
+      // Usa el ID de usuario actual para obtener si ha votado este post
+      const userVote = await this.getUserVote(currentUserId, undefined, post.id);
       
       return {
         ...post,
@@ -257,8 +256,8 @@ export class MemStorage implements IStorage {
     }));
   }
   
-  async getTopPosts(limit: number): Promise<PostWithDetails[]> {
-    const posts = await this.getPosts();
+  async getTopPosts(limit: number, currentUserId: number = 0): Promise<PostWithDetails[]> {
+    const posts = await this.getPosts(currentUserId);
     
     // Sort by vote score (highest first) and take the specified limit
     return posts
@@ -298,7 +297,7 @@ export class MemStorage implements IStorage {
     return this.comments.get(id);
   }
 
-  async getCommentsByPostId(postId: number): Promise<CommentWithUser[]> {
+  async getCommentsByPostId(postId: number, currentUserId: number = 0): Promise<CommentWithUser[]> {
     const allComments = Array.from(this.comments.values())
       .filter((comment) => comment.postId === postId)
       .map(async (comment) => {
@@ -320,9 +319,8 @@ export class MemStorage implements IStorage {
             return total + (likeUser?.likeMultiplier || 1);
           }, 0);
         
-        // Get logged in user's vote if applicable
-        const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
-        const userVote = await this.getUserVote(sessionUserId, comment.id);
+        // Usa el ID de usuario actual para obtener si ha votado este comentario
+        const userVote = await this.getUserVote(currentUserId, comment.id);
         
         return {
           ...comment,
@@ -430,7 +428,7 @@ export class MemStorage implements IStorage {
   }
 
   // Combined operations
-  async getTopComments(limit: number): Promise<CommentWithUser[]> {
+  async getTopComments(limit: number, currentUserId: number = 0): Promise<CommentWithUser[]> {
     const comments = Array.from(this.comments.values());
     
     const commentsWithDetails = await Promise.all(
@@ -453,9 +451,8 @@ export class MemStorage implements IStorage {
             return total + (likeUser?.likeMultiplier || 1);
           }, 0);
           
-        // Get logged in user's vote if applicable
-        const sessionUserId = 0; // This will be replaced with the actual session user ID when called from route handlers
-        const userVote = await this.getUserVote(sessionUserId, comment.id);
+        // Usa el ID de usuario actual para obtener si ha votado este comentario
+        const userVote = await this.getUserVote(currentUserId, comment.id);
         
         return {
           ...comment,
@@ -690,13 +687,16 @@ export class MemStorage implements IStorage {
         });
       }
       
+      // Aplicar el multiplicador de votos del usuario que hace el voto
+      const userMultiplier = likeUser?.likeMultiplier || 1;
+      
       // Procesar el voto en sí
       if (like.postId === postId) {
         // Voto al post principal
         const targetUser = userMap.get(post.userId);
         if (targetUser) {
-          if (like.isUpvote) targetUser.upvotes++;
-          else targetUser.downvotes++;
+          if (like.isUpvote) targetUser.upvotes += userMultiplier;
+          else targetUser.downvotes += userMultiplier;
         }
       } else if (like.commentId) {
         // Voto a un comentario
@@ -704,8 +704,8 @@ export class MemStorage implements IStorage {
         if (comment && comment.postId === postId) {
           const targetUser = userMap.get(comment.userId);
           if (targetUser) {
-            if (like.isUpvote) targetUser.upvotes++;
-            else targetUser.downvotes++;
+            if (like.isUpvote) targetUser.upvotes += userMultiplier;
+            else targetUser.downvotes += userMultiplier;
           }
         }
       }

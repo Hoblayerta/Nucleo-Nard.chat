@@ -309,7 +309,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/posts", async (req, res) => {
     try {
-      const posts = await storage.getPosts();
+      // Incluir el ID del usuario actual si está autenticado
+      const currentUserId = req.session.userId || 0;
+      
+      const posts = await storage.getPosts(currentUserId);
       res.status(200).json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch posts" });
@@ -320,7 +323,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts/top", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
-      const topPosts = await storage.getTopPosts(limit);
+      
+      // Incluir el ID del usuario actual si está autenticado
+      const currentUserId = req.session.userId || 0;
+      
+      const topPosts = await storage.getTopPosts(limit, currentUserId);
       res.status(200).json(topPosts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch top posts" });
@@ -438,7 +445,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid post ID" });
       }
       
-      const comments = await storage.getCommentsByPostId(postId);
+      // Incluir el ID del usuario actual si está autenticado
+      const currentUserId = req.session.userId || 0;
+      
+      const comments = await storage.getCommentsByPostId(postId, currentUserId);
       res.status(200).json(comments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch comments" });
@@ -603,7 +613,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/leaderboard", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      const topComments = await storage.getTopComments(limit);
+      
+      // Incluir el ID del usuario actual si está autenticado
+      const currentUserId = req.session.userId || 0;
+      
+      const topComments = await storage.getTopComments(limit, currentUserId);
       res.status(200).json(topComments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch leaderboard" });
