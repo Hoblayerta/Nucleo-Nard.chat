@@ -1,16 +1,18 @@
-import type { Express, Request, Response } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { 
-  insertUserSchema, 
-  loginUserSchema, 
-  insertPostSchema, 
-  insertCommentSchema, 
-  insertLikeSchema, 
-  updateUserSchema 
-} from "@shared/schema";
-import session from "express-session";
+import { Express, Request, Response, NextFunction } from "express";
+import { Server, createServer } from "http";
 import { z } from "zod";
+import { WebSocketServer } from "ws";
+import { createWriteStream } from "fs";
+import { storage } from "./storage";
+import {
+  insertUserSchema,
+  insertPostSchema,
+  insertCommentSchema,
+  insertLikeSchema,
+  loginUserSchema,
+  updateUserSchema,
+  NotificationType
+} from "@shared/schema";
 
 declare module "express-session" {
   interface SessionData {
@@ -21,17 +23,6 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup session middleware
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "lemmy-clone-secret",
-      resave: false,
-      saveUninitialized: false,
-      cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }, // 1 day
-    })
-  );
-
-  // Authentication Middleware
   const requireAuth = (req: Request, res: Response, next: Function) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Authentication required" });
@@ -41,364 +32,286 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const requireAdmin = (req: Request, res: Response, next: Function) => {
     if (!req.session.userId || req.session.role !== "admin") {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-    next();
-  };
-  
-  const requireModerator = (req: Request, res: Response, next: Function) => {
-    if (!req.session.userId || (req.session.role !== "admin" && req.session.role !== "moderator")) {
-      return res.status(403).json({ message: "Moderator access required" });
+      return res.status(403).json({ message: "Admin privileges required" });
     }
     next();
   };
 
-  // Authentication Routes
-  // Solo los administradores pueden registrar nuevos usuarios
+  const requireModerator = (req: Request, res: Response, next: Function) => {
+    if (!req.session.userId || (req.session.role !== "admin" && req.session.role !== "moderator")) {
+      return res.status(403).json({ message: "Moderator privileges required" });
+    }
+    next();
+  };
+
+  // Crear un usuario (solo admins pueden crear usuarios)
   app.post("/api/auth/register", requireAdmin, async (req, res) => {
     try {
-      const data = insertUserSchema.parse(req.body);
+      const data = loginUserSchema.parse(req.body);
       
-      // Check if username already exists
+      // Verificar si el usuario ya existe
       const existingUser = await storage.getUserByUsername(data.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
       
-      const user = await storage.createUser(data);
+      const user = await storage.createUser({
+        username: data.username,
+        password: data.password,
+        role: "user",
+        likeMultiplier: 1,
+        badges: [],
+        createdAt: new Date()
+      });
       
-      // No establecemos la sesión ya que el administrador está creando el usuario
-      // y no debería iniciar sesión como ese usuario
-      
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
-      
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
+      res.status(201).json({
+        username: user.username,
+        role: user.role,
+        likeMultiplier: user.likeMultiplier,
+        badges: user.badges,
+        id: user.id
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: err.errors });
       }
-      res.status(500).json({ message: "Registration failed" });
+      res.status(500).json({ message: "Failed to create user" });
     }
   });
 
+  // Login
   app.post("/api/auth/login", async (req, res) => {
     try {
       const data = loginUserSchema.parse(req.body);
-      
       const user = await storage.getUserByUsername(data.username);
+      
       if (!user || user.password !== data.password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid username or password" });
       }
       
-      // Set session
       req.session.userId = user.id;
       req.session.username = user.username;
       req.session.role = user.role;
       
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
-      
-      res.status(200).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
+      res.status(200).json({
+        username: user.username,
+        role: user.role,
+        likeMultiplier: user.likeMultiplier,
+        badges: user.badges,
+        id: user.id
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: err.errors });
       }
-      res.status(500).json({ message: "Login failed" });
+      res.status(500).json({ message: "Failed to log in" });
     }
   });
 
+  // Get current user
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(200).json({
+        username: user.username,
+        role: user.role,
+        likeMultiplier: user.likeMultiplier,
+        badges: user.badges,
+        id: user.id
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
+  // Logout
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ message: "Logout failed" });
+        return res.status(500).json({ message: "Failed to log out" });
       }
       res.status(200).json({ message: "Logged out successfully" });
     });
   });
 
-  app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      req.session.destroy(() => {});
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    // Remove password from response
-    const { password, ...userWithoutPassword } = user;
-    
-    res.status(200).json(userWithoutPassword);
-  });
-
-  // User Routes
-  // Fixed order: specific route first, then parametrized routes
-  app.get("/api/users/top", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const topUsers = await storage.getTopUsers(limit);
-      
-      // Remove passwords from response
-      const usersWithoutPasswords = topUsers.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
-      
-      res.status(200).json(usersWithoutPasswords);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch top users" });
-    }
-  });
-
-  app.get("/api/users", requireAuth, async (req, res) => {
+  // Obtener todos los usuarios (admin solo)
+  app.get("/api/users", requireAdmin, async (req, res) => {
     try {
       const users = await storage.getUsers();
-      const usersWithoutPasswords = users.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
-      
-      res.status(200).json(usersWithoutPasswords);
+      // No enviar la contraseña
+      const sanitizedUsers = users.map(user => ({
+        username: user.username,
+        role: user.role,
+        likeMultiplier: user.likeMultiplier,
+        badges: user.badges,
+        id: user.id
+      }));
+      res.status(200).json(sanitizedUsers);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch users" });
+      res.status(500).json({ message: "Failed to get users" });
     }
   });
 
-  app.get("/api/users/:id", requireAuth, async (req, res) => {
+  // Actualizar un usuario (solo admin)
+  app.patch("/api/users/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
+      const userId = parseInt(req.params.id, 10);
+      const data = updateUserSchema.parse(req.body);
       
-      const user = await storage.getUser(id);
+      const user = await storage.updateUser(userId, data);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Get user stats
-      const stats = await storage.getUserStats(id);
-      
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
-      
       res.status(200).json({
-        ...userWithoutPassword,
-        stats
+        username: user.username,
+        role: user.role,
+        likeMultiplier: user.likeMultiplier,
+        badges: user.badges,
+        id: user.id
       });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  app.patch("/api/users/:id", requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      
-      const data = updateUserSchema.parse(req.body);
-      
-      const updatedUser = await storage.updateUser(id, data);
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Remove password from response
-      const { password, ...userWithoutPassword } = updatedUser;
-      
-      res.status(200).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: err.errors });
       }
       res.status(500).json({ message: "Failed to update user" });
     }
   });
-  
-  app.put("/api/posts/:id/freeze", requireModerator, async (req, res) => {
+
+  // Crear un post (usuario autenticado)
+  app.post("/api/posts", requireAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const { frozen } = req.body;
-      
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid post ID" });
-      }
-
-      const post = await storage.updatePost(id, { frozen });
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
-
-      res.status(200).json(post);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update post freeze status" });
-    }
-  });
-  
-  app.put("/api/posts/:id/slow-mode", requireModerator, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const { slowModeInterval } = req.body;
-      
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid post ID" });
-      }
-      
-      // Validar que slowModeInterval sea un número válido
-      if (typeof slowModeInterval !== 'number' || slowModeInterval < 0) {
-        return res.status(400).json({ message: "slowModeInterval debe ser un número no negativo" });
-      }
-
-      const post = await storage.updatePost(id, { slowModeInterval });
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
-
-      res.status(200).json(post);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update post slow mode" });
-    }
-  });
-
-  app.delete("/api/users/:id", requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      
-      // Don't allow deleting own account
-      if (id === req.session.userId) {
-        return res.status(400).json({ message: "Cannot delete your own account" });
-      }
-      
-      const success = await storage.deleteUser(id);
-      if (!success) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.status(200).json({ message: "User deleted successfully" });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete user" });
-    }
-  });
-
-  // Post Routes
-  app.post("/api/posts", requireModerator, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
+      const userId = req.session.userId;
       const data = insertPostSchema.parse({
         ...req.body,
-        userId
+        userId,
+        createdAt: new Date()
       });
       
       const post = await storage.createPost(data);
       res.status(201).json(post);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: err.errors });
       }
       res.status(500).json({ message: "Failed to create post" });
     }
   });
 
+  // Obtener todos los posts
   app.get("/api/posts", async (req, res) => {
     try {
-      // Incluir el ID del usuario actual si está autenticado
-      const currentUserId = req.session.userId || 0;
-      
+      const currentUserId = req.session?.userId || 0;
       const posts = await storage.getPosts(currentUserId);
       res.status(200).json(posts);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch posts" });
+      res.status(500).json({ message: "Failed to get posts" });
     }
   });
 
-  // Top Posts - IMPORTANT: This route must be defined before the dynamic :id route
-  app.get("/api/posts/top", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 5;
-      
-      // Incluir el ID del usuario actual si está autenticado
-      const currentUserId = req.session.userId || 0;
-      
-      const topPosts = await storage.getTopPosts(limit, currentUserId);
-      res.status(200).json(topPosts);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch top posts" });
-    }
-  });
-
+  // Obtener un post por ID
   app.get("/api/posts/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid post ID" });
-      }
+      const postId = parseInt(req.params.id, 10);
+      const post = await storage.getPost(postId);
       
-      const post = await storage.getPost(id);
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
       
-      const user = await storage.getUser(post.userId);
-      
-      // Count likes
-      const likes = Array.from((await storage.getLikesByUserId(post.userId)).values())
-        .filter(like => like.postId === post.id)
-        .length;
-      
-      res.status(200).json({
-        ...post,
-        user: {
-          id: user?.id || 0,
-          username: user?.username || "unknown",
-          role: user?.role || "user",
-        },
-        likes
-      });
+      res.status(200).json(post);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch post" });
+      res.status(500).json({ message: "Failed to get post" });
     }
   });
 
-  // Comment Routes
+  // Actualizar estado de congelación de un post (solo admin/mod)
+  app.put("/api/posts/:id/freeze", requireModerator, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      const { frozen } = req.body;
+      
+      if (typeof frozen !== 'boolean') {
+        return res.status(400).json({ message: "Invalid input: 'frozen' must be a boolean" });
+      }
+      
+      const post = await storage.updatePost(postId, { frozen });
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      res.status(200).json({ message: `Post ${frozen ? 'frozen' : 'unfrozen'} successfully`, post });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update post freeze status" });
+    }
+  });
+
+  // Actualizar intervalo de modo lento de un post (solo admin/mod)
+  app.put("/api/posts/:id/slow-mode", requireModerator, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      const { slowModeInterval } = req.body;
+      
+      if (typeof slowModeInterval !== 'number' || slowModeInterval < 0) {
+        return res.status(400).json({ message: "Invalid input: 'slowModeInterval' must be a non-negative number" });
+      }
+      
+      const post = await storage.updatePost(postId, { slowModeInterval });
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      res.status(200).json({ 
+        message: slowModeInterval > 0 
+          ? `Slow mode set to ${slowModeInterval} seconds` 
+          : "Slow mode disabled", 
+        post 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update slow mode interval" });
+    }
+  });
+
+  // Crear un comentario (usuario autenticado)
   app.post("/api/comments", requireAuth, async (req, res) => {
     try {
-      const userId = req.session.userId!;
+      const userId = req.session.userId;
       const data = insertCommentSchema.parse({
         ...req.body,
-        userId
+        userId,
+        createdAt: new Date()
       });
       
-      // Verificar si el post está congelado
+      // Verificar si el post existe
       const post = await storage.getPost(data.postId);
       if (!post) {
-        return res.status(404).json({ message: "Post no encontrado" });
+        return res.status(404).json({ message: "Post not found" });
       }
       
+      // Verificar si el post está congelado
       if (post.frozen) {
-        return res.status(403).json({ message: "No se pueden añadir comentarios a un post congelado" });
+        return res.status(403).json({ message: "This post is frozen. Comments are disabled." });
       }
       
-      // Verificar si el post está en modo lento (slow mode)
+      // Verificar modo lento
       if (post.slowModeInterval > 0) {
-        // Obtener el último comentario del usuario en este post
-        const allComments = Array.from(await storage.getCommentsByPostId(post.id))
-          .flat()
-          .filter(comment => comment.user.id === userId);
-          
-        // Ordenar por fecha de creación (más reciente primero)
-        allComments.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        // Obtener comentarios recientes del usuario en este post
+        const allComments = await storage.getCommentsByPostId(post.id);
+        const userComments = allComments
+          .filter(c => c.user.id === userId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
-        const lastComment = allComments[0];
+        const lastComment = userComments[0];
         
         if (lastComment) {
           const lastCommentTime = new Date(lastComment.createdAt).getTime();
@@ -437,215 +350,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({
         ...comment,
         user: {
-          id: user?.id || 0,
-          username: user?.username || "unknown",
-          role: user?.role || "user",
-          likeMultiplier: user?.likeMultiplier || 1
-        },
-        likes: 0,
-        replies: []
+          id: user?.id,
+          username: user?.username,
+          role: user?.role,
+          badges: user?.badges,
+          likeMultiplier: user?.likeMultiplier
+        }
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: err.errors });
       }
       res.status(500).json({ message: "Failed to create comment" });
     }
   });
 
-  app.get("/api/posts/:postId/comments", async (req, res) => {
+  // Obtener comentarios de un post
+  app.get("/api/posts/:id/comments", async (req, res) => {
     try {
-      const postId = parseInt(req.params.postId);
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: "Invalid post ID" });
-      }
+      const postId = parseInt(req.params.id, 10);
+      const currentUserId = req.session?.userId || 0;
       
-      // Incluir el ID del usuario actual si está autenticado
-      const currentUserId = req.session.userId || 0;
+      // Verificar si el post existe
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
       
       const comments = await storage.getCommentsByPostId(postId, currentUserId);
       res.status(200).json(comments);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch comments" });
-    }
-  });
-  
-  // PostBoard routes
-  app.get("/api/posts/:postId/board", async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: "Invalid post ID" });
-      }
-      
-      const boardUsers = await storage.getPostBoardUsers(postId);
-      res.json(boardUsers);
-    } catch (error) {
-      console.error("Error fetching post board data:", error);
-      res.status(500).json({ message: "Failed to fetch post board data" });
-    }
-  });
-  
-  app.put("/api/posts/:postId/verify", requireModerator, async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const { userId, verificationType, value } = req.body;
-      
-      if (isNaN(postId) || !userId || !verificationType) {
-        return res.status(400).json({ message: "Invalid request parameters" });
-      }
-      
-      if (verificationType !== 'irl' && verificationType !== 'handmade') {
-        return res.status(400).json({ message: "Invalid verification type" });
-      }
-      
-      const success = await storage.updateUserVerification(
-        userId, 
-        postId, 
-        verificationType, 
-        value, 
-        req.session.username || "unknown"
-      );
-      
-      if (success) {
-        res.json({ success: true });
-      } else {
-        res.status(404).json({ message: "User or post not found" });
-      }
-    } catch (error) {
-      console.error("Error updating verification:", error);
-      res.status(500).json({ message: "Failed to update verification status" });
+      res.status(500).json({ message: "Failed to get comments" });
     }
   });
 
-  // Vote Routes
+  // Crear o actualizar un voto (like/dislike)
   app.post("/api/votes", requireAuth, async (req, res) => {
     try {
-      const userId = req.session.userId!;
-      const { commentId, postId, isUpvote } = req.body;
+      const userId = req.session.userId;
+      const { commentId, postId, voteType } = req.body;
+      
+      if (voteType !== 'upvote' && voteType !== 'downvote') {
+        return res.status(400).json({ message: "Invalid vote type. Must be 'upvote' or 'downvote'" });
+      }
       
       if (!commentId && !postId) {
-        return res.status(400).json({ message: "Either commentId or postId is required" });
+        return res.status(400).json({ message: "Must provide either commentId or postId" });
       }
       
-      if (isUpvote === undefined) {
-        return res.status(400).json({ message: "Vote type (isUpvote) is required" });
-      }
-      
-      // Verificar si se está votando directamente en un post congelado
-      if (postId) {
+      // Verificar si el comentario/post existe
+      if (commentId) {
+        const comment = await storage.getComment(commentId);
+        if (!comment) {
+          return res.status(404).json({ message: "Comment not found" });
+        }
+        
+        // Verificar si el post asociado está congelado
+        const post = await storage.getPost(comment.postId);
+        if (post && post.frozen) {
+          return res.status(403).json({ message: "This post is frozen. Voting is disabled." });
+        }
+      } else if (postId) {
         const post = await storage.getPost(postId);
-        if (post?.frozen) {
-          return res.status(403).json({ message: "No se pueden añadir votos a un post congelado" });
+        if (!post) {
+          return res.status(404).json({ message: "Post not found" });
+        }
+        
+        // Verificar si el post está congelado
+        if (post.frozen) {
+          return res.status(403).json({ message: "This post is frozen. Voting is disabled." });
         }
       }
       
-      // Verificar si se está votando en un comentario de un post congelado
-      if (commentId) {
-        const comment = await storage.getComment(commentId);
-        if (comment) {
-          const post = await storage.getPost(comment.postId);
-          if (post?.frozen) {
-            return res.status(403).json({ message: "No se pueden añadir votos a comentarios de un post congelado" });
+      // Verificar si ya existe un voto del usuario
+      const existingVote = await storage.checkLikeExists(userId, commentId, postId);
+      
+      // Si ya existe un voto, eliminarlo
+      if (existingVote) {
+        await storage.removeLike(userId, commentId, postId);
+      }
+      
+      // Crear un nuevo voto si no es el mismo tipo que el existente
+      const userVote = await storage.getUserVote(userId, commentId, postId);
+      let action = "added";
+      
+      if (userVote === voteType) {
+        action = "removed";
+      } else {
+        // Si es un voto diferente o no había voto, crear uno nuevo
+        await storage.createLike({
+          userId,
+          commentId,
+          postId,
+          type: voteType === 'upvote' ? 'like' : 'dislike',
+          createdAt: new Date()
+        });
+        
+        // Si es un upvote a un comentario, crear notificación
+        if (voteType === 'upvote' && commentId) {
+          const comment = await storage.getComment(commentId);
+          if (comment && comment.userId !== userId) {
+            await storage.createNotification({
+              userId: comment.userId,
+              triggeredByUserId: userId,
+              postId: comment.postId,
+              commentId: commentId,
+              type: 'like'
+            });
           }
         }
       }
       
-      // Check if already voted on this item
-      const existingVote = await storage.getUserVote(userId, commentId, postId);
-      if (existingVote) {
-        // Remove existing vote
-        await storage.removeLike(userId, commentId, postId);
-        
-        // If the user is changing vote type (upvote -> downvote or vice versa), add the new vote
-        if ((existingVote === 'upvote' && !isUpvote) || (existingVote === 'downvote' && isUpvote)) {
-          const data = insertLikeSchema.parse({
-            userId,
-            commentId,
-            postId,
-            isUpvote
-          });
-          
-          await storage.createLike(data);
-          return res.status(201).json({ 
-            message: isUpvote ? "Upvoted successfully" : "Downvoted successfully", 
-            action: "changed", 
-            voteType: isUpvote ? "upvote" : "downvote" 
-          });
-        }
-        
-        // If the user is clicking the same vote type, just remove the vote
-        return res.status(200).json({ 
-          message: "Vote removed", 
-          action: "removed" 
-        });
-      }
-      
-      // Add new vote
-      const data = insertLikeSchema.parse({
-        userId,
-        commentId,
-        postId,
-        isUpvote
-      });
-      
-      await storage.createLike(data);
-      
-      // Crear notificación si es un like en un comentario
-      if (commentId && isUpvote) {
-        const comment = await storage.getComment(commentId);
-        if (comment && comment.userId !== userId) {
-          await storage.createNotification({
-            userId: comment.userId,
-            triggeredByUserId: userId,
-            postId: comment.postId,
-            commentId: commentId,
-            type: 'like'
-          });
-        }
-      }
-      
       res.status(201).json({ 
-        message: isUpvote ? "Upvoted successfully" : "Downvoted successfully", 
-        action: "added", 
-        voteType: isUpvote ? "upvote" : "downvote" 
+        message: `${voteType === 'upvote' ? 'Upvoted' : 'Downvoted'} successfully`,
+        action
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      res.status(500).json({ message: "Failed to vote" });
-    }
-  });
-  
-  // Legacy route for backwards compatibility
-  app.post("/api/likes", requireAuth, async (req, res) => {
-    try {
-      // Redirect to the votes endpoint with isUpvote=true
-      req.body.isUpvote = true;
-      
-      // Forward the request to the votes handler
-      const voteHandler = app._router.stack
-        .filter((layer: any) => layer.route?.path === '/api/votes')
-        .map((layer: any) => layer.route.stack[0].handle)[0];
-      
-      if (voteHandler) {
-        voteHandler(req, res);
-      } else {
-        res.status(500).json({ message: "Vote handler not found" });
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to process like" });
+      res.status(500).json({ message: "Failed to process vote" });
     }
   });
 
-  // Leaderboard
+  // Obtener usuarios del tablero de un post (PostBoard)
+  app.get("/api/posts/:id/board", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      
+      // Verificar si el post existe
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      const users = await storage.getPostBoardUsers(postId);
+      res.status(200).json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get post board users" });
+    }
+  });
+
+  // Actualizar verificación de usuario en un post (IRL o Handmade)
+  app.post("/api/posts/:postId/users/:userId/verify", requireModerator, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId, 10);
+      const userId = parseInt(req.params.userId, 10);
+      const { type, value } = req.body;
+      
+      if (type !== 'irl' && type !== 'handmade') {
+        return res.status(400).json({ message: "Invalid verification type. Must be 'irl' or 'handmade'" });
+      }
+      
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value. Must be a boolean" });
+      }
+      
+      // Obtener el nombre del verificador (admin/mod)
+      const verifierName = req.session.username;
+      
+      const result = await storage.updateUserVerification(userId, postId, type, value, verifierName);
+      
+      if (result) {
+        res.status(200).json({ 
+          message: `User ${userId} ${value ? 'verified' : 'unverified'} as ${type} by ${verifierName}`,
+          type,
+          value,
+          verifiedBy: verifierName
+        });
+      } else {
+        res.status(400).json({ message: "Failed to update verification" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Obtener el leaderboard (mejores comentarios)
   app.get("/api/leaderboard", async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      
-      // Incluir el ID del usuario actual si está autenticado
-      const currentUserId = req.session.userId || 0;
+      const currentUserId = req.session?.userId || 0;
+      const limitStr = req.query.limit as string;
+      const limit = limitStr ? parseInt(limitStr, 10) : 10;
       
       const topComments = await storage.getTopComments(limit, currentUserId);
       res.status(200).json(topComments);
@@ -653,10 +536,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch leaderboard" });
     }
   });
-  
-
 
   const httpServer = createServer(app);
+  
   // Notificaciones
   
   // Obtener notificaciones del usuario actual
@@ -666,6 +548,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(notifications);
     } catch (error) {
       console.error("Error getting notifications:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Marcar todas las notificaciones como leídas
+  app.put("/api/notifications/read-all", requireAuth, async (req, res) => {
+    try {
+      const result = await storage.markAllNotificationsAsRead(req.session.userId);
+      
+      if (result) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(200).json({ success: false, message: "No hay notificaciones para marcar como leídas" });
+      }
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -683,22 +581,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-  
-  // Marcar todas las notificaciones como leídas
-  app.put("/api/notifications/read-all", requireAuth, async (req, res) => {
-    try {
-      const result = await storage.markAllNotificationsAsRead(req.session.userId);
-      
-      if (result) {
-        res.status(200).json({ success: true });
-      } else {
-        res.status(200).json({ success: false, message: "No hay notificaciones para marcar como leídas" });
-      }
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
