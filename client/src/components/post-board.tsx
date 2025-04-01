@@ -388,48 +388,9 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                     <TableHead className="w-[200px]">Usuario</TableHead>
                     <TableHead>Insignias</TableHead>
                     <TableHead className="text-center">Comentarios</TableHead>
-                    <TableHead className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="inline-flex items-center text-green-700 font-semibold">
-                              Upvotes <span className="ml-1 text-xs">(x mult)</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Votos positivos con multiplicadores aplicados</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableHead>
-                    <TableHead className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="inline-flex items-center text-red-700 font-semibold">
-                              Downvotes <span className="ml-1 text-xs">(x mult)</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Votos negativos con multiplicadores aplicados</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableHead>
-                    <TableHead className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="inline-flex items-center text-primary font-semibold">
-                              Puntuación neta
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Upvotes - Downvotes (con multiplicadores)</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableHead>
+                    <TableHead className="text-center">Upvotes (x mult)</TableHead>
+                    <TableHead className="text-center">Downvotes (x mult)</TableHead>
+                    <TableHead className="text-center">Net Score</TableHead>
                     <TableHead className="text-center">Verificaciones</TableHead>
                     {canVerify && <TableHead className="text-center">Acciones</TableHead>}
                   </TableRow>
@@ -482,60 +443,41 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                           </Tooltip>
                         </TooltipProvider>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center font-medium">
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex flex-col items-center">
-                                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-base px-3 py-1">
-                                  <span className="font-bold">+{boardUser.upvotes}</span>
-                                </Badge>
-                                <span className="text-xs text-green-700 mt-1">Multiplicado</span>
-                              </div>
+                            <TooltipTrigger>
+                              <span className="text-green-600">+{boardUser.upvotes}</span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Total de upvotes con multiplicadores aplicados</p>
-                              <p className="text-xs mt-1">Este valor incluye los multiplicadores de cada votante</p>
+                              <p>Upvotes con multiplicadores aplicados</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center font-medium">
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex flex-col items-center">
-                                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300 text-base px-3 py-1">
-                                  <span className="font-bold">-{boardUser.downvotes}</span>
-                                </Badge>
-                                <span className="text-xs text-red-700 mt-1">Multiplicado</span>
-                              </div>
+                            <TooltipTrigger>
+                              <span className="text-red-600">-{boardUser.downvotes}</span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Total de downvotes con multiplicadores aplicados</p>
-                              <p className="text-xs mt-1">Este valor incluye los multiplicadores de cada votante</p>
+                              <p>Downvotes con multiplicadores aplicados</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center font-medium">
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex flex-col items-center">
-                                <Badge variant={boardUser.netScore >= 0 ? "default" : "destructive"} className="text-base px-4 py-1">
-                                  <span className="font-bold">{boardUser.netScore}</span>
-                                </Badge>
-                                <span className="text-xs text-muted-foreground mt-1">Net Score</span>
-                              </div>
+                            <TooltipTrigger>
+                              <span className={boardUser.netScore >= 0 ? "text-primary" : "text-destructive"}>
+                                {boardUser.netScore}
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p className="font-medium">Puntuación neta: {boardUser.netScore}</p>
-                              <div className="flex items-center justify-between gap-3 mt-1">
-                                <span className="text-green-600">+{boardUser.upvotes} upvotes</span>
-                                <span className="text-red-600">-{boardUser.downvotes} downvotes</span>
-                              </div>
-                              <p className="text-xs mt-2">Todos los valores incluyen multiplicadores</p>
+                              <p>Puntuación neta (upvotes - downvotes)</p>
+                              <p className="text-xs">Incluye multiplicadores de todos los votantes</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

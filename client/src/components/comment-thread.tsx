@@ -169,21 +169,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
             >
               <ArrowUp className="h-3 w-3" />
             </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-xs mx-px">
-                    {comment.voteScore || 0}
-                    <span className="text-[0.65rem] ml-0.5">
-                      (+{comment.upvotes || 0}/-{comment.downvotes || 0})
-                    </span>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Upvotes: +{comment.upvotes} | Downvotes: -{comment.downvotes} (con multiplicadores)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <span className="text-xs mx-px">{comment.voteScore || 0}</span>
             <Button 
               variant="ghost" 
               size="sm" 
