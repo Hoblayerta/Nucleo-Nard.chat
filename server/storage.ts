@@ -560,6 +560,52 @@ export class MemStorage implements IStorage {
       (comment) => comment.postId === postId
     );
     
+    // Calcular comentarios totales (incluyendo respuestas anidadas)
+    // Para cada usuario, contamos comentarios directos + respuestas a sus comentarios
+    const userCommentCounts = new Map<number, { direct: number, total: number }>();
+    
+    // Primera pasada: contamos comentarios directos
+    postComments.forEach(comment => {
+      const userId = comment.userId;
+      const counts = userCommentCounts.get(userId) || { direct: 0, total: 0 };
+      counts.direct += 1;
+      counts.total += 1;
+      userCommentCounts.set(userId, counts);
+    });
+    
+    // Segunda pasada: contamos respuestas (para el total)
+    const commentsByParent = new Map<number, Comment[]>();
+    postComments.forEach(comment => {
+      if (comment.parentId) {
+        const list = commentsByParent.get(comment.parentId) || [];
+        list.push(comment);
+        commentsByParent.set(comment.parentId, list);
+      }
+    });
+    
+    // Función recursiva para contar respuestas
+    const countReplies = (commentId: number): number => {
+      const replies = commentsByParent.get(commentId) || [];
+      let count = replies.length;
+      
+      for (const reply of replies) {
+        count += countReplies(reply.id);
+      }
+      
+      return count;
+    };
+    
+    // Actualizar los totales
+    postComments.forEach(comment => {
+      const replyCount = countReplies(comment.id);
+      if (replyCount > 0) {
+        const userId = comment.userId;
+        const counts = userCommentCounts.get(userId)!;
+        counts.total += replyCount;
+        userCommentCounts.set(userId, counts);
+      }
+    });
+    
     // Obtener todos los likes de este post
     const postLikes = Array.from(this.likes.values()).filter(
       (like) => like.postId === postId || postComments.some(c => c.id === like.commentId)
@@ -586,11 +632,12 @@ export class MemStorage implements IStorage {
     if (postAuthor) {
       // Obtener verificaciones de este usuario si existen
       const userVerif = postVerificationsMap.get(postAuthor.id);
+      const commentData = userCommentCounts.get(postAuthor.id) || { direct: 0, total: 0 };
       
       userMap.set(postAuthor.id, {
         user: postAuthor,
-        commentCount: 0,
-        totalComments: 0,
+        commentCount: commentData.direct,
+        totalComments: commentData.total,
         upvotes: 0,
         downvotes: 0,
         isIRL: userVerif?.isIRL || false,
@@ -600,22 +647,18 @@ export class MemStorage implements IStorage {
       });
     }
     
-    // Añadir los autores de los comentarios
-    postComments.forEach(comment => {
-      const commentUser = this.users.get(comment.userId);
-      if (commentUser) {
-        if (userMap.has(commentUser.id)) {
-          // Incrementar el contador de comentarios
-          const userData = userMap.get(commentUser.id)!;
-          userData.commentCount += 1;
-        } else {
-          // Añadir nuevo usuario
-          const userVerif = postVerificationsMap.get(commentUser.id);
+    // Añadir todos los usuarios que han comentado
+    userCommentCounts.forEach((counts, userId) => {
+      if (userId !== post.userId) { // Ya añadimos el autor anteriormente
+        const commentUser = this.users.get(userId);
+        if (commentUser) {
+          // Obtener verificaciones
+          const userVerif = postVerificationsMap.get(userId);
           
-          userMap.set(commentUser.id, {
+          userMap.set(userId, {
             user: commentUser,
-            commentCount: 1,
-            totalComments: 1,
+            commentCount: counts.direct,
+            totalComments: counts.total,
             upvotes: 0,
             downvotes: 0,
             isIRL: userVerif?.isIRL || false,
@@ -627,25 +670,43 @@ export class MemStorage implements IStorage {
       }
     });
     
-    // Procesar los votos en el post y comentarios
+    // Procesar los votos (upvotes y downvotes)
     postLikes.forEach(like => {
+      // Si el usuario que dio el voto aún no está en el mapa, lo añadimos
       const likeUser = this.users.get(like.userId);
-      if (likeUser) {
-        if (!userMap.has(likeUser.id)) {
-          // Añadir nuevo usuario que solo ha votado
-          const userVerif = postVerificationsMap.get(likeUser.id);
+      if (likeUser && !userMap.has(likeUser.id)) {
+        const userVerif = postVerificationsMap.get(likeUser.id);
           
-          userMap.set(likeUser.id, {
-            user: likeUser,
-            commentCount: 0,
-            totalComments: 0,
-            upvotes: 0,
-            downvotes: 0,
-            isIRL: userVerif?.isIRL || false,
-            isHandmade: userVerif?.isHandmade || false,
-            irlVotes: userVerif?.irlVotes || [],
-            handmadeVotes: userVerif?.handmadeVotes || []
-          });
+        userMap.set(likeUser.id, {
+          user: likeUser,
+          commentCount: 0,
+          totalComments: 0,
+          upvotes: 0,
+          downvotes: 0,
+          isIRL: userVerif?.isIRL || false,
+          isHandmade: userVerif?.isHandmade || false,
+          irlVotes: userVerif?.irlVotes || [],
+          handmadeVotes: userVerif?.handmadeVotes || []
+        });
+      }
+      
+      // Procesar el voto en sí
+      if (like.postId === postId) {
+        // Voto al post principal
+        const targetUser = userMap.get(post.userId);
+        if (targetUser) {
+          if (like.isUpvote) targetUser.upvotes++;
+          else targetUser.downvotes++;
+        }
+      } else if (like.commentId) {
+        // Voto a un comentario
+        const comment = this.comments.get(like.commentId);
+        if (comment && comment.postId === postId) {
+          const targetUser = userMap.get(comment.userId);
+          if (targetUser) {
+            if (like.isUpvote) targetUser.upvotes++;
+            else targetUser.downvotes++;
+          }
         }
       }
     });
@@ -661,14 +722,14 @@ export class MemStorage implements IStorage {
         role: item.user.role,
         badges: userBadges,
         commentCount: item.commentCount,
-        totalComments: item.totalComments || item.commentCount, // Si no hay total, usamos el recuento básico
+        totalComments: item.totalComments,
         upvotes: item.upvotes,
         downvotes: item.downvotes,
         netScore: item.upvotes - item.downvotes,
         isIRL: item.isIRL,
         isHandmade: item.isHandmade,
-        irlVotes: item.irlVotes || [],
-        handmadeVotes: item.handmadeVotes || []
+        irlVotes: item.irlVotes,
+        handmadeVotes: item.handmadeVotes
       };
     });
     

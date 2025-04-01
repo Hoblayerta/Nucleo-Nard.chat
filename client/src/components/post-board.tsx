@@ -64,13 +64,14 @@ interface PostBoardUser {
   role: string;
   badges: string[];
   commentCount: number;
+  totalComments: number; // total de comentarios incluyendo respuestas
   upvotes: number;
   downvotes: number;
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string; // nombre del admin/mod que verificó
-  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+  irlVotes: string[]; // nombres de admin/mod que votaron IRL
+  handmadeVotes: string[]; // nombres de admin/mod que votaron Handmade
 }
 
 interface PostBoardProps {
@@ -415,9 +416,10 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                                 ? "bg-blue-500 hover:bg-blue-600" 
                                 : "text-muted-foreground"
                               }
+                              title={boardUser.irlVotes?.join(", ") || ""}
                             >
                               <UserCheck className="h-3 w-3 mr-1" />
-                              IRL {boardUser.isIRL ? (boardUser.irlVotes && boardUser.irlVotes.length > 0 ? `(${boardUser.irlVotes.length})` : '') : '(No)'}
+                              IRL {boardUser.isIRL ? `(${boardUser.irlVotes?.length || 0})` : '(No)'}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1">
@@ -427,9 +429,10 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                                 ? "bg-amber-500 hover:bg-amber-600" 
                                 : "text-muted-foreground"
                               }
+                              title={boardUser.handmadeVotes?.join(", ") || ""}
                             >
                               <HandMetal className="h-3 w-3 mr-1" />
-                              Handmade {boardUser.isHandmade ? (boardUser.handmadeVotes && boardUser.handmadeVotes.length > 0 ? `(${boardUser.handmadeVotes.length})` : '') : '(No)'}
+                              Handmade {boardUser.isHandmade ? `(${boardUser.handmadeVotes?.length || 0})` : '(No)'}
                             </Badge>
                           </div>
                         </div>
