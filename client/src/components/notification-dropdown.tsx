@@ -20,7 +20,8 @@ interface Notification {
   postId: number;
   commentId?: number;
   parentCommentId?: number;
-  type: 'reply' | 'like';
+  mentionedUsername?: string;
+  type: 'reply' | 'mention';
   read: boolean;
   createdAt: string;
   triggerUser: {
@@ -91,8 +92,8 @@ export default function NotificationDropdown() {
         {type === 'reply' && (
           <span> respondió a tu comentario en <span className="font-medium italic">{post.title}</span></span>
         )}
-        {type === 'like' && (
-          <span> le gustó tu comentario en <span className="font-medium italic">{post.title}</span></span>
+        {type === 'mention' && (
+          <span> te mencionó en un comentario en <span className="font-medium italic">{post.title}</span></span>
         )}
         <div className="text-xs text-gray-500 mt-1">
           {timeAgo(new Date(notification.createdAt))}

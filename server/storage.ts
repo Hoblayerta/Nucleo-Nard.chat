@@ -46,6 +46,7 @@ export interface IStorage {
     postId: number;
     commentId?: number;
     parentCommentId?: number;
+    mentionedUsername?: string;
     type: NotificationType;
   }): Promise<Notification>;
   getUserNotifications(userId: number, limit?: number): Promise<NotificationWithDetails[]>;
@@ -835,6 +836,7 @@ export class MemStorage implements IStorage {
     postId: number;
     commentId?: number;
     parentCommentId?: number;
+    mentionedUsername?: string;
     type: NotificationType;
   }): Promise<Notification> {
     const id = this.currentIds.notification++;

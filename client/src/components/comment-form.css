@@ -70,6 +70,39 @@
   background: linear-gradient(90deg, var(--yellow-500), var(--yellow-300)) !important;
 }
 
+/* Estilos para el sistema de menciones */
+.mention-highlight {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 4px;
+  padding: 0 2px;
+  font-weight: 500;
+}
+
+.mention-suggestions {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-height: 200px;
+  overflow-y: auto;
+  width: 250px;
+  position: absolute;
+  z-index: 50;
+}
+
+.mention-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mention-item:hover {
+  background-color: #f3f4f6;
+}
+
 @media (max-width: 768px) {
   .comment-form-container {
     flex-direction: column;

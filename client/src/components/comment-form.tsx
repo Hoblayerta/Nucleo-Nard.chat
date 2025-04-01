@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useSlowMode } from "@/hooks/use-slow-mode";
-import { Lock, Clock } from "lucide-react";
+import { Lock, Clock, AtSign } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +28,46 @@ export default function CommentForm({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
+  const [mentionedUsers, setMentionedUsers] = useState<string[]>([]);
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Obtener la lista de usuarios para menciones
+  const { data: users = [] } = useQuery<Array<{id: number, username: string}>>({
+    queryKey: ['/api/users/list'],
+    enabled: !!user
+  });
+  
+  // Función para verificar si el usuario está escribiendo una mención (@)
+  const checkForMention = (text: string, cursorPos: number) => {
+    // Buscar la última ocurrencia de @ antes de la posición del cursor
+    const textUntilCursor = text.substring(0, cursorPos);
+    const lastAtSymbol = textUntilCursor.lastIndexOf('@');
+    
+    if (lastAtSymbol >= 0) {
+      // Verificar que el @ no sea parte de una palabra (debe estar precedido por espacio o ser el inicio del texto)
+      const isStartOfText = lastAtSymbol === 0;
+      const isPrecededBySpace = lastAtSymbol > 0 && /\s/.test(text[lastAtSymbol - 1]);
+      
+      if (isStartOfText || isPrecededBySpace) {
+        // Extraer la consulta (texto entre @ y la posición actual del cursor)
+        const query = textUntilCursor.substring(lastAtSymbol + 1);
+        
+        // Si hay una consulta y no contiene espacios, mostrar sugerencias
+        if (query.length > 0 && !query.includes(' ')) {
+          setMentionQuery(query);
+          setShowMentionSuggestions(true);
+          return;
+        }
+      }
+    }
+    
+    // Si no se cumplen las condiciones, ocultar las sugerencias
+    setShowMentionSuggestions(false);
+    setMentionQuery("");
+  };
   
   // Usar el contexto de SlowMode para sincronizar la cuenta atrás entre todos los formularios
   const { 
@@ -182,13 +222,74 @@ export default function CommentForm({
           </div>
         )}
         
-        <Textarea
-          className="comment-form-textarea"
-          placeholder={parentId ? "Write a reply..." : "Write a comment..."}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          disabled={slowModeCountdown > 0}
-        />
+        <div className="relative">
+          <Textarea
+            ref={textareaRef}
+            className="comment-form-textarea"
+            placeholder={parentId ? "Write a reply..." : "Write a comment..."}
+            value={comment}
+            onChange={(e) => {
+              setComment(e.target.value);
+              const cursorPos = e.target.selectionStart || 0;
+              setCursorPosition(cursorPos);
+              checkForMention(e.target.value, cursorPos);
+            }}
+            onKeyDown={(e) => {
+              // Al presionar Escape, cerrar las sugerencias
+              if (e.key === 'Escape' && showMentionSuggestions) {
+                setShowMentionSuggestions(false);
+                e.preventDefault();
+              }
+            }}
+            disabled={slowModeCountdown > 0}
+          />
+          
+          {/* Lista de sugerencias de menciones */}
+          {showMentionSuggestions && (
+            <div className="absolute z-10 bg-white rounded-md shadow-lg border mt-1 max-h-60 overflow-y-auto w-60">
+              {users
+                .filter((u: any) => u.username.toLowerCase().includes(mentionQuery.toLowerCase()))
+                .slice(0, 5)
+                .map((user: any) => (
+                  <div
+                    key={user.id}
+                    className="p-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    onClick={() => {
+                      // Insertar la mención en el texto
+                      const textBeforeCursor = comment.substring(0, cursorPosition);
+                      const lastAtPos = textBeforeCursor.lastIndexOf('@');
+                      const textBeforeMention = comment.substring(0, lastAtPos);
+                      const textAfterCursor = comment.substring(cursorPosition);
+                      const newText = `${textBeforeMention}@${user.username} ${textAfterCursor}`;
+                      
+                      setComment(newText);
+                      setShowMentionSuggestions(false);
+                      
+                      // Actualizar la lista de usuarios mencionados
+                      if (!mentionedUsers.includes(user.username)) {
+                        setMentionedUsers([...mentionedUsers, user.username]);
+                      }
+                      
+                      // Poner el foco de nuevo en el textarea
+                      if (textareaRef.current) {
+                        const newCursorPos = lastAtPos + user.username.length + 2; // +2 por @ y espacio
+                        setTimeout(() => {
+                          textareaRef.current?.focus();
+                          textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+                        }, 0);
+                      }
+                    }}
+                  >
+                    <AtSign className="h-4 w-4 text-blue-500" />
+                    {user.username}
+                  </div>
+                ))}
+              {users.filter((u: any) => u.username.toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
+                <div className="p-2 text-gray-500 text-sm">No hay usuarios que coincidan</div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end mt-2">
           <Button 

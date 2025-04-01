@@ -162,15 +162,16 @@ export type PostBoardUser = {
   totalComments: number; // total de comentarios (incluyendo respuestas)
 };
 
-export type NotificationType = 'reply' | 'like';
+export type NotificationType = 'reply' | 'mention';
 
 export type Notification = {
   id: number;
   userId: number; // usuario que recibe la notificación
   triggeredByUserId: number; // usuario que causó la notificación (dio like o respondió)
   postId: number;
-  commentId?: number; // el comentario al que respondieron o dieron like
+  commentId?: number; // el comentario donde se respondió o se mencionó
   parentCommentId?: number; // si es una respuesta, el comentario padre
+  mentionedUsername?: string; // nombre de usuario mencionado (solo para tipo "mention")
   type: NotificationType;
   read: boolean;
   createdAt: string;

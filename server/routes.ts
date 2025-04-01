@@ -159,6 +159,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get users" });
     }
   });
+  
+  // Obtener lista simplificada de usuarios para menciones (autenticado)
+  app.get("/api/users/list", requireAuth, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // Solo enviar username e id para menciones
+      const usernames = users.map(user => ({
+        username: user.username,
+        id: user.id
+      }));
+      res.status(200).json(usernames);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get user list" });
+    }
+  });
 
   // Actualizar un usuario (solo admin)
   app.patch("/api/users/:id", requireAdmin, async (req, res) => {
@@ -347,6 +362,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Buscar menciones en el comentario (@usuario)
+      const mentionRegex = /@(\w+)/g;
+      const mentions = data.content.match(mentionRegex);
+      
+      if (mentions) {
+        const users = await storage.getUsers();
+        const usernames = users.map(u => u.username.toLowerCase());
+        
+        // Para cada mención, enviar notificación al usuario mencionado
+        for (const mention of mentions) {
+          const username = mention.substring(1); // Quitar el signo @
+          const mentionedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+          
+          if (mentionedUser && mentionedUser.id !== userId) {
+            await storage.createNotification({
+              userId: mentionedUser.id,
+              triggeredByUserId: userId,
+              postId: comment.postId,
+              commentId: comment.id,
+              mentionedUsername: mentionedUser.username,
+              type: 'mention'
+            });
+          }
+        }
+      }
+      
       res.status(201).json({
         ...comment,
         user: {
@@ -446,19 +487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: new Date()
         });
         
-        // Si es un upvote a un comentario, crear notificación
-        if (voteType === 'upvote' && commentId) {
-          const comment = await storage.getComment(commentId);
-          if (comment && comment.userId !== userId) {
-            await storage.createNotification({
-              userId: comment.userId,
-              triggeredByUserId: userId,
-              postId: comment.postId,
-              commentId: commentId,
-              type: 'like'
-            });
-          }
-        }
+        // Ya no creamos notificaciones para likes, solo para menciones y respuestas
       }
       
       res.status(201).json({ 
