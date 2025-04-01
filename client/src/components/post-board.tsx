@@ -186,31 +186,21 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
   const exportToExcel = () => {
     // Cabeceras
     const headers = [
-      "Usuario",
-      "Rol",
+      "Nombre",
       "Insignias",
-      "Comentarios",
-      "Upvotes",
-      "Downvotes",
-      "Net Score",
-      "IRL",
-      "IRL Verificado Por",
-      "Handmade",
-      "Handmade Verificado Por"
+      "Cant de comentarios",
+      "Cant de puntos",
+      "Checker de IRL",
+      "Checker de A mano"
     ];
 
     const rows = filteredUsers.map(user => [
       user.username,
-      user.role,
       user.badges.join(", "),
-      user.commentCount.toString(),
-      user.upvotes.toString(),
-      user.downvotes.toString(),
-      user.netScore.toString(),
-      user.isIRL ? "Sí" : "No",
-      user.irlVerifiedBy || "",
-      user.isHandmade ? "Sí" : "No",
-      user.handmadeVerifiedBy || ""
+      user.totalComments.toString(),
+      `${user.netScore}`,
+      user.irlVotes.join(", "),
+      user.handmadeVotes.join(", ")
     ]);
 
     const csvContent = [
@@ -427,7 +417,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               }
                             >
                               <UserCheck className="h-3 w-3 mr-1" />
-                              IRL {boardUser.isIRL ? (boardUser.irlVerifiedBy ? `(${boardUser.irlVerifiedBy})` : '') : '(No)'}
+                              IRL {boardUser.isIRL ? (boardUser.irlVotes && boardUser.irlVotes.length > 0 ? `(${boardUser.irlVotes.length})` : '') : '(No)'}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-1">
@@ -439,7 +429,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                               }
                             >
                               <HandMetal className="h-3 w-3 mr-1" />
-                              Handmade {boardUser.isHandmade ? (boardUser.handmadeVerifiedBy ? `(${boardUser.handmadeVerifiedBy})` : '') : '(No)'}
+                              Handmade {boardUser.isHandmade ? (boardUser.handmadeVotes && boardUser.handmadeVotes.length > 0 ? `(${boardUser.handmadeVotes.length})` : '') : '(No)'}
                             </Badge>
                           </div>
                         </div>

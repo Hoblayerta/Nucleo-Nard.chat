@@ -157,6 +157,7 @@ export type PostBoardUser = {
   netScore: number;
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string; // nombre del admin/mod que verificó
-  handmadeVerifiedBy?: string; // nombre del admin/mod que verificó
+  irlVotes: string[]; // nombres de admin/mod que votaron IRL
+  handmadeVotes: string[]; // nombres de admin/mod que votaron Handmade
+  totalComments: number; // total de comentarios (incluyendo respuestas)
 };

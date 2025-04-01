@@ -47,8 +47,8 @@ export interface IStorage {
 type UserVerification = {
   isIRL: boolean;
   isHandmade: boolean;
-  irlVerifiedBy?: string;
-  handmadeVerifiedBy?: string;
+  irlVotes: string[];
+  handmadeVotes: string[];
 };
 
 export class MemStorage implements IStorage {
@@ -572,12 +572,13 @@ export class MemStorage implements IStorage {
     const userMap = new Map<number, {
       user: User,
       commentCount: number,
+      totalComments: number, // Incluye respuestas a comentarios
       upvotes: number,
       downvotes: number,
       isIRL: boolean,
       isHandmade: boolean,
-      irlVerifiedBy?: string,
-      handmadeVerifiedBy?: string
+      irlVotes: string[],
+      handmadeVotes: string[]
     }>();
     
     // Añadir el autor del post si no está ya en el mapa
@@ -589,12 +590,13 @@ export class MemStorage implements IStorage {
       userMap.set(postAuthor.id, {
         user: postAuthor,
         commentCount: 0,
+        totalComments: 0,
         upvotes: 0,
         downvotes: 0,
         isIRL: userVerif?.isIRL || false,
         isHandmade: userVerif?.isHandmade || false,
-        irlVerifiedBy: userVerif?.irlVerifiedBy,
-        handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+        irlVotes: userVerif?.irlVotes || [],
+        handmadeVotes: userVerif?.handmadeVotes || []
       });
     }
     
@@ -613,12 +615,13 @@ export class MemStorage implements IStorage {
           userMap.set(commentUser.id, {
             user: commentUser,
             commentCount: 1,
+            totalComments: 1,
             upvotes: 0,
             downvotes: 0,
             isIRL: userVerif?.isIRL || false,
             isHandmade: userVerif?.isHandmade || false,
-            irlVerifiedBy: userVerif?.irlVerifiedBy,
-            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+            irlVotes: userVerif?.irlVotes || [],
+            handmadeVotes: userVerif?.handmadeVotes || []
           });
         }
       }
@@ -635,12 +638,13 @@ export class MemStorage implements IStorage {
           userMap.set(likeUser.id, {
             user: likeUser,
             commentCount: 0,
+            totalComments: 0,
             upvotes: 0,
             downvotes: 0,
             isIRL: userVerif?.isIRL || false,
             isHandmade: userVerif?.isHandmade || false,
-            irlVerifiedBy: userVerif?.irlVerifiedBy,
-            handmadeVerifiedBy: userVerif?.handmadeVerifiedBy
+            irlVotes: userVerif?.irlVotes || [],
+            handmadeVotes: userVerif?.handmadeVotes || []
           });
         }
       }
@@ -657,14 +661,15 @@ export class MemStorage implements IStorage {
         role: item.user.role,
         badges: userBadges,
         commentCount: item.commentCount,
+        totalComments: item.totalComments || item.commentCount, // Si no hay total, usamos el recuento básico
         upvotes: item.upvotes,
         downvotes: item.downvotes,
         netScore: item.upvotes - item.downvotes,
         isIRL: item.isIRL,
         isHandmade: item.isHandmade,
-        irlVerifiedBy: item.irlVerifiedBy,
-        handmadeVerifiedBy: item.handmadeVerifiedBy
-      } as PostBoardUser;
+        irlVotes: item.irlVotes || [],
+        handmadeVotes: item.handmadeVotes || []
+      };
     });
     
     // Ordenar por puntuación neta (descendente)
@@ -704,8 +709,8 @@ export class MemStorage implements IStorage {
       postVerifications.set(userId, {
         isIRL: false,
         isHandmade: false,
-        irlVerifiedBy: undefined,
-        handmadeVerifiedBy: undefined
+        irlVotes: [],
+        handmadeVotes: []
       });
     }
     
@@ -714,20 +719,28 @@ export class MemStorage implements IStorage {
     // Actualizar las verificaciones
     if (verificationType === 'irl') {
       if (value) {
-        userVerification.isIRL = true;
-        userVerification.irlVerifiedBy = verifiedBy;
+        // Añadir el voto si no existe
+        if (!userVerification.irlVotes.includes(verifiedBy)) {
+          userVerification.irlVotes.push(verifiedBy);
+        }
       } else {
-        userVerification.isIRL = false;
-        userVerification.irlVerifiedBy = undefined;
+        // Eliminar el voto si existe
+        userVerification.irlVotes = userVerification.irlVotes.filter(v => v !== verifiedBy);
       }
+      // Actualizar estado basado en votos
+      userVerification.isIRL = userVerification.irlVotes.length > 0;
     } else {
       if (value) {
-        userVerification.isHandmade = true;
-        userVerification.handmadeVerifiedBy = verifiedBy;
+        // Añadir el voto si no existe
+        if (!userVerification.handmadeVotes.includes(verifiedBy)) {
+          userVerification.handmadeVotes.push(verifiedBy);
+        }
       } else {
-        userVerification.isHandmade = false;
-        userVerification.handmadeVerifiedBy = undefined;
+        // Eliminar el voto si existe
+        userVerification.handmadeVotes = userVerification.handmadeVotes.filter(v => v !== verifiedBy);
       }
+      // Actualizar estado basado en votos
+      userVerification.isHandmade = userVerification.handmadeVotes.length > 0;
     }
     
     // Guardar las actualizaciones
