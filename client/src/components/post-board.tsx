@@ -174,17 +174,25 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
 
   // Función para confirmar la verificación
   const confirmVerify = () => {
-    if (selectedUserId !== null && verifyType !== null) {
+    if (selectedUserId !== null && verifyType !== null && user) {
       const currentUser = boardUsers.find(u => u.id === selectedUserId);
       if (!currentUser) return;
 
-      const newValue = verifyType === 'irl' ? !currentUser.isIRL : !currentUser.isHandmade;
+      // Verificar si este moderador/admin ya ha votado por este tipo
+      const hasVoted = verifyType === 'irl' 
+        ? currentUser.irlVotes?.includes(user.username)
+        : currentUser.handmadeVotes?.includes(user.username);
+      
+      // El valor true aquí significa "agregar voto", false significa "quitar voto"
+      const newValue = !hasVoted;
+      
+      console.log(`Verificando usuario ${selectedUserId} para ${verifyType}, valor: ${newValue}, verificador: ${user.username}`);
 
       verifyUserMutation.mutate({
         userId: selectedUserId,
         verificationType: verifyType,
         value: newValue,
-        voter: user?.username || ""
+        voter: user.username
       });
     }
   };
@@ -537,13 +545,17 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
                                   onClick={() => handleVerify(boardUser.id, "irl", boardUser.isIRL)}
                                 >
                                   <UserCheck className="h-4 w-4 mr-2" />
-                                  {boardUser.isIRL ? "Quitar verificación IRL" : "Verificar como IRL"}
+                                  {user && boardUser.irlVotes?.includes(user.username) 
+                                    ? "Quitar mi verificación IRL" 
+                                    : "Agregar mi verificación IRL"}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleVerify(boardUser.id, "handmade", boardUser.isHandmade)}
                                 >
                                   <HandMetal className="h-4 w-4 mr-2" />
-                                  {boardUser.isHandmade ? "Quitar Handmade" : "Marcar como Handmade"}
+                                  {user && boardUser.handmadeVotes?.includes(user.username) 
+                                    ? "Quitar mi verificación Handmade" 
+                                    : "Agregar mi verificación Handmade"}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -570,14 +582,27 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
               }
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {verifyType === 'irl' 
-                ? (selectedUserId && boardUsers.find(u => u.id === selectedUserId)?.isIRL 
-                  ? "¿Estás seguro de que deseas quitar la verificación IRL de este usuario?" 
-                  : "¿Estás seguro de que deseas verificar a este usuario como IRL?")
-                : (selectedUserId && boardUsers.find(u => u.id === selectedUserId)?.isHandmade 
-                  ? "¿Estás seguro de que deseas quitar la verificación Handmade de este usuario?" 
-                  : "¿Estás seguro de que deseas verificar a este usuario como Handmade?")
-              }
+              {(() => {
+                if (!selectedUserId || !user) return "";
+                
+                const currentUser = boardUsers.find(u => u.id === selectedUserId);
+                if (!currentUser) return "";
+                
+                // Verificar si este moderador/admin ya ha votado por este tipo
+                const hasVoted = verifyType === 'irl' 
+                  ? currentUser.irlVotes?.includes(user.username)
+                  : currentUser.handmadeVotes?.includes(user.username);
+                
+                if (verifyType === 'irl') {
+                  return hasVoted 
+                    ? `¿Estás seguro de que deseas quitar TU verificación IRL de ${currentUser.username}? Otros moderadores pueden haber verificado también.` 
+                    : `¿Estás seguro de que deseas agregar TU verificación IRL a ${currentUser.username}?`;
+                } else {
+                  return hasVoted
+                    ? `¿Estás seguro de que deseas quitar TU verificación Handmade de ${currentUser.username}? Otros moderadores pueden haber verificado también.`
+                    : `¿Estás seguro de que deseas agregar TU verificación Handmade a ${currentUser.username}?`;
+                }
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
