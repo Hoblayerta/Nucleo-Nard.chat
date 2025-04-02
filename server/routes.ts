@@ -15,7 +15,7 @@ import {
   NotificationType,
   CommentWithUser
 } from "@shared/schema";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
+// Ya no necesitamos docx para la exportación de texto plano
 
 declare module "express-session" {
   interface SessionData {
@@ -512,82 +512,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Función simplificada para generar un documento Word con comentarios
-  function createWordDocFromComments(comments: any[], post: any): Document {
-    // Crear un documento simple
-    const doc = new Document({
-      sections: [
-        {
-          children: [
-            new Paragraph({
-              text: post.title,
-              heading: HeadingLevel.HEADING_1,
-            }),
-            new Paragraph({
-              text: `Autor: ${post.user.username} (${post.user.role})`,
-            }),
-            new Paragraph({
-              text: `Fecha: ${new Date(post.createdAt).toLocaleDateString()}`,
-            }),
-            new Paragraph({
-              text: post.content,
-            }),
-            new Paragraph({
-              text: `Comentarios (${comments.length})`,
-              heading: HeadingLevel.HEADING_2,
-            }),
-          ],
-        },
-      ],
-    });
-
-    // Obtener la sección principal del documento
-    const section = doc.sections[0];
-    
-    // Función para añadir comentarios de forma recursiva
-    function addComments(comments: any[], level = 0, prefix = "") {
-      comments.forEach((comment, index) => {
-        const idx = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
-        const indent = level * 360;
-        
-        // Añadir comentario
-        section.addChildElement(
-          new Paragraph({
-            text: `${idx}. ${comment.user.username} (${comment.user.role})`,
-            indent: { left: indent },
-          })
-        );
-        
-        section.addChildElement(
-          new Paragraph({
-            text: comment.content,
-            indent: { left: indent + 180 },
-          })
-        );
-        
-        section.addChildElement(
-          new Paragraph({
-            text: `Votos: ${comment.voteScore} (👍 ${comment.upvotes} / 👎 ${comment.downvotes})`,
-            indent: { left: indent + 180 },
-          })
-        );
-        
-        // Añadir respuestas si existen
-        if (comment.replies && comment.replies.length > 0) {
-          addComments(comment.replies, level + 1, idx);
-        }
-      });
-    }
-    
-    // Añadir todos los comentarios
-    addComments(comments);
-    
-    return doc;
-  }
+  // Ya no necesitamos la función de creación de Word, ahora usamos texto plano
   
-  // Exportar comentarios de un post en formato DOCX (solo para admin/mod)
+  // Exportar post y comentarios en formato CSV como alternativa
   app.get("/api/posts/:id/comments/export-word", requireAuth, async (req, res) => {
     try {
-      console.log('Iniciando exportación de Word - Usuario:', req.session.username, 'Rol:', req.session.role);
+      console.log('Iniciando exportación alternativa - Usuario:', req.session.username, 'Rol:', req.session.role);
       
       // Verificar si el usuario es admin o moderador
       if (req.session.role !== 'admin' && req.session.role !== 'moderator') {
@@ -598,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.id, 10);
       const currentUserId = req.session.userId;
       
-      console.log(`Exportando Word para post ID: ${postId}, solicitado por usuario ID: ${currentUserId}`);
+      console.log(`Exportando datos para post ID: ${postId}, solicitado por usuario ID: ${currentUserId}`);
       
       // Obtener el post para incluir su título
       const post = await storage.getPost(postId);
@@ -614,46 +544,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Usuario del post no encontrado" });
       }
       
-      // Crear objeto de post con datos de usuario
-      const postWithUser = {
-        ...post,
-        user: {
-          id: postUser.id,
-          username: postUser.username,
-          role: postUser.role,
-          badges: postUser.badges,
-        }
-      };
-      
-      console.log(`Obteniendo comentarios para post ID: ${postId}`);
-      
       // Obtener comentarios
       const comments = await storage.getCommentsByPostId(postId, currentUserId);
       console.log(`Se encontraron ${comments.length} comentarios para el post ID: ${postId}`);
       
-      // Crear documento Word
-      console.log('Creando documento Word...');
-      const doc = createWordDocFromComments(comments, postWithUser);
+      // Crear un documento de texto formateado en lugar de Word
+      let content = `TÍTULO: ${post.title}\n`;
+      content += `AUTOR: ${postUser.username} (${postUser.role})\n`;
+      content += `FECHA: ${new Date(post.createdAt).toLocaleString()}\n\n`;
+      content += `CONTENIDO:\n${post.content}\n\n`;
+      content += `COMENTARIOS (${comments.length}):\n\n`;
       
-      // Convertir el documento a ArrayBuffer
-      console.log('Convirtiendo documento a buffer...');
-      const buffer = await Packer.toBuffer(doc);
+      // Función para aplanar la estructura de comentarios y respuestas (con tipos explícitos)
+      const flattenComments = (cmts: CommentWithUser[], level: number = 0, prefix: string = ""): string => {
+        let result = "";
+        
+        cmts.forEach((comment: CommentWithUser, index: number) => {
+          const idx = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
+          const indent = "    ".repeat(level);
+          
+          // Información del comentario
+          result += `${indent}${idx}. ${comment.user.username} (${comment.user.role}) - ${new Date(comment.createdAt).toLocaleString()}\n`;
+          result += `${indent}    ${comment.content}\n`;
+          result += `${indent}    Votos: ${comment.voteScore} (👍 ${comment.upvotes} / 👎 ${comment.downvotes})\n\n`;
+          
+          // Procesar respuestas
+          if (comment.replies && comment.replies.length > 0) {
+            result += flattenComments(comment.replies, level + 1, idx);
+          }
+        });
+        
+        return result;
+      };
       
-      // Establecer cabeceras para descarga
-      console.log('Estableciendo cabeceras para descarga...');
-      const filename = `post-${postId}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`;
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      // Añadir comentarios al contenido
+      content += flattenComments(comments);
+      
+      // Establecer cabeceras para descarga de archivo de texto
+      const filename = `post-${postId}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', buffer.byteLength);
       
-      console.log(`Enviando documento Word: ${filename}`);
-      
-      // Enviar el documento
-      res.send(Buffer.from(buffer));
-      console.log('Documento Word enviado con éxito');
+      // Enviar el contenido
+      res.send(content);
+      console.log('Documento texto enviado con éxito');
     } catch (error) {
-      console.error(`Error exportando comentarios en DOCX para post ${req.params.id}:`, error);
-      res.status(500).json({ message: "Error interno al exportar comentarios en formato Word" });
+      console.error(`Error exportando contenido para post ${req.params.id}:`, error);
+      res.status(500).json({ message: "Error interno al exportar contenido" });
     }
   });
 

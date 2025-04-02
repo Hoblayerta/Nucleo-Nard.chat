@@ -194,10 +194,10 @@ export default function Post() {
               <a 
                 href={`/api/posts/${post.id}/comments/export-word`}
                 className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`}
+                download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                <span>Exportar Word</span>
+                <span>Exportar Texto</span>
               </a>
             </div>
           </div>
