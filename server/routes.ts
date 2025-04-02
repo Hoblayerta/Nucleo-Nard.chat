@@ -479,136 +479,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Exportar comentarios de un post (solo para admin/mod) en formato CSV
   app.get("/api/posts/:id/comments/export", requireAuth, async (req, res) => {
     try {
-      console.log('Iniciando exportación CSV - Usuario:', req.session.username, 'Rol:', req.session.role);
-      
       // Verificar si el usuario es admin o moderador
       if (req.session.role !== 'admin' && req.session.role !== 'moderator') {
-        console.log('Usuario sin permisos para exportar CSV:', req.session.username, 'Rol:', req.session.role);
         return res.status(403).json({ message: "No tienes permisos para exportar comentarios" });
       }
       
       const postId = parseInt(req.params.id, 10);
       const currentUserId = req.session.userId;
       
-      console.log(`Exportando CSV para post ID: ${postId}, solicitado por usuario ID: ${currentUserId}`);
-      
       // Obtener el post para incluir su título
       const post = await storage.getPost(postId);
       if (!post) {
-        console.log(`Post no encontrado: ${postId}`);
         return res.status(404).json({ message: "Post no encontrado" });
       }
       
       // Obtener comentarios
-      console.log(`Obteniendo comentarios para post ID: ${postId}`);
       const comments = await storage.getCommentsByPostId(postId, currentUserId);
-      console.log(`Se encontraron ${comments.length} comentarios para el post ID: ${postId}`);
       
       // Formatear los comentarios para exportación
-      console.log('Formateando comentarios para CSV...');
       const formattedComments = formatCommentsForExport(comments, post.title);
       
       // Establecer cabeceras para descarga de CSV
-      console.log('Estableciendo cabeceras para descarga CSV...');
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="comentarios-post-${postId}.csv"`);
       
-      console.log(`Enviando CSV para post ID: ${postId}`);
-      
       // Enviar los datos formateados
       res.send(formattedComments);
-      console.log('CSV enviado con éxito');
     } catch (error) {
       console.error(`Error exportando comentarios para post ${req.params.id}:`, error);
       res.status(500).json({ message: "Error interno al exportar comentarios" });
-    }
-  });
-  
-  // Exportar comentarios de un post en formato Excel (XLSX)
-  app.get("/api/posts/:id/comments/export-excel", requireAuth, async (req, res) => {
-    try {
-      console.log('Iniciando exportación Excel - Usuario:', req.session.username, 'Rol:', req.session.role);
-      
-      // Verificar si el usuario es admin o moderador
-      if (req.session.role !== 'admin' && req.session.role !== 'moderator') {
-        console.log('Usuario sin permisos para exportar Excel:', req.session.username, 'Rol:', req.session.role);
-        return res.status(403).json({ message: "No tienes permisos para exportar comentarios" });
-      }
-      
-      const postId = parseInt(req.params.id, 10);
-      const currentUserId = req.session.userId;
-      
-      console.log(`Exportando Excel para post ID: ${postId}, solicitado por usuario ID: ${currentUserId}`);
-      
-      // Obtener el post para incluir su título
-      const post = await storage.getPost(postId);
-      if (!post) {
-        console.log(`Post no encontrado: ${postId}`);
-        return res.status(404).json({ message: "Post no encontrado" });
-      }
-      
-      // Obtener el usuario del post
-      const postUser = await storage.getUser(post.userId);
-      if (!postUser) {
-        console.log(`Usuario del post no encontrado: ${post.userId}`);
-        return res.status(404).json({ message: "Usuario del post no encontrado" });
-      }
-      
-      // Obtener comentarios
-      console.log(`Obteniendo comentarios para post ID: ${postId} (Excel)`);
-      const comments = await storage.getCommentsByPostId(postId, currentUserId);
-      console.log(`Se encontraron ${comments.length} comentarios para el post ID: ${postId} (Excel)`);
-      
-      // Crear formato para Excel
-      console.log('Creando formato Excel...');
-      
-      // Cabecera del Excel
-      let excelContent = 'Comentarios para el post: "' + post.title + '"\n';
-      excelContent += 'Autor: ' + postUser.username + '\n';
-      excelContent += 'Fecha: ' + new Date(post.createdAt).toLocaleString() + '\n\n';
-      
-      // Cabecera de la tabla
-      excelContent += 'Número\tUsuario\tRol\tBadges\tContenido\tFecha\tVotos Positivos\tVotos Negativos\tPuntaje\tCamino\n';
-      
-      // Función recursiva para procesar comentarios
-      function processExcelComments(cmts, prefix = '') {
-        let result = '';
-        cmts.forEach((comment, index) => {
-          const currentIndex = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
-          const badges = comment.user.badges.join(', ');
-          const date = new Date(comment.createdAt).toLocaleString();
-          
-          // Escapar campos que puedan contener caracteres problemáticos
-          const escapedContent = comment.content.replace(/"/g, '""').replace(/\n/g, ' ');
-          const escapedUsername = comment.user.username.replace(/"/g, '""');
-          
-          // Añadir fila al Excel
-          result += `${currentIndex}\t${escapedUsername}\t${comment.user.role}\t${badges}\t"${escapedContent}"\t${date}\t${comment.upvotes}\t${comment.downvotes}\t${comment.voteScore}\t${currentIndex}\n`;
-          
-          // Procesar respuestas recursivamente
-          if (comment.replies && comment.replies.length > 0) {
-            result += processExcelComments(comment.replies, currentIndex);
-          }
-        });
-        return result;
-      }
-      
-      // Procesar todos los comentarios
-      excelContent += processExcelComments(comments);
-      
-      // Establecer cabeceras para descarga
-      console.log('Estableciendo cabeceras para descarga Excel...');
-      res.setHeader('Content-Type', 'application/vnd.ms-excel');
-      res.setHeader('Content-Disposition', `attachment; filename="post-${postId}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.xls"`);
-      
-      console.log(`Enviando Excel para post ID: ${postId}`);
-      
-      // Enviar el documento Excel
-      res.send(excelContent);
-      console.log('Excel enviado con éxito');
-    } catch (error) {
-      console.error(`Error exportando comentarios en Excel para post ${req.params.id}:`, error);
-      res.status(500).json({ message: "Error interno al exportar comentarios en formato Excel" });
     }
   });
   
