@@ -10,11 +10,13 @@ app.use(express.urlencoded({ extended: false }));
 // Configurar sesiones
 app.use(session({
   secret: "your-secret-key",
-  resave: false,
-  saveUninitialized: false,
+  resave: true,
+  saveUninitialized: true,
   cookie: { 
     secure: false, // En desarrollo, no se requiere HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    httpOnly: true,
+    path: '/'
   }
 }));
 
