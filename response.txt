@@ -1,0 +1,11 @@
+HTTP/1.1 401 Unauthorized
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 37
+ETag: W/"25-SetIB6wLsPt3Ogr5oCd0XHpTaMw"
+Set-Cookie: connect.sid=s%3ABDDDyysyJtCs1d03IqpjFPKwRnzQXGyC.7kR%2FOXqY4gqXA2tW10qrnS%2BwCVo3E20AvQ2r00YRzGU; Path=/; Expires=Thu, 03 Apr 2025 20:47:43 GMT; HttpOnly
+Date: Wed, 02 Apr 2025 20:47:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"message":"Authentication required"}
