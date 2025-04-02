@@ -6,12 +6,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { timeAgo } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: number;
@@ -40,6 +41,7 @@ export default function NotificationDropdown() {
   const [hasUnread, setHasUnread] = useState(false);
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
@@ -139,28 +141,17 @@ export default function NotificationDropdown() {
                   key={notification.id} 
                   className={`block p-3 border-b hover:bg-accent cursor-pointer ${!notification.read ? 'bg-blue-100/50 dark:bg-blue-900/20' : ''}`}
                   onClick={() => {
+                    // Simplemente marcar la notificación como leída
                     handleNotificationClick(notification.id);
                     // Cerrar el menú de notificaciones
                     setOpen(false);
                     
-                    // Para asegurarnos de que la navegación y el resaltado funcionan correctamente:
-                    
-                    // 1. Si ya estamos en la misma página, primero eliminamos el parámetro
-                    // para forzar que se active el efecto de scrollIntoView y resaltado
-                    if (window.location.pathname === `/posts/${notification.postId}`) {
-                      const urlWithoutParams = window.location.pathname;
-                      // Cambiar brevemente a la URL sin parámetros
-                      window.history.pushState({}, '', urlWithoutParams);
-                      
-                      // Luego, después de un breve delay, navegar con el parámetro comment
-                      setTimeout(() => {
-                        // Usar Wouter para navegar y asegurarnos de que la URL tenga el parámetro comment
-                        setLocation(`/posts/${notification.postId}?comment=${notification.commentId || ''}`);
-                      }, 50);
-                    } else {
-                      // Si estamos en otra página, navegar directamente
-                      setLocation(`/posts/${notification.postId}?comment=${notification.commentId || ''}`);
-                    }
+                    // Mostrar un toast confirmando que la notificación fue leída
+                    toast({
+                      title: "Notificación leída",
+                      description: `Has leído la notificación de ${notification.triggerUser.username}`,
+                      duration: 3000,
+                    });
                   }}
                 >
                   {renderNotificationContent(notification)}
