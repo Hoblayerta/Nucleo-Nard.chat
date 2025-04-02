@@ -4,10 +4,11 @@ import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSlowMode } from "@/hooks/use-slow-mode";
+import { useAuth } from "@/lib/auth";
 import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
 import { Progress } from "@/components/ui/progress";
-import { Clock } from "lucide-react";
+import { Clock, Download, FileText } from "lucide-react";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -15,6 +16,7 @@ export default function Post() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user, isAdmin, isModerator } = useAuth();
   
   // Analizamos los parámetros de consulta para obtener el ID del comentario
   const searchParams = new URLSearchParams(window.location.search);
@@ -172,6 +174,33 @@ export default function Post() {
           <CommentForm 
             postId={post.id} 
           />
+        </section>
+      )}
+      
+      {/* Botones de exportación para admin/mod */}
+      {(isAdmin || isModerator) && (
+        <section className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 border border-blue-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <h3 className="text-md font-semibold text-blue-900">Opciones de Administración:</h3>
+            <div className="flex flex-wrap gap-2">
+              <a 
+                href={`/api/posts/${post.id}/comments/export`}
+                className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                download={`comentarios-post-${post.id}.csv`}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                <span>Exportar CSV</span>
+              </a>
+              <a 
+                href={`/api/posts/${post.id}/comments/export-word`}
+                className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                <span>Exportar Word</span>
+              </a>
+            </div>
+          </div>
         </section>
       )}
       

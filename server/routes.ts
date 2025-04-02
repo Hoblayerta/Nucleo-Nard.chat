@@ -15,6 +15,7 @@ import {
   NotificationType,
   CommentWithUser
 } from "@shared/schema";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
 
 declare module "express-session" {
   interface SessionData {
@@ -475,7 +476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return csv;
   }
   
-  // Exportar comentarios de un post (solo para admin/mod)
+  // Exportar comentarios de un post (solo para admin/mod) en formato CSV
   app.get("/api/posts/:id/comments/export", requireAuth, async (req, res) => {
     try {
       // Verificar si el usuario es admin o moderador
@@ -507,6 +508,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error exportando comentarios para post ${req.params.id}:`, error);
       res.status(500).json({ message: "Error interno al exportar comentarios" });
+    }
+  });
+  
+  // Función para generar un documento Word con comentarios
+  function createWordDocFromComments(comments: any[], post: any): Document {
+    // Crear un nuevo documento
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              text: post.title,
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                after: 200,
+              },
+            }),
+            new Paragraph({
+              text: `Autor: ${post.user.username}`,
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                after: 200,
+              },
+            }),
+            new Paragraph({
+              text: post.content,
+              spacing: {
+                after: 400,
+              },
+            }),
+            new Paragraph({
+              text: `Comentarios (${comments.length})`,
+              heading: HeadingLevel.HEADING_2,
+              spacing: {
+                after: 200,
+              },
+            }),
+            // Párrafo separador (línea)
+            new Paragraph({
+              border: {
+                bottom: {
+                  color: "999999",
+                  space: 1,
+                  style: BorderStyle.SINGLE,
+                  size: 1,
+                },
+              },
+            }),
+          ],
+        },
+      ],
+    });
+
+    // Función recursiva para añadir comentarios al documento
+    function addCommentsToDoc(cmts: any[], section: any, level: number = 0, prefix: string = "") {
+      cmts.forEach((comment, index) => {
+        const currentIndex = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
+        
+        // Formatear badges
+        const badges = comment.user.badges.length > 0 ? `[${comment.user.badges.join(", ")}]` : "";
+        
+        // Calcular fecha
+        const date = new Date(comment.createdAt);
+        const formattedDate = date.toLocaleString();
+        
+        // Añadir el comentario
+        section.push(
+          new Paragraph({
+            text: "",
+            spacing: {
+              before: 120,
+            },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${currentIndex}. `,
+                bold: true,
+              }),
+              new TextRun({
+                text: `${comment.user.username} (${comment.user.role}) ${badges}`,
+                bold: true,
+              }),
+              new TextRun({
+                text: ` • ${formattedDate}`,
+                italics: true,
+              }),
+            ],
+            indent: {
+              left: level * 360, // Indentación según el nivel
+            },
+          }),
+          new Paragraph({
+            text: comment.content,
+            indent: {
+              left: level * 360 + 180, // Indentación para el contenido
+            },
+            spacing: {
+              after: 120,
+            },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Votos: ${comment.voteScore} (${comment.upvotes} 👍 / ${comment.downvotes} 👎)`,
+                italics: true,
+                color: "666666",
+              }),
+            ],
+            indent: {
+              left: level * 360 + 180,
+            },
+          })
+        );
+        
+        // Procesar respuestas recursivamente
+        if (comment.replies && comment.replies.length > 0) {
+          addCommentsToDoc(comment.replies, section, level + 1, currentIndex);
+        }
+      });
+    }
+    
+    // Añadir todos los comentarios
+    const typedDoc = doc as any;
+    if (typedDoc.sections && typedDoc.sections[0]) {
+      addCommentsToDoc(comments, typedDoc.sections[0].children);
+    }
+    
+    return doc;
+  }
+  
+  // Exportar comentarios de un post en formato DOCX (solo para admin/mod)
+  app.get("/api/posts/:id/comments/export-word", requireAuth, async (req, res) => {
+    try {
+      // Verificar si el usuario es admin o moderador
+      if (req.session.role !== 'admin' && req.session.role !== 'moderator') {
+        return res.status(403).json({ message: "No tienes permisos para exportar comentarios" });
+      }
+      
+      const postId = parseInt(req.params.id, 10);
+      const currentUserId = req.session.userId;
+      
+      // Obtener el post para incluir su título
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post no encontrado" });
+      }
+      
+      // Obtener el usuario del post
+      const postUser = await storage.getUser(post.userId);
+      if (!postUser) {
+        return res.status(404).json({ message: "Usuario del post no encontrado" });
+      }
+      
+      // Crear objeto de post con datos de usuario
+      const postWithUser = {
+        ...post,
+        user: {
+          id: postUser.id,
+          username: postUser.username,
+          role: postUser.role,
+          badges: postUser.badges,
+        }
+      };
+      
+      // Obtener comentarios
+      const comments = await storage.getCommentsByPostId(postId, currentUserId);
+      
+      // Crear documento Word
+      const doc = createWordDocFromComments(comments, postWithUser);
+      
+      // Convertir el documento a ArrayBuffer
+      const buffer = await Packer.toBuffer(doc);
+      
+      // Establecer cabeceras para descarga
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="post-${postId}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx"`);
+      res.setHeader('Content-Length', buffer.byteLength);
+      
+      // Enviar el documento
+      res.send(Buffer.from(buffer));
+    } catch (error) {
+      console.error(`Error exportando comentarios en DOCX para post ${req.params.id}:`, error);
+      res.status(500).json({ message: "Error interno al exportar comentarios en formato Word" });
     }
   });
 
