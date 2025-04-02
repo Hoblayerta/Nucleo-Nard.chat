@@ -73,7 +73,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         commentRef.current?.classList.add('highlight-comment');
         setTimeout(() => {
           commentRef.current?.classList.remove('highlight-comment');
-        }, 2000);
+        }, 3000);
       }, 500);
     }
   }, [comment.id, expanded, highlightedCommentId]);

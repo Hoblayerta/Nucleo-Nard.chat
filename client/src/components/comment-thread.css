@@ -200,7 +200,7 @@
 
 /* Estilo para comentario resaltado */
 .highlight-comment {
-  animation: highlight-pulse 2s ease-in-out;
+  animation: highlight-pulse 3s ease-in-out;
 }
 
 @keyframes highlight-pulse {
@@ -208,13 +208,13 @@
     background-color: transparent;
   }
   25% {
-    background-color: rgba(59, 130, 246, 0.15);
+    background-color: rgba(59, 130, 246, 0.3);
   }
   50% {
-    background-color: rgba(59, 130, 246, 0.2);
+    background-color: rgba(59, 130, 246, 0.4);
   }
   75% {
-    background-color: rgba(59, 130, 246, 0.15);
+    background-color: rgba(59, 130, 246, 0.3);
   }
   100% {
     background-color: transparent;

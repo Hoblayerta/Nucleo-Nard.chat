@@ -95,7 +95,7 @@ export default function NotificationDropdown() {
         {type === 'mention' && (
           <span> te mencionó en un comentario en <span className="font-medium italic">{post.title}</span></span>
         )}
-        <div className="text-xs text-gray-500 mt-1">
+        <div className="text-xs text-muted-foreground mt-1">
           {timeAgo(new Date(notification.createdAt))}
         </div>
       </div>
@@ -134,17 +134,19 @@ export default function NotificationDropdown() {
           ) : (
             <div>
               {notifications.map((notification: Notification) => (
-                <Link 
+                <div 
                   key={notification.id} 
-                  href={`/posts/${notification.postId}?comment=${notification.commentId || ''}`}
+                  className={`block p-3 border-b hover:bg-accent cursor-pointer ${!notification.read ? 'bg-blue-100/50 dark:bg-blue-900/20' : ''}`}
+                  onClick={() => {
+                    handleNotificationClick(notification.id);
+                    // Cerrar el menú de notificaciones
+                    setOpen(false);
+                    // Navegar a la página
+                    window.location.href = `/posts/${notification.postId}?comment=${notification.commentId || ''}`;
+                  }}
                 >
-                  <div 
-                    className={`block p-3 border-b hover:bg-accent cursor-pointer ${!notification.read ? 'bg-blue-100/50 dark:bg-blue-900/20' : ''}`}
-                    onClick={() => handleNotificationClick(notification.id)}
-                  >
-                    {renderNotificationContent(notification)}
-                  </div>
-                </Link>
+                  {renderNotificationContent(notification)}
+                </div>
               ))}
             </div>
           )}

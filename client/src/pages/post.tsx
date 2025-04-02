@@ -29,6 +29,13 @@ export default function Post() {
         description: "Te estamos llevando al comentario compartido...",
         duration: 3000,
       });
+      
+      // Hacer que el resaltado se quite después de un tiempo
+      const timer = setTimeout(() => {
+        setCommentId(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
     }
   }, [commentIdFromURL, toast]);
   
