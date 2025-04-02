@@ -177,43 +177,41 @@ export default function Post() {
         </section>
       )}
       
-      {/* Botones de exportación - temporalmente visibles para todos para facilitar las pruebas */}
-      {(
-        <section className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 border border-blue-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <h3 className="text-md font-semibold text-blue-900">Opciones de Administración:</h3>
-            <div className="flex flex-col gap-2">
-              <div className="text-sm text-gray-700">Exportar comentarios como:</div>
-              <div className="flex flex-wrap gap-2">
-                <a 
-                  href={`/api/posts/${post.id}/comments/export`}
-                  className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                  download={`comentarios-post-${post.id}.csv`}
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  <span>CSV</span>
-                </a>
-                <a 
-                  href={`/api/posts/${post.id}/comments/export-text`}
-                  className="flex items-center px-3 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition-colors"
-                  download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  <span>Texto plano</span>
-                </a>
-                <a 
-                  href={`/api/posts/${post.id}/comments/export-word`}
-                  className="flex items-center px-3 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
-                  download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  <span>Word (DOCX)</span>
-                </a>
-              </div>
+      {/* Botones de exportación - accesibles para todos los usuarios */}
+      <section className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 border border-blue-200">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <h3 className="text-md font-semibold text-blue-900">Opciones de Exportación:</h3>
+          <div className="flex flex-col gap-2">
+            <div className="text-sm text-gray-700">Descargar contenido como:</div>
+            <div className="flex flex-wrap gap-2">
+              <a 
+                href={`/api/posts/${post.id}/comments/export`}
+                className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                download={`comentarios-post-${post.id}.csv`}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                <span>CSV</span>
+              </a>
+              <a 
+                href={`/api/posts/${post.id}/comments/export-text`}
+                className="flex items-center px-3 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition-colors"
+                download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`}
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                <span>Texto plano</span>
+              </a>
+              <a 
+                href={`/api/posts/${post.id}/comments/export-word`}
+                className="flex items-center px-3 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
+                download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`}
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                <span>Word (DOCX)</span>
+              </a>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
