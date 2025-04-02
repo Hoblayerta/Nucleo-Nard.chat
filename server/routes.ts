@@ -511,132 +511,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Función para generar un documento Word con comentarios
+  // Función simplificada para generar un documento Word con comentarios
   function createWordDocFromComments(comments: any[], post: any): Document {
-    // Crear un nuevo documento
+    // Crear un documento simple
     const doc = new Document({
       sections: [
         {
-          properties: {},
           children: [
             new Paragraph({
               text: post.title,
               heading: HeadingLevel.HEADING_1,
-              alignment: AlignmentType.CENTER,
-              spacing: {
-                after: 200,
-              },
             }),
             new Paragraph({
-              text: `Autor: ${post.user.username}`,
-              alignment: AlignmentType.CENTER,
-              spacing: {
-                after: 200,
-              },
+              text: `Autor: ${post.user.username} (${post.user.role})`,
+            }),
+            new Paragraph({
+              text: `Fecha: ${new Date(post.createdAt).toLocaleDateString()}`,
             }),
             new Paragraph({
               text: post.content,
-              spacing: {
-                after: 400,
-              },
             }),
             new Paragraph({
               text: `Comentarios (${comments.length})`,
               heading: HeadingLevel.HEADING_2,
-              spacing: {
-                after: 200,
-              },
-            }),
-            // Párrafo separador (línea)
-            new Paragraph({
-              border: {
-                bottom: {
-                  color: "999999",
-                  space: 1,
-                  style: BorderStyle.SINGLE,
-                  size: 1,
-                },
-              },
             }),
           ],
         },
       ],
     });
 
-    // Función recursiva para añadir comentarios al documento
-    function addCommentsToDoc(cmts: any[], section: any, level: number = 0, prefix: string = "") {
-      cmts.forEach((comment, index) => {
-        const currentIndex = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
+    // Obtener la sección principal del documento
+    const section = doc.sections[0];
+    
+    // Función para añadir comentarios de forma recursiva
+    function addComments(comments: any[], level = 0, prefix = "") {
+      comments.forEach((comment, index) => {
+        const idx = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
+        const indent = level * 360;
         
-        // Formatear badges
-        const badges = comment.user.badges.length > 0 ? `[${comment.user.badges.join(", ")}]` : "";
-        
-        // Calcular fecha
-        const date = new Date(comment.createdAt);
-        const formattedDate = date.toLocaleString();
-        
-        // Añadir el comentario
-        section.push(
+        // Añadir comentario
+        section.addChildElement(
           new Paragraph({
-            text: "",
-            spacing: {
-              before: 120,
-            },
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `${currentIndex}. `,
-                bold: true,
-              }),
-              new TextRun({
-                text: `${comment.user.username} (${comment.user.role}) ${badges}`,
-                bold: true,
-              }),
-              new TextRun({
-                text: ` • ${formattedDate}`,
-                italics: true,
-              }),
-            ],
-            indent: {
-              left: level * 360, // Indentación según el nivel
-            },
-          }),
-          new Paragraph({
-            text: comment.content,
-            indent: {
-              left: level * 360 + 180, // Indentación para el contenido
-            },
-            spacing: {
-              after: 120,
-            },
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Votos: ${comment.voteScore} (${comment.upvotes} 👍 / ${comment.downvotes} 👎)`,
-                italics: true,
-                color: "666666",
-              }),
-            ],
-            indent: {
-              left: level * 360 + 180,
-            },
+            text: `${idx}. ${comment.user.username} (${comment.user.role})`,
+            indent: { left: indent },
           })
         );
         
-        // Procesar respuestas recursivamente
+        section.addChildElement(
+          new Paragraph({
+            text: comment.content,
+            indent: { left: indent + 180 },
+          })
+        );
+        
+        section.addChildElement(
+          new Paragraph({
+            text: `Votos: ${comment.voteScore} (👍 ${comment.upvotes} / 👎 ${comment.downvotes})`,
+            indent: { left: indent + 180 },
+          })
+        );
+        
+        // Añadir respuestas si existen
         if (comment.replies && comment.replies.length > 0) {
-          addCommentsToDoc(comment.replies, section, level + 1, currentIndex);
+          addComments(comment.replies, level + 1, idx);
         }
       });
     }
     
     // Añadir todos los comentarios
-    const typedDoc = doc as any;
-    if (typedDoc.sections && typedDoc.sections[0]) {
-      addCommentsToDoc(comments, typedDoc.sections[0].children);
-    }
+    addComments(comments);
     
     return doc;
   }
