@@ -39,6 +39,14 @@ export const loginUserSchema = z.object({
   password: z.string().min(4, "Password must be at least 4 characters"),
 });
 
+export const registerUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(4, "Password must be at least 4 characters"),
+  role: z.enum(["user", "moderator", "admin"]).default("user"),
+  likeMultiplier: z.number().min(1).max(20).default(1),
+  badges: z.array(z.string()).default([]),
+});
+
 export const updateUserSchema = z.object({
   role: z.enum(["user", "moderator", "admin"]).optional(),
   likeMultiplier: z.number().min(1).max(20).optional(),
@@ -95,6 +103,7 @@ export const insertLikeSchema = createInsertSchema(likes).omit({
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
+export type RegisterUser = z.infer<typeof registerUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 
 export type Post = typeof posts.$inferSelect;

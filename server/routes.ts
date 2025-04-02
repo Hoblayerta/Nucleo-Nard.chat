@@ -10,6 +10,7 @@ import {
   insertCommentSchema,
   insertLikeSchema,
   loginUserSchema,
+  registerUserSchema,
   updateUserSchema,
   NotificationType
 } from "@shared/schema";
@@ -47,21 +48,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crear un usuario (solo admins pueden crear usuarios)
   app.post("/api/auth/register", requireAdmin, async (req, res) => {
     try {
-      const data = loginUserSchema.parse(req.body);
+      // Validamos con el nuevo esquema de registro
+      const userData = registerUserSchema.parse(req.body);
       
       // Verificar si el usuario ya existe
-      const existingUser = await storage.getUserByUsername(data.username);
+      const existingUser = await storage.getUserByUsername(userData.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
       
       const user = await storage.createUser({
-        username: data.username,
-        password: data.password,
-        role: "user",
-        likeMultiplier: 1,
-        badges: [],
-        createdAt: new Date()
+        username: userData.username,
+        password: userData.password,
+        role: userData.role,
+        likeMultiplier: userData.likeMultiplier,
+        badges: userData.badges
       });
       
       res.status(201).json({

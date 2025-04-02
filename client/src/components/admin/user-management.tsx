@@ -88,8 +88,18 @@ export default function UserManagement() {
   
   const createUserMutation = useMutation({
     mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
+      // Asegurarse de que likeMultiplier sea un número
+      if (typeof userData.likeMultiplier === 'string') {
+        userData.likeMultiplier = parseInt(userData.likeMultiplier as any, 10);
+      }
+      
+      console.log("Sending user data:", userData); // Para depuración
+      
       const res = await apiRequest("POST", `/api/auth/register`, userData);
-      if (!res.ok) throw new Error("Failed to create user");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to create user" }));
+        throw new Error(errorData.message || "Failed to create user");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -101,10 +111,11 @@ export default function UserManagement() {
         description: "New user has been added successfully.",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error("Error creating user:", error);
       toast({
         title: "Creation failed",
-        description: "Failed to create user. Username may already be taken.",
+        description: error.message || "Failed to create user. Username may already be taken.",
         variant: "destructive",
       });
     }
