@@ -644,23 +644,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Exportar comentarios de un post en formato DOCX (solo para admin/mod)
   app.get("/api/posts/:id/comments/export-word", requireAuth, async (req, res) => {
     try {
+      console.log('Iniciando exportación de Word - Usuario:', req.session.username, 'Rol:', req.session.role);
+      
       // Verificar si el usuario es admin o moderador
       if (req.session.role !== 'admin' && req.session.role !== 'moderator') {
+        console.log('Usuario sin permisos para exportar:', req.session.username, 'Rol:', req.session.role);
         return res.status(403).json({ message: "No tienes permisos para exportar comentarios" });
       }
       
       const postId = parseInt(req.params.id, 10);
       const currentUserId = req.session.userId;
       
+      console.log(`Exportando Word para post ID: ${postId}, solicitado por usuario ID: ${currentUserId}`);
+      
       // Obtener el post para incluir su título
       const post = await storage.getPost(postId);
       if (!post) {
+        console.log(`Post no encontrado: ${postId}`);
         return res.status(404).json({ message: "Post no encontrado" });
       }
       
       // Obtener el usuario del post
       const postUser = await storage.getUser(post.userId);
       if (!postUser) {
+        console.log(`Usuario del post no encontrado: ${post.userId}`);
         return res.status(404).json({ message: "Usuario del post no encontrado" });
       }
       
@@ -675,22 +682,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
+      console.log(`Obteniendo comentarios para post ID: ${postId}`);
+      
       // Obtener comentarios
       const comments = await storage.getCommentsByPostId(postId, currentUserId);
+      console.log(`Se encontraron ${comments.length} comentarios para el post ID: ${postId}`);
       
       // Crear documento Word
+      console.log('Creando documento Word...');
       const doc = createWordDocFromComments(comments, postWithUser);
       
       // Convertir el documento a ArrayBuffer
+      console.log('Convirtiendo documento a buffer...');
       const buffer = await Packer.toBuffer(doc);
       
       // Establecer cabeceras para descarga
+      console.log('Estableciendo cabeceras para descarga...');
+      const filename = `post-${postId}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`;
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', `attachment; filename="post-${postId}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', buffer.byteLength);
+      
+      console.log(`Enviando documento Word: ${filename}`);
       
       // Enviar el documento
       res.send(Buffer.from(buffer));
+      console.log('Documento Word enviado con éxito');
     } catch (error) {
       console.error(`Error exportando comentarios en DOCX para post ${req.params.id}:`, error);
       res.status(500).json({ message: "Error interno al exportar comentarios en formato Word" });
