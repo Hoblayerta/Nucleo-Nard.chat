@@ -177,8 +177,8 @@ export default function Post() {
         </section>
       )}
       
-      {/* Botones de exportación para admin/mod */}
-      {(isAdmin || isModerator) && (
+      {/* Botones de exportación - temporalmente visibles para todos para facilitar las pruebas */}
+      {(
         <section className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 border border-blue-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <h3 className="text-md font-semibold text-blue-900">Opciones de Administración:</h3>
