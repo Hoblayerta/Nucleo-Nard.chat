@@ -65,18 +65,41 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         setExpanded(true);
       }
       
-      // Añadir un pequeño delay para asegurar que el DOM está listo
+      // Si algún comentario padre está colapsado, necesitamos encontrarlo y expandirlo también
+      if ('parentId' in comment && comment.parentId) {
+        // Intentamos encontrar todos los elementos padre colapsados
+        const parentComments = document.querySelectorAll(`.comment-item[data-comment-id="${comment.parentId}"]`);
+        parentComments.forEach(parent => {
+          // Buscar el botón de expandir y hacer clic en él si está colapsado
+          const expandButton = parent.querySelector('.expand-button.collapsed');
+          if (expandButton && expandButton instanceof HTMLElement) {
+            expandButton.click();
+          }
+        });
+      }
+      
+      // Añadir un pequeño delay más largo para asegurar que todos los elementos están expandidos
       setTimeout(() => {
-        commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Scroll con opciones para posicionamiento más preciso
+        commentRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
         
-        // Añadir una clase para destacar brevemente el comentario
+        // Añadir una clase para destacar brevemente el comentario con mayor tiempo
         commentRef.current?.classList.add('highlight-comment');
+        
+        // Agitar suavemente el comentario para llamar la atención
+        commentRef.current?.classList.add('comment-shake');
+        
+        // Quitar las clases de efecto después de un tiempo
         setTimeout(() => {
           commentRef.current?.classList.remove('highlight-comment');
-        }, 3000);
-      }, 500);
+          commentRef.current?.classList.remove('comment-shake');
+        }, 5000);
+      }, 800);
     }
-  }, [comment.id, expanded, highlightedCommentId]);
+  }, [comment.id, expanded, highlightedCommentId, window.location.search]);
   
   const voteMutation = useMutation({
     mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {

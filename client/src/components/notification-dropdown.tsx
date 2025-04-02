@@ -142,8 +142,25 @@ export default function NotificationDropdown() {
                     handleNotificationClick(notification.id);
                     // Cerrar el menú de notificaciones
                     setOpen(false);
-                    // Navegar a la página usando Wouter
-                    setLocation(`/posts/${notification.postId}?comment=${notification.commentId || ''}`);
+                    
+                    // Para asegurarnos de que la navegación y el resaltado funcionan correctamente:
+                    
+                    // 1. Si ya estamos en la misma página, primero eliminamos el parámetro
+                    // para forzar que se active el efecto de scrollIntoView y resaltado
+                    if (window.location.pathname === `/posts/${notification.postId}`) {
+                      const urlWithoutParams = window.location.pathname;
+                      // Cambiar brevemente a la URL sin parámetros
+                      window.history.pushState({}, '', urlWithoutParams);
+                      
+                      // Luego, después de un breve delay, navegar con el parámetro comment
+                      setTimeout(() => {
+                        // Usar Wouter para navegar y asegurarnos de que la URL tenga el parámetro comment
+                        setLocation(`/posts/${notification.postId}?comment=${notification.commentId || ''}`);
+                      }, 50);
+                    } else {
+                      // Si estamos en otra página, navegar directamente
+                      setLocation(`/posts/${notification.postId}?comment=${notification.commentId || ''}`);
+                    }
                   }}
                 >
                   {renderNotificationContent(notification)}

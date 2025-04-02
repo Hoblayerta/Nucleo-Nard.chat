@@ -355,20 +355,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const comment = await storage.createComment(data);
-      const user = await storage.getUser(userId);
+      const user = userId ? await storage.getUser(userId) : undefined;
       
       // Crear notificación si es una respuesta a otro comentario
       if (comment.parentId) {
         const parentComment = await storage.getComment(comment.parentId);
         if (parentComment && parentComment.userId !== userId) {
-          await storage.createNotification({
-            userId: parentComment.userId,
-            triggeredByUserId: userId,
-            postId: comment.postId,
-            commentId: comment.id,
-            parentCommentId: comment.parentId,
-            type: 'reply'
-          });
+          if (userId) { // Asegurarnos de que userId no es undefined
+            await storage.createNotification({
+              userId: parentComment.userId,
+              triggeredByUserId: userId,
+              postId: comment.postId,
+              commentId: comment.id,
+              parentCommentId: parentComment.id, // Usar el ID del comentario padre directamente
+              type: 'reply'
+            });
+          }
         }
       }
       
@@ -385,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const username = mention.substring(1); // Quitar el signo @
           const mentionedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
           
-          if (mentionedUser && mentionedUser.id !== userId) {
+          if (mentionedUser && userId && mentionedUser.id !== userId) {
             await storage.createNotification({
               userId: mentionedUser.id,
               triggeredByUserId: userId,
@@ -441,6 +443,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const { commentId, postId, voteType } = req.body;
       
+      // Verificar que el ID de usuario existe
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found in session" });
+      }
+      
       if (voteType !== 'upvote' && voteType !== 'downvote') {
         return res.status(400).json({ message: "Invalid vote type. Must be 'upvote' or 'downvote'" });
       }
@@ -493,8 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId,
           commentId,
           postId,
-          isUpvote: voteType === 'upvote',
-          createdAt: new Date()
+          isUpvote: voteType === 'upvote'
         });
         
         // Ya no creamos notificaciones para likes, solo para menciones y respuestas
@@ -543,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener el nombre del verificador (admin/mod)
-      const verifierName = req.session.username;
+      const verifierName = req.session.username || '';
       
       const result = await storage.updateUserVerification(userId, postId, type, value, verifierName);
       
@@ -661,7 +667,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obtener notificaciones del usuario actual
   app.get("/api/notifications", requireAuth, async (req, res) => {
     try {
-      const notifications = await storage.getUserNotifications(req.session.userId);
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found in session" });
+      }
+      
+      const notifications = await storage.getUserNotifications(userId);
       res.status(200).json(notifications);
     } catch (error) {
       console.error("Error getting notifications:", error);
@@ -672,7 +684,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Marcar todas las notificaciones como leídas
   app.put("/api/notifications/read-all", requireAuth, async (req, res) => {
     try {
-      const result = await storage.markAllNotificationsAsRead(req.session.userId);
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found in session" });
+      }
+      
+      const result = await storage.markAllNotificationsAsRead(userId);
       
       if (result) {
         res.status(200).json({ success: true });

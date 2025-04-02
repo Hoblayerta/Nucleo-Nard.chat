@@ -37,7 +37,7 @@ export interface IStorage {
   
   // PostBoard operations
   getPostBoardUsers(postId: number): Promise<PostBoardUser[]>;
-  updateUserVerification(userId: number, postId: number, verificationType: 'irl' | 'handmade', value: boolean, verifiedBy: string): Promise<boolean>;
+  updateUserVerification(userId: number, postId: number, verificationType: 'irl' | 'handmade', value: boolean, verifiedBy: string | undefined): Promise<boolean>;
   
   // Notification operations
   createNotification(notification: {
@@ -760,8 +760,10 @@ export class MemStorage implements IStorage {
     postId: number, 
     verificationType: 'irl' | 'handmade', 
     value: boolean, 
-    verifiedBy: string
+    verifiedBy: string | undefined
   ): Promise<boolean> {
+    // Asegurar que verifiedBy sea una cadena válida
+    verifiedBy = verifiedBy || 'unknown';
     // Comprobar si el usuario existe
     const user = await this.getUser(userId);
     if (!user) return false;
