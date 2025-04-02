@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth";
 import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Download, FileText } from "lucide-react";
+import { Clock, Download, FileText, FileSpreadsheet } from "lucide-react";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -198,6 +198,14 @@ export default function Post() {
               >
                 <FileText className="h-4 w-4 mr-2" />
                 <span>Exportar Word</span>
+              </a>
+              <a 
+                href={`/api/posts/${post.id}/comments/export-excel`}
+                className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.xls`}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                <span>Exportar Excel</span>
               </a>
             </div>
           </div>
