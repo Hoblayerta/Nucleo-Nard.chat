@@ -135,12 +135,12 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
       value: boolean,
       voter: string
     }) => {
+      console.log(`Enviando: userId=${userId}, type=${verificationType}, value=${value}, voter=${voter}`);
       // Llamada real a la API
       const response = await apiRequest("PUT", `/api/posts/${postId}/verify`, {
-        userId: userId,
-        verificationType: verificationType,
-        value: value,
-        voter: voter
+        userId,
+        type: verificationType,
+        value
       });
       return response.json();
     },
@@ -181,6 +181,7 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
     setSelectedUserId(userId);
     setVerifyType(type);
     setConfirmDialogOpen(true);
+    console.log(`Seleccionado: userId=${userId}, type=${type}, currentValue=${currentValue}`);
   };
 
   // Función para confirmar la verificación

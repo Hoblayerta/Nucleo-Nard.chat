@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { timeAgo } from "@/lib/utils";
@@ -39,6 +39,7 @@ export default function NotificationDropdown() {
   const [open, setOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const queryClient = useQueryClient();
+  const [_, setLocation] = useLocation();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
@@ -141,8 +142,8 @@ export default function NotificationDropdown() {
                     handleNotificationClick(notification.id);
                     // Cerrar el menú de notificaciones
                     setOpen(false);
-                    // Navegar a la página
-                    window.location.href = `/posts/${notification.postId}?comment=${notification.commentId || ''}`;
+                    // Navegar a la página usando Wouter
+                    setLocation(`/posts/${notification.postId}?comment=${notification.commentId || ''}`);
                   }}
                 >
                   {renderNotificationContent(notification)}

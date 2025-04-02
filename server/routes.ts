@@ -560,7 +560,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+  
+  // Endpoint alternativo para verificación
+  app.put("/api/posts/:postId/verify", requireModerator, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId, 10);
+      const { userId, type, value } = req.body;
+      
+      if (!userId || typeof userId !== 'number') {
+        return res.status(400).json({ message: "userId is required and must be a number" });
+      }
+      
+      if (type !== 'irl' && type !== 'handmade') {
+        return res.status(400).json({ message: "Invalid verification type. Must be 'irl' or 'handmade'" });
+      }
+      
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value. Must be a boolean" });
+      }
+      
+      // Obtener el nombre del verificador (admin/mod)
+      const verifierName = req.session.username || '';
+      
+      const result = await storage.updateUserVerification(userId, postId, type, value, verifierName);
+      
+      if (result) {
+        res.status(200).json({ 
+          message: `User ${userId} ${value ? 'verified' : 'unverified'} as ${type} by ${verifierName}`,
+          type,
+          value,
+          verifiedBy: verifierName
+        });
+      } else {
+        res.status(404).json({ message: "User or post not found" });
+      }
+    } catch (error) {
+      console.error("Error en verificación:", error);
+      res.status(500).json({ message: "Failed to update user verification" });
+    }
+  });
 
+  // Endpoint alternativo para verificación
+  app.put("/api/posts/:postId/verify", requireModerator, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId, 10);
+      const { userId, type, value } = req.body;
+      
+      if (!userId || typeof userId !== 'number') {
+        return res.status(400).json({ message: "userId is required and must be a number" });
+      }
+      
+      if (type !== 'irl' && type !== 'handmade') {
+        return res.status(400).json({ message: "Invalid verification type. Must be 'irl' or 'handmade'" });
+      }
+      
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value. Must be a boolean" });
+      }
+      
+      // Obtener el nombre del verificador (admin/mod)
+      const verifierName = req.session.username || '';
+      
+      const result = await storage.updateUserVerification(userId, postId, type, value, verifierName);
+      
+      if (result) {
+        res.status(200).json({ 
+          message: `User ${userId} ${value ? 'verified' : 'unverified'} as ${type} by ${verifierName}`,
+          type,
+          value,
+          verifiedBy: verifierName
+        });
+      } else {
+        res.status(404).json({ message: "User or post not found" });
+      }
+    } catch (error) {
+      console.error("Error en verificación:", error);
+      res.status(500).json({ message: "Failed to update user verification" });
+    }
+  });
+  
   // Obtener el leaderboard (mejores comentarios)
   app.get("/api/leaderboard", async (req, res) => {
     try {
