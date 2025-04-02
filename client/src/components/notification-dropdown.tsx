@@ -176,15 +176,6 @@ export default function NotificationDropdown() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex justify-between items-center border-b p-3">
           <h4 className="font-medium">Notificaciones</h4>
-          {localNotifications.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={markAllAsRead}
-            >
-              Marcar todos como leído
-            </Button>
-          )}
         </div>
         <div className="max-h-80 overflow-auto">
           {localNotifications.length === 0 ? (
