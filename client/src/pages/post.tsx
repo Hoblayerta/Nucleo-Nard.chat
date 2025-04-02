@@ -16,24 +16,21 @@ export default function Post() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  // Obtener el ID del comentario de los parámetros de consulta si existe
-  const [commentId, setCommentId] = useState<string | null>(null);
+  // Analizamos los parámetros de consulta para obtener el ID del comentario
+  const searchParams = new URLSearchParams(window.location.search);
+  const commentIdFromURL = searchParams.get('comment');
+  const [commentId, setCommentId] = useState<string | null>(commentIdFromURL);
   
-  // Analizamos los parámetros de consulta
+  // Efecto para mostrar un toast cuando hay un comentario en la URL
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const comment = searchParams.get('comment');
-    if (comment) {
-      setCommentId(comment);
-      
-      // Mostrar un toast para indicar que se está navegando a un comentario específico
+    if (commentIdFromURL) {
       toast({
         title: "Navegando al comentario",
         description: "Te estamos llevando al comentario compartido...",
         duration: 3000,
       });
     }
-  }, [toast]);
+  }, [commentIdFromURL, toast]);
   
   const postId = parseInt(params.id || "0", 10);
   
