@@ -56,6 +56,15 @@ export default function NotificationDropdown() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      
+      // Verificar si esta era la última notificación sin leer
+      const remainingUnread = notifications.filter(
+        notification => notification.read === false && notification.id !== notificationId
+      );
+      
+      if (remainingUnread.length === 0) {
+        setHasUnread(false);
+      }
     }
   });
 
@@ -66,6 +75,12 @@ export default function NotificationDropdown() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       setHasUnread(false);
+      // Mostrar toast de confirmación
+      toast({
+        title: "Notificaciones leídas",
+        description: "Todas las notificaciones han sido marcadas como leídas",
+        duration: 3000,
+      });
     }
   });
 
