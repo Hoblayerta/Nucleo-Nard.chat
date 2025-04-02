@@ -246,14 +246,14 @@ export default function CommentForm({
           
           {/* Lista de sugerencias de menciones */}
           {showMentionSuggestions && (
-            <div className="absolute z-10 bg-white rounded-md shadow-lg border mt-1 max-h-60 overflow-y-auto w-60">
+            <div className="absolute z-10 bg-background rounded-md shadow-lg border mt-1 max-h-60 overflow-y-auto w-60">
               {users
                 .filter((u: any) => u.username.toLowerCase().includes(mentionQuery.toLowerCase()))
                 .slice(0, 5)
                 .map((user: any) => (
                   <div
                     key={user.id}
-                    className="p-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    className="p-2 hover:bg-accent cursor-pointer flex items-center gap-2"
                     onClick={() => {
                       // Insertar la mención en el texto
                       const textBeforeCursor = comment.substring(0, cursorPosition);
@@ -285,7 +285,7 @@ export default function CommentForm({
                   </div>
                 ))}
               {users.filter((u: any) => u.username.toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
-                <div className="p-2 text-gray-500 text-sm">No hay usuarios que coincidan</div>
+                <div className="p-2 text-muted-foreground text-sm">No hay usuarios que coincidan</div>
               )}
             </div>
           )}

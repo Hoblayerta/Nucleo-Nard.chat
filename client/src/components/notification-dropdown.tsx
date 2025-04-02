@@ -128,7 +128,7 @@ export default function NotificationDropdown() {
         </div>
         <div className="max-h-80 overflow-auto">
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-sm text-gray-500">
+            <div className="p-4 text-center text-sm text-muted-foreground">
               No tienes notificaciones
             </div>
           ) : (
@@ -136,10 +136,10 @@ export default function NotificationDropdown() {
               {notifications.map((notification: Notification) => (
                 <Link 
                   key={notification.id} 
-                  href={`/post/${notification.postId}?comment=${notification.commentId || ''}`}
+                  href={`/posts/${notification.postId}?comment=${notification.commentId || ''}`}
                 >
                   <div 
-                    className={`block p-3 border-b hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
+                    className={`block p-3 border-b hover:bg-accent cursor-pointer ${!notification.read ? 'bg-blue-100/50 dark:bg-blue-900/20' : ''}`}
                     onClick={() => handleNotificationClick(notification.id)}
                   >
                     {renderNotificationContent(notification)}

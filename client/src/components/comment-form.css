@@ -80,8 +80,8 @@
 }
 
 .mention-suggestions {
-  background-color: white;
-  border: 1px solid #e5e7eb;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
   border-radius: 4px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   max-height: 200px;
@@ -100,7 +100,7 @@
 }
 
 .mention-item:hover {
-  background-color: #f3f4f6;
+  background-color: hsl(var(--accent));
 }
 
 @media (max-width: 768px) {
