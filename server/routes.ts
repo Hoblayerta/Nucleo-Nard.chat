@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId,
           commentId,
           postId,
-          type: voteType === 'upvote' ? 'like' : 'dislike',
+          isUpvote: voteType === 'upvote',
           createdAt: new Date()
         });
         

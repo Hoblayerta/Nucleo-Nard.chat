@@ -82,7 +82,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
     mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {
       const res = await apiRequest("POST", "/api/votes", {
         commentId: comment.id,
-        isUpvote
+        voteType: isUpvote ? 'upvote' : 'downvote'
       });
       return res.json();
     },

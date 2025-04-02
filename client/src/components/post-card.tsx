@@ -45,7 +45,7 @@ export default function PostCard({ post }: PostCardProps) {
     mutationFn: async ({ isUpvote }: { isUpvote: boolean }) => {
       const res = await apiRequest("POST", "/api/votes", {
         postId: post.id,
-        isUpvote
+        voteType: isUpvote ? 'upvote' : 'downvote'
       });
       return res.json();
     },
