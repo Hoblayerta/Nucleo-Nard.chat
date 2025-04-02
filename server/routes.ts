@@ -690,11 +690,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User ID not found in session" });
       }
       
+      console.log(`Intentando marcar todas las notificaciones como leídas para el usuario ID: ${userId}`);
+      
       const result = await storage.markAllNotificationsAsRead(userId);
       
+      console.log(`Resultado de marcar notificaciones como leídas: ${result}`);
+      
       if (result) {
+        console.log("Todas las notificaciones marcadas como leídas con éxito");
         res.status(200).json({ success: true });
       } else {
+        console.log("No había notificaciones para marcar como leídas");
         res.status(200).json({ success: false, message: "No hay notificaciones para marcar como leídas" });
       }
     } catch (error) {
@@ -706,12 +712,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Marcar una notificación como leída
   app.put("/api/notifications/:id/read", requireAuth, async (req, res) => {
     try {
+      const userId = req.session.userId;
       const notificationId = parseInt(req.params.id, 10);
+      
+      console.log(`Intentando marcar la notificación ID: ${notificationId} como leída para el usuario ID: ${userId}`);
+      
       const result = await storage.markNotificationAsRead(notificationId);
       
+      console.log(`Resultado de marcar notificación ${notificationId} como leída: ${result}`);
+      
       if (result) {
+        console.log(`Notificación ${notificationId} marcada como leída con éxito`);
         res.status(200).json({ success: true });
       } else {
+        console.log(`Notificación ${notificationId} no encontrada o ya leída`);
         res.status(404).json({ message: "Notificación no encontrada" });
       }
     } catch (error) {

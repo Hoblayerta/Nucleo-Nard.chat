@@ -38,50 +38,70 @@ export default function NotificationDropdown() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Obtener notificaciones
-  const { data: notifications = [] } = useQuery<Notification[]>({
+  const { data: notificationsData = [], refetch } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     enabled: !!user,
-    refetchInterval: 15000, // Refrescar cada 15 segundos
+    refetchInterval: 15000,
     refetchOnWindowFocus: true
   });
 
-  // Verificar si hay notificaciones no leídas cada vez que cambian las notificaciones
+  // Actualizar el estado local cuando cambian las notificaciones
   useEffect(() => {
-    if (!user || !notifications.length) {
-      setHasUnread(false);
-      return;
-    }
-    
-    const unreadCount = notifications.filter(n => !n.read).length;
-    setHasUnread(unreadCount > 0);
-  }, [notifications, user]);
+    if (notificationsData) {
+      setLocalNotifications(notificationsData);
+      
+      // Actualizar el estado hasUnread
+      const unreadCount = notificationsData.filter(n => !n.read).length;
+      setHasUnread(unreadCount > 0);
 
-  // Marcar una notificación como leída - versión simplificada
-  const markAsReadMutation = useMutation({
-    mutationFn: (id: number) => {
-      return apiRequest(`/api/notifications/${id}/read`, 'PUT');
-    },
-    onSuccess: () => {
-      // Simplemente actualizar todas las notificaciones después de marcar una como leída
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      console.log('Notificaciones actualizadas:', notificationsData);
+      console.log('Notificaciones sin leer:', unreadCount);
     }
-  });
+  }, [notificationsData]);
 
-  // Marcar todas las notificaciones como leídas - versión simplificada
-  const markAllAsReadMutation = useMutation({
-    mutationFn: () => {
-      return apiRequest('/api/notifications/read-all', 'PUT');
-    },
-    onSuccess: () => {
-      // Actualizar notificaciones y quitar el punto rojo
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+  // Función para marcar una notificación como leída
+  const markAsRead = async (id: number) => {
+    try {
+      await apiRequest(`/api/notifications/${id}/read`, 'PUT');
+      
+      // Actualizar estado local inmediatamente
+      setLocalNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, read: true } : n)
+      );
+      
+      // Verificar si queda alguna notificación sin leer
+      const stillHasUnread = localNotifications.some(n => n.id !== id && !n.read);
+      setHasUnread(stillHasUnread);
+      
+      // Recargar datos
+      refetch();
+      
+      return true;
+    } catch (error) {
+      console.error('Error al marcar notificación como leída:', error);
+      return false;
+    }
+  };
+
+  // Función para marcar todas como leídas
+  const markAllAsRead = async () => {
+    try {
+      const response = await apiRequest('/api/notifications/read-all', 'PUT');
+      console.log('Respuesta marcar todo como leído:', response);
+      
+      // Actualizar estado local inmediatamente
+      setLocalNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setHasUnread(false);
       
-      // Mostrar confirmación
+      // Recargar datos del servidor
+      refetch();
+      
+      // Notificar al usuario
       toast({
         title: "Notificaciones leídas",
         description: "Todas las notificaciones han sido marcadas como leídas",
@@ -90,16 +110,27 @@ export default function NotificationDropdown() {
       
       // Cerrar el menú
       setOpen(false);
+      
+      return true;
+    } catch (error) {
+      console.error('Error al marcar todas como leídas:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron marcar las notificaciones como leídas",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return false;
     }
-  });
+  };
 
   const handleNotificationClick = (notification: Notification) => {
-    // Marcar como leída si no está leída
+    // Solo marcar como leída si no está leída
     if (!notification.read) {
-      markAsReadMutation.mutate(notification.id);
+      markAsRead(notification.id);
     }
     
-    // Cerrar menú
+    // Cerrar el menú
     setOpen(false);
     
     // Mostrar toast
@@ -145,25 +176,24 @@ export default function NotificationDropdown() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex justify-between items-center border-b p-3">
           <h4 className="font-medium">Notificaciones</h4>
-          {notifications.length > 0 && (
+          {localNotifications.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isPending}
+              onClick={markAllAsRead}
             >
               Marcar todos como leído
             </Button>
           )}
         </div>
         <div className="max-h-80 overflow-auto">
-          {notifications.length === 0 ? (
+          {localNotifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               No tienes notificaciones
             </div>
           ) : (
             <div>
-              {notifications.map((notification: Notification) => (
+              {localNotifications.map((notification: Notification) => (
                 <div 
                   key={notification.id} 
                   className={`block p-3 border-b hover:bg-accent cursor-pointer ${!notification.read ? 'bg-blue-100/50 dark:bg-blue-900/20' : ''}`}

@@ -888,25 +888,50 @@ export class MemStorage implements IStorage {
   }
   
   async markNotificationAsRead(id: number): Promise<boolean> {
+    console.log(`Storage - Buscando notificación con ID: ${id}`);
     const notification = this.notifications.get(id);
-    if (!notification) return false;
     
+    if (!notification) {
+      console.log(`Storage - Notificación con ID ${id} no encontrada`);
+      return false;
+    }
+    
+    console.log(`Storage - Encontrada notificación:`, JSON.stringify(notification));
+    console.log(`Storage - Estado actual: ${notification.read ? 'Leída' : 'No leída'}`);
+    
+    // Marcar como leída
     notification.read = true;
     this.notifications.set(id, notification);
+    
+    console.log(`Storage - Notificación actualizada como leída`);
     return true;
   }
   
   async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    console.log(`Storage - Buscando notificaciones para usuario ID: ${userId}`);
+    
     const userNotifications = Array.from(this.notifications.values())
       .filter(notification => notification.userId === userId);
     
-    if (userNotifications.length === 0) return false;
+    console.log(`Storage - Encontradas ${userNotifications.length} notificaciones para el usuario ${userId}`);
     
+    if (userNotifications.length === 0) {
+      console.log(`Storage - No hay notificaciones para marcar como leídas para el usuario ${userId}`);
+      return false;
+    }
+    
+    console.log(`Storage - Notificaciones antes de actualizar:`, JSON.stringify(userNotifications));
+    
+    let unreadCount = 0;
     userNotifications.forEach(notification => {
+      if (!notification.read) {
+        unreadCount++;
+      }
       notification.read = true;
       this.notifications.set(notification.id, notification);
     });
     
+    console.log(`Storage - ${unreadCount} notificaciones marcadas como leídas para el usuario ${userId}`);
     return true;
   }
 }
