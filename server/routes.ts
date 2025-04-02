@@ -12,7 +12,8 @@ import {
   loginUserSchema,
   registerUserSchema,
   updateUserSchema,
-  NotificationType
+  NotificationType,
+  CommentWithUser
 } from "@shared/schema";
 
 declare module "express-session" {
@@ -436,6 +437,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get comments" });
     }
   });
+  
+  // Función auxiliar para formatear comentarios para exportación
+  function formatCommentsForExport(comments: any[], postTitle: string): string {
+    // Encabezados del CSV
+    let csv = 'Índice,Usuario,Rol,Badges,Contenido,Votos,Fecha\n';
+    
+    // Función recursiva para procesar comentarios con sus respuestas
+    function processComments(cmts: any[], prefix = '') {
+      cmts.forEach((comment, index) => {
+        const currentIndex = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
+        
+        // Escapar comillas en el contenido
+        const escapedContent = comment.content.replace(/"/g, '""');
+        
+        // Formatear badges como una lista separada por comas
+        const badges = comment.user.badges.join(', ');
+        
+        // Calcular votos netos
+        const netVotes = comment.voteScore;
+        
+        // Formatear fecha
+        const date = new Date(comment.createdAt);
+        const formattedDate = date.toLocaleString();
+        
+        // Añadir la línea al CSV
+        csv += `"${currentIndex}","${comment.user.username}","${comment.user.role}","${badges}","${escapedContent}","${netVotes}","${formattedDate}"\n`;
+        
+        // Procesar respuestas recursivamente
+        if (comment.replies && comment.replies.length > 0) {
+          processComments(comment.replies, currentIndex);
+        }
+      });
+    }
+    
+    processComments(comments);
+    return csv;
+  }
+  
+  // Exportar comentarios de un post (solo para admin/mod)
+  app.get("/api/posts/:id/comments/export", requireAuth, async (req, res) => {
+    try {
+      // Verificar si el usuario es admin o moderador
+      if (req.session.role !== 'admin' && req.session.role !== 'moderator') {
+        return res.status(403).json({ message: "No tienes permisos para exportar comentarios" });
+      }
+      
+      const postId = parseInt(req.params.id, 10);
+      const currentUserId = req.session.userId;
+      
+      // Obtener el post para incluir su título
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post no encontrado" });
+      }
+      
+      // Obtener comentarios
+      const comments = await storage.getCommentsByPostId(postId, currentUserId);
+      
+      // Formatear los comentarios para exportación
+      const formattedComments = formatCommentsForExport(comments, post.title);
+      
+      // Establecer cabeceras para descarga de CSV
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="comentarios-post-${postId}.csv"`);
+      
+      // Enviar los datos formateados
+      res.send(formattedComments);
+    } catch (error) {
+      console.error(`Error exportando comentarios para post ${req.params.id}:`, error);
+      res.status(500).json({ message: "Error interno al exportar comentarios" });
+    }
+  });
 
   // Crear o actualizar un voto (like/dislike)
   app.post("/api/votes", requireAuth, async (req, res) => {
@@ -568,46 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint alternativo para verificación
-  app.put("/api/posts/:postId/verify", requireModerator, async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId, 10);
-      const { userId, type, value } = req.body;
-      
-      if (!userId || typeof userId !== 'number') {
-        return res.status(400).json({ message: "userId is required and must be a number" });
-      }
-      
-      if (type !== 'irl' && type !== 'handmade') {
-        return res.status(400).json({ message: "Invalid verification type. Must be 'irl' or 'handmade'" });
-      }
-      
-      if (typeof value !== 'boolean') {
-        return res.status(400).json({ message: "Invalid value. Must be a boolean" });
-      }
-      
-      // Obtener el nombre del verificador (admin/mod)
-      const verifierName = req.session.username || '';
-      
-      const result = await storage.updateUserVerification(userId, postId, type, value, verifierName);
-      
-      if (result) {
-        res.status(200).json({ 
-          message: `User ${userId} ${value ? 'verified' : 'unverified'} as ${type} by ${verifierName}`,
-          type,
-          value,
-          verifiedBy: verifierName
-        });
-      } else {
-        res.status(404).json({ message: "User or post not found" });
-      }
-    } catch (error) {
-      console.error("Error en verificación:", error);
-      res.status(500).json({ message: "Failed to update user verification" });
-    }
-  });
-
-  // Endpoint alternativo para verificación
+  // Endpoint para verificación
   app.put("/api/posts/:postId/verify", requireModerator, async (req, res) => {
     try {
       const postId = parseInt(req.params.postId, 10);
