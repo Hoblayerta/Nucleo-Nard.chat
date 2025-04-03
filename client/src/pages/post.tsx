@@ -181,30 +181,56 @@ export default function Post() {
         </section>
       )}
       
-      {/* Ya se añadieron los botones de exportación en el componente PostCard */}
+      {/* Botón de Árbol de Comentarios (versión destacada) */}
+      <div className="bg-card p-4 rounded-lg border-2 border-primary/20 mb-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold mb-1">¡Nueva visualización de árbol de comentarios!</h3>
+            <p className="text-sm text-muted-foreground mb-0 md:mb-0">
+              Explora los comentarios en un formato visual intuitivo. ¡Pruébalo ahora!
+            </p>
+          </div>
+          <div className="flex gap-3">
+            {isMobile ? (
+              <Button 
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white gap-2"
+                onClick={() => {
+                  setSplitView(true);
+                  setShowCommentTree(true);
+                }}
+              >
+                <Network className="h-5 w-5" />
+                Ver árbol interactivo
+              </Button>
+            ) : (
+              <Button 
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white gap-2"
+                onClick={() => setShowCommentTree(true)}
+              >
+                <Network className="h-5 w-5" />
+                Ver árbol interactivo
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
       
       {/* Interfaz móvil: botones para vista normal o vista dividida */}
-      {isMobile && (
+      {isMobile && splitView && (
         <div className="flex items-center gap-2 mb-4">
           <Button 
-            variant={!splitView ? "default" : "outline"}
+            variant="outline"
             className="flex-1"
             onClick={() => {
               setSplitView(false);
               setShowCommentTree(false);
             }}
           >
-            Vista normal
-          </Button>
-          <Button 
-            variant={splitView ? "default" : "outline"}
-            className="flex-1"
-            onClick={() => {
-              setSplitView(true);
-              setShowCommentTree(true);
-            }}
-          >
-            Vista dividida
+            <span className="flex gap-1 items-center justify-center w-full">
+              <span>Volver a vista normal</span>
+            </span>
           </Button>
         </div>
       )}

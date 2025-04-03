@@ -140,21 +140,33 @@ export default function Sidebar() {
       </div>
       
       {/* Visualizador de árbol de comentarios en lugar de Top Comments cuando estamos en una página de post */}
-      {currentPostId && comments.length > 0 ? (
-        <div className="bg-card p-4 rounded-md shadow">
+      {currentPostId ? (
+        <div className="bg-card p-4 rounded-md shadow border-2 border-primary/20">
           <h3 className="font-medium text-lg mb-3 border-b border-border pb-2">
             Árbol de Comentarios
           </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Visualización jerárquica de los comentarios del post. Haz clic en un nodo para ver ese comentario.
-          </p>
-          {isLoading ? (
-            <div className="flex items-center justify-center h-[200px]">
-              <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
-              <span className="ml-2">Cargando...</span>
-            </div>
+          {comments.length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-4">
+                Visualización jerárquica de los comentarios. Haz clic en un nodo para ver ese comentario.
+              </p>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-[200px]">
+                  <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+                  <span className="ml-2">Cargando...</span>
+                </div>
+              ) : (
+                <SidebarCommentTree postId={currentPostId} />
+              )}
+            </>
           ) : (
-            <SidebarCommentTree postId={currentPostId} />
+            <div className="text-center py-6 px-4">
+              <Network className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+              <h4 className="font-medium mb-2">No hay comentarios aún</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                El árbol de comentarios aparecerá una vez que se agreguen comentarios al post.
+              </p>
+            </div>
           )}
         </div>
       ) : (
