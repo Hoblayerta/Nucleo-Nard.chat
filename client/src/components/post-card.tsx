@@ -244,6 +244,24 @@ export default function PostCard({ post }: PostCardProps) {
                   <span className="md:inline">Post Board</span>
                 </Button>
 
+                <a 
+                  href={`/api/posts/${post.id}/comments/export-text`}
+                  download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:text-primary h-8 px-2 md:px-3 mr-2 md:mr-4"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  <span className="md:inline">Texto</span>
+                </a>
+
+                <a 
+                  href={`/api/posts/${post.id}/comments/export-word`}
+                  download={`post-${post.id}-${post.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.docx`}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:text-primary h-8 px-2 md:px-3 mr-2 md:mr-4"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  <span className="md:inline">Word</span>
+                </a>
+
                 {(user?.role === "admin" || user?.role === "moderator") && (
                   <div className="flex items-center space-x-1 md:space-x-2 ml-auto mr-0">
                     <Switch

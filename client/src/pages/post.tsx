@@ -7,7 +7,6 @@ import { useSlowMode } from "@/hooks/use-slow-mode";
 import { useAuth } from "@/lib/auth";
 import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
-import ExportButtons from "@/components/export-buttons"; // Importamos el nuevo componente
 import { Progress } from "@/components/ui/progress";
 import { Clock } from "lucide-react";
 import type { PostWithDetails } from "@shared/schema";
@@ -178,8 +177,7 @@ export default function Post() {
         </section>
       )}
       
-      {/* Componente de exportación - visible para todos los usuarios */}
-      <ExportButtons postId={post.id} postTitle={post.title} />
+      {/* Ya se añadieron los botones de exportación en el componente PostCard */}
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
