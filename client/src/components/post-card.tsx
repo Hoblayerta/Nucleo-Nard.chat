@@ -23,6 +23,7 @@ import CommentThread from "./comment-thread";
 import CommentForm from "./comment-form";
 import BadgeIcon from "./badge-icon";
 import PostBoard from "./post-board";
+import CommentTreeView from "./comment-tree-view";
 import type { PostWithDetails } from "@shared/schema";
 import { Switch } from "@/components/ui/switch"; // Import the Switch component
 
@@ -37,6 +38,7 @@ export default function PostCard({ post }: PostCardProps) {
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
   const [showPostBoard, setShowPostBoard] = useState(false);
+  const [showCommentTree, setShowCommentTree] = useState(false);
 
   // Determina si el usuario ha votado en este post
   const userVoteStatus = post.userVote || null;
@@ -243,6 +245,20 @@ export default function PostCard({ post }: PostCardProps) {
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   <span className="md:inline">Post Board</span>
                 </Button>
+                
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="bg-primary text-white hover:bg-primary/90 mr-2 md:mr-4 h-8 px-2 md:px-3"
+                  onClick={() => setShowCommentTree(true)}
+                >
+                  <div className="w-4 h-4 mr-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
+                    </svg>
+                  </div>
+                  <span className="md:inline">Ver Árbol</span>
+                </Button>
 
                 {(user?.role === "admin" || user?.role === "moderator") && (
                   <>
@@ -307,6 +323,37 @@ export default function PostCard({ post }: PostCardProps) {
         isOpen={showPostBoard} 
         onClose={() => setShowPostBoard(false)} 
       />
+      
+      {/* Árbol de comentarios */}
+      {showCommentTree && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card p-4 rounded-lg shadow-lg w-full max-w-4xl h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Árbol de Comentarios</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-1 h-8 w-8" 
+                onClick={() => setShowCommentTree(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>
+                </svg>
+              </Button>
+            </div>
+            <div className="flex-1 relative overflow-hidden">
+              <CommentTreeView 
+                postId={post.id} 
+                onClose={() => setShowCommentTree(false)}
+                onCommentSelect={() => {
+                  setShowCommentTree(false);
+                  setShowComments(true);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
