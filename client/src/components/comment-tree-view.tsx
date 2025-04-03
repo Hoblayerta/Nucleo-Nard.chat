@@ -37,10 +37,10 @@ interface CommentTreeViewProps {
 }
 
 const CANVAS_PADDING = 50;
-const NODE_RADIUS = 25; // Nodos más grandes para mejor visibilidad en móvil
-const SMALL_NODE_RADIUS = 16; // Nodos negativos también más visibles
-const NODE_SPACING_H = 120; // Mayor espaciado horizontal para evitar solapamiento
-const NODE_SPACING_V = 120; // Mayor espaciado vertical para una mejor visualización
+const NODE_RADIUS = 28; // Nodos más grandes para mejor visibilidad en móvil
+const SMALL_NODE_RADIUS = 18; // Nodos negativos también más visibles
+const NODE_SPACING_H = 140; // Mayor espaciado horizontal para evitar solapamiento
+const NODE_SPACING_V = 180; // Mucho mayor espaciado vertical entre filas jerárquicas
 const LINE_WIDTH = 3.5; // Líneas más gruesas para mejor visualización
 const COLOR_PALETTE = [
   '#1dd1c7', // Cian turquesa (más brillante, como en la imagen)
@@ -242,7 +242,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       
       // El espacio horizontal debe ser proporcional a la cantidad de comentarios
       // para evitar que se amontonen o queden muy separados
-      const spacingMultiplier = Math.min(1.8, Math.max(0.8, 1 - totalComments * 0.01));
+      const spacingMultiplier = Math.min(2.2, Math.max(1.0, 1.2 - totalComments * 0.008));
       
       // Mostrar mensaje si no hay comentarios
       if (node.children.length === 0) {
@@ -257,7 +257,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         // Espaciamos horizontalmente los comentarios de primer nivel
         // Usamos una distribución más amplia para los comentarios de primer nivel
         const horizontalOffset = (childIndex - (node.children.length - 1) / 2) * 
-                                 NODE_SPACING_H * 1.8 * spacingMultiplier;
+                                 NODE_SPACING_H * 2.0 * spacingMultiplier;
         
         calculateNodePositions(child, 0, childIndex, node.children.length, horizontalOffset);
         childIndex++;
@@ -275,7 +275,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     if (node.children.length > 1) {
       // Calculamos el ancho total que ocuparán los hijos
       // Si hay muchos hijos, reducimos el espaciado para que no queden muy separados
-      const spacingFactor = Math.min(1, Math.max(0.6, 1 - (node.children.length * 0.05)));
+      const spacingFactor = Math.min(1.2, Math.max(0.7, 1.1 - (node.children.length * 0.04)));
       const totalWidth = NODE_SPACING_H * spacingFactor * (node.children.length - 1);
       const startX = node.x - totalWidth / 2;
       
