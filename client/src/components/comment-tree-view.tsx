@@ -182,33 +182,45 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   }
 
   // Calculate positions for all nodes
-  function calculateNodePositions(node: CommentNode, depth = 0, index = 0, siblingCount = 1) {
-    // For the invisible root node
+  function calculateNodePositions(node: CommentNode, depth = 0, index = 0, siblingCount = 1, xOffset = 0) {
+    // Para el nodo raíz (post)
     if (node.level === -1) {
       node.x = 0;
       node.y = 0;
-
-      // Position all children
+      
+      // Posicionar todos los hijos (comentarios de primer nivel)
       let childIndex = 0;
       node.children.forEach(child => {
-        calculateNodePositions(child, 0, childIndex, node.children.length);
+        // Espaciamos horizontalmente los comentarios de primer nivel
+        const horizontalOffset = (childIndex - (node.children.length - 1) / 2) * NODE_SPACING_H * 1.2;
+        calculateNodePositions(child, 0, childIndex, node.children.length, horizontalOffset);
         childIndex++;
       });
-
+      
       return;
     }
-
-    // Calculate node's position
-    const horizontalSpacing = NODE_SPACING_H * (siblingCount > 1 ? 1.5 : 1);
-    node.x = index * horizontalSpacing - ((siblingCount - 1) * horizontalSpacing / 2);
+    
+    // Para nodos normales (comentarios)
+    // Usamos el desplazamiento para mantener la estructura del árbol
+    node.x = xOffset;
     node.y = depth * NODE_SPACING_V;
-
-    // Position all children
-    let childIndex = 0;
-    node.children.forEach(child => {
-      calculateNodePositions(child, depth + 1, childIndex, node.children.length);
-      childIndex++;
-    });
+    
+    // Si tiene muchos hijos, los distribuimos en un arco
+    if (node.children.length > 1) {
+      // Calculamos el ancho total que ocuparán los hijos
+      const totalWidth = NODE_SPACING_H * (node.children.length - 1);
+      const startX = node.x - totalWidth / 2;
+      
+      // Posicionar cada hijo con su propio desplazamiento
+      node.children.forEach((child, i) => {
+        const childX = startX + i * NODE_SPACING_H;
+        calculateNodePositions(child, depth + 1, i, node.children.length, childX);
+      });
+    } 
+    // Si solo tiene un hijo, lo colocamos directamente debajo (alineado)
+    else if (node.children.length === 1) {
+      calculateNodePositions(node.children[0], depth + 1, 0, 1, node.x);
+    }
   }
 
   // Draw the tree on the canvas
@@ -238,7 +250,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   }, [tree, offsetX, offsetY, scale, containerRef.current?.clientWidth, containerRef.current?.clientHeight]);
 
   // Function to draw a node and its connections
-  function drawNode(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number, parentIndex?: string) {
+  function drawNode(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number) {
     // Si es el nodo raíz (post), dibujarlo de manera especial
     if (node.level === -1) {
       // Dibujamos el post como raíz visible
@@ -342,7 +354,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     // Draw all children nodes
     node.children.forEach((child, idx) => {
       if (!child.collapsed) {
-        child.index = parentIndex ? `${parentIndex}.${idx + 1}` : `${idx + 1}`;
+        child.index = node.index ? `${node.index}.${idx + 1}` : `${idx + 1}`;
         drawNode(ctx, child, centerX, centerY);
       }
     });
