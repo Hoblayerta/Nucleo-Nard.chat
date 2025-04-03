@@ -7,8 +7,10 @@ import { useSlowMode } from "@/hooks/use-slow-mode";
 import { useAuth } from "@/lib/auth";
 import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
+import CommentTreeView from "@/components/comment-tree-view";
 import { Progress } from "@/components/ui/progress";
-import { Clock } from "lucide-react";
+import { Clock, Network } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -17,6 +19,7 @@ export default function Post() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user, isAdmin, isModerator } = useAuth();
+  const [showCommentTree, setShowCommentTree] = useState(false);
   
   // Analizamos los parámetros de consulta para obtener el ID del comentario
   const searchParams = new URLSearchParams(window.location.search);
@@ -181,12 +184,49 @@ export default function Post() {
       
       {/* Sección de comentarios existentes */}
       <section className="bg-card rounded-lg shadow-sm p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Comentarios</h3>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => setShowCommentTree(true)}
+          >
+            <Network className="h-4 w-4" />
+            Ver árbol de comentarios
+          </Button>
+        </div>
+        
         <CommentThread 
           postId={post.id} 
           highlightedCommentId={commentId} 
           isFrozen={post.frozen}
           slowModeInterval={post.slowModeInterval}
         />
+        
+        {showCommentTree && (
+          <CommentTreeView 
+            postId={post.id} 
+            onClose={() => setShowCommentTree(false)}
+            onCommentSelect={(commentId) => {
+              setShowCommentTree(false);
+              
+              // Desplazarse al comentario seleccionado
+              setTimeout(() => {
+                const commentElement = document.getElementById(`comment-${commentId}`);
+                if (commentElement) {
+                  commentElement.scrollIntoView({ behavior: 'smooth' });
+                  // Resaltar brevemente el comentario
+                  commentElement.classList.add('bg-primary/10');
+                  setTimeout(() => {
+                    commentElement.classList.remove('bg-primary/10');
+                  }, 2000);
+                }
+              }, 100);
+            }}
+          />
+        )}
       </section>
     </div>
   );

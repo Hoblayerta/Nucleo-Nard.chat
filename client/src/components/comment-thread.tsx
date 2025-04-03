@@ -170,7 +170,10 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
   };
     
   return (
-    <div ref={commentRef} className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
+    <div 
+      id={`comment-${comment.id}`} 
+      ref={commentRef} 
+      className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
       {isMobile && level > 0 && (
         <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
           <CornerDownRight className="h-3 w-3 mr-1" />
