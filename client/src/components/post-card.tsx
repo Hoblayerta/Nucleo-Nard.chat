@@ -247,18 +247,32 @@ export default function PostCard({ post }: PostCardProps) {
                 </Button>
                 
                 <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="bg-primary text-white hover:bg-primary/90 mr-2 md:mr-4 h-8 px-2 md:px-3"
+                  variant="ghost" 
+                  size="sm"
+                  className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
                   onClick={() => setShowCommentTree(true)}
                 >
-                  <div className="w-4 h-4 mr-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
-                    </svg>
-                  </div>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="h-4 w-4 mr-1"
+                  >
+                    <path d="M8 3v4h1a2 2 0 0 1 2 2v2" />
+                    <path d="M12 19v-2a2 2 0 0 0-2-2H8" />
+                    <path d="M4 9h1a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h2" />
+                    <path d="M16 3v4h-1a2 2 0 0 0-2 2v2" />
+                    <path d="M16 21v-4h1a2 2 0 0 0 2-2v-2" />
+                    <path d="M20 9h-1a2 2 0 0 0-2 2v2a2 2 0 0 1-2 2h-2" />
+                  </svg>
                   <span className="md:inline">Ver Árbol</span>
                 </Button>
+                
+
 
                 {(user?.role === "admin" || user?.role === "moderator") && (
                   <>

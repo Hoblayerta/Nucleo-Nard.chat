@@ -243,22 +243,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get posts" });
     }
   });
-
-  // Obtener un post por ID
+  
+  // Get a specific post by ID
   app.get("/api/posts/:id", async (req, res) => {
     try {
-      const postId = parseInt(req.params.id, 10);
-      const post = await storage.getPost(postId);
+      const postId = parseInt(req.params.id);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
       
+      const post = await storage.getPost(postId);
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
       
-      res.status(200).json(post);
+      // Get additional details like vote count
+      const currentUserId = req.session?.userId || 0;
+      const posts = await storage.getPosts(currentUserId);
+      const postWithDetails = posts.find(p => p.id === postId);
+      
+      if (!postWithDetails) {
+        return res.status(404).json({ message: "Post details not found" });
+      }
+      
+      res.status(200).json(postWithDetails);
     } catch (error) {
+      console.error("Error getting post:", error);
       res.status(500).json({ message: "Failed to get post" });
     }
   });
+
+
 
   // Actualizar estado de congelación de un post (solo admin/mod)
   app.put("/api/posts/:id/freeze", requireModerator, async (req, res) => {

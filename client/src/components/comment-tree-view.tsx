@@ -26,6 +26,7 @@ interface CommentNode {
   highlighted?: boolean;
   collapsed?: boolean;
   negativeScore?: boolean;
+  isPost?: boolean;
 }
 
 interface CommentTreeViewProps {
@@ -78,9 +79,17 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     },
   });
 
+  const { data: postData } = useQuery({
+    queryKey: [`/api/posts/${postId}`],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/posts/${postId}`);
+      return res.json();
+    },
+  });
+
   // Build the comment tree
   useEffect(() => {
-    if (comments.length > 0) {
+    if (comments.length > 0 && postData) {
       // Convert flat comments to hierarchical tree
       const commentMap = new Map<number, CommentNode>();
       
@@ -120,30 +129,31 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         }
       });
       
-      // Create a virtual root if there are multiple root comments
-      const virtualRoot: CommentNode = {
-        id: 0,
-        content: "Root",
-        userId: 0,
-        username: "root",
-        role: "system",
-        badges: [],
-        upvotes: 0,
-        downvotes: 0,
-        voteScore: 0,
+      // Create a root node for the post
+      const postRoot: CommentNode = {
+        id: postData.id,
+        content: postData.content || postData.title,
+        userId: postData.user.id,
+        username: postData.user.username,
+        role: postData.user.role,
+        badges: postData.user.badges || [],
+        upvotes: postData.upvotes || 0,
+        downvotes: postData.downvotes || 0,
+        voteScore: postData.voteScore || 0,
         children: rootNodes,
-        level: -1
+        level: -1,
+        isPost: true  // Marca este nodo como el post principal
       };
       
       // Calculate best path (canonical path with highest votes)
-      markBestPath(virtualRoot);
+      markBestPath(postRoot);
       
       // Calculate positions for all nodes
-      calculateNodePositions(virtualRoot);
+      calculateNodePositions(postRoot);
       
-      setTree(virtualRoot);
+      setTree(postRoot);
     }
-  }, [comments]);
+  }, [comments, postData]);
 
   // Mark the best path based on vote scores
   function markBestPath(node: CommentNode): number {
@@ -227,12 +237,81 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
   // Function to draw a node and its connections
   function drawNode(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number) {
-    // Skip drawing the virtual root
+    // Si es el nodo raíz (post), dibujarlo de manera especial
     if (node.level === -1) {
-      // Draw all children of root
+      // Dibujamos el post como raíz visible
+      if (node.isPost) {
+        // Posición del nodo raíz
+        const x = centerX;
+        const y = centerY - 20; // Un poco más arriba que los comentarios
+        
+        // Dibuja un nodo más grande para el post
+        const postRadius = NODE_RADIUS * 1.5;
+        
+        // Dibuja circulo para el post
+        ctx.beginPath();
+        ctx.arc(x, y, postRadius, 0, Math.PI * 2);
+        
+        // Estilo especial para el post
+        ctx.fillStyle = '#3498db'; // Color azul para distinguirlo
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        // Borde para el post
+        ctx.strokeStyle = '#2980b9';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Texto "POST" encima del nodo
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('POST', x, y - postRadius - 5);
+        
+        // Guarda las coordenadas reales para poder detectar clics
+        node.x = 0;
+        node.y = y - centerY;
+      }
+      
+      // Dibuja todos los comentarios hijos (comentarios de primer nivel)
       node.children.forEach(child => {
+        // Si es un post, conectar los comentarios raíz con el nodo del post
+        if (node.isPost) {
+          const postX = centerX;
+          const postY = centerY - 20;
+          
+          const childX = centerX + (child.x || 0) * scale + offsetX;
+          const childY = centerY + (child.y || 0) * scale + offsetY;
+          
+          // Dibuja la conexión del post a este comentario
+          ctx.beginPath();
+          ctx.moveTo(postX, postY + NODE_RADIUS * 1.5);
+          
+          // Determina si este comentario está en el camino destacado
+          const isOnBestPath = child.highlighted;
+          
+          // Línea curva
+          const controlPointY = (postY + childY) / 2 + 20;
+          
+          // Establece el color y grosor de la línea
+          ctx.strokeStyle = isOnBestPath ? '#2ecc71' : '#3498db';
+          ctx.lineWidth = isOnBestPath ? LINE_WIDTH * 1.5 : LINE_WIDTH;
+          
+          // Dibuja la curva bezier
+          ctx.bezierCurveTo(
+            postX, controlPointY,
+            childX, controlPointY,
+            childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS)
+          );
+          
+          ctx.stroke();
+        }
+        
+        // Dibuja el comentario y sus hijos
         drawNode(ctx, child, centerX, centerY);
       });
+      
       return;
     }
     
@@ -451,9 +530,23 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     centerX: number, 
     centerY: number
   ): CommentNode | null {
-    // Skip the virtual root
+    // Si es nodo raíz (post), verificar si el clic es en el post
     if (node.level === -1) {
-      // Check all children of root
+      // Si es un post, comprobar si se hizo clic en él
+      if (node.isPost) {
+        // Calcular posición del nodo del post
+        const postX = centerX;
+        const postY = centerY - 20;
+        const postRadius = NODE_RADIUS * 1.5;
+        
+        // Comprobar si el clic está dentro del nodo del post
+        const distanceSquared = Math.pow(clickX - postX, 2) + Math.pow(clickY - postY, 2);
+        if (distanceSquared <= Math.pow(postRadius, 2)) {
+          return node;
+        }
+      }
+      
+      // Verificar clics en los comentarios hijos
       for (const child of node.children) {
         const foundNode = findNodeAtPosition(child, clickX, clickY, centerX, centerY);
         if (foundNode) return foundNode;
