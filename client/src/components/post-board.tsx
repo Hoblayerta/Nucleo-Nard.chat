@@ -396,10 +396,12 @@ export default function PostBoard({ postId, isOpen, onClose }: PostBoardProps) {
             </DropdownMenu>
           </div>
 
-          <Button onClick={exportToExcel} variant="outline" size="sm" className="ml-auto">
-            <Download className="h-4 w-4 mr-1" />
-            Exportar a Excel
-          </Button>
+          {canVerify && (
+            <Button onClick={exportToExcel} variant="outline" size="sm" className="ml-auto">
+              <Download className="h-4 w-4 mr-1" />
+              Exportar a Excel
+            </Button>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto p-0">
