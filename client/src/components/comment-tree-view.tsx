@@ -317,8 +317,15 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
     // Update canvas size
     if (containerRef.current) {
-      canvas.width = containerRef.current.clientWidth;
-      canvas.height = containerRef.current.clientHeight;
+      // Para el modo integrado (no modal)
+      if (!onClose) {
+        canvas.width = containerRef.current.clientWidth;
+        canvas.height = containerRef.current.clientHeight;
+      } else {
+        // Para el modo modal (pantalla completa) con área de desplazamiento
+        canvas.width = Math.max(1500, containerRef.current.clientWidth);
+        canvas.height = Math.max(2500, containerRef.current.clientHeight);
+      }
     }
 
     // Calculate center offset
@@ -337,7 +344,23 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       ctx.fillText('No hay comentarios aún', centerX, centerY + 60);
     }
 
-  }, [tree, offsetX, offsetY, scale, containerRef.current?.clientWidth, containerRef.current?.clientHeight]);
+    // Añadir instrucciones para el usuario
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const instructions = [
+      'Haz clic en un nodo para ver información',
+      'Doble clic para ir al comentario',
+      'Arrastra para mover el árbol'
+    ];
+    
+    instructions.forEach((text, i) => {
+      ctx.fillText(text, centerX, canvas.height - 80 + (i * 20));
+    });
+
+  }, [tree, offsetX, offsetY, scale, containerRef.current?.clientWidth, containerRef.current?.clientHeight, onClose]);
 
   // Function to draw a node and its connections
   function drawNode(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number) {
@@ -537,7 +560,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    // Calculate center offset
+    // Calculate center offset (considerando scroll del área)
     const centerX = canvas.width / 2;
     const centerY = CANVAS_PADDING * 2;
 
@@ -545,12 +568,6 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
 
     if (clickedNode) {
-      // Al hacer clic en cualquier nodo, ir directamente al comentario (como con "share")
-      if (onCommentSelect && clickedNode.id !== postData?.id) {
-        onCommentSelect(clickedNode.id);
-        return;
-      }
-
       // Handle single click - show info
       setSelectedNode(clickedNode);
       setInfoModalOpen(true);
@@ -571,6 +588,27 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       // Click on empty space - close info modal
       setInfoModalOpen(false);
       setSelectedNode(null);
+    }
+  };
+  
+  // Handle double click to navigate to comment
+  const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!tree || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    // Calculate center offset
+    const centerX = canvas.width / 2;
+    const centerY = CANVAS_PADDING * 2;
+
+    // Find clicked node
+    const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
+
+    if (clickedNode && onCommentSelect && clickedNode.id !== postData?.id) {
+      onCommentSelect(clickedNode.id);
     }
   };
 
@@ -761,6 +799,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               ref={canvasRef}
               className="w-full h-full cursor-grab active:cursor-grabbing"
               onClick={handleCanvasClick}
+              onDoubleClick={handleCanvasDoubleClick}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -851,19 +890,22 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           <span className="ml-2">Cargando comentarios...</span>
         </div>
       ) : (
-        <div className={`h-[calc(100vh-${fullscreen ? '4rem' : '5rem'})] w-full overflow-hidden`}>
-          <canvas
-            ref={canvasRef}
-            className="h-full w-full cursor-grab active:cursor-grabbing"
-            onClick={handleCanvasClick}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          />
+        <div className={`h-[calc(100vh-${fullscreen ? '4rem' : '5rem'})] w-full overflow-auto`}>
+          <div className="min-h-full min-w-[1200px] h-[2000px] relative">
+            <canvas
+              ref={canvasRef}
+              className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0"
+              onClick={handleCanvasClick}
+              onDoubleClick={handleCanvasDoubleClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            />
+          </div>
         </div>
       )}
 
