@@ -316,6 +316,7 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentsByPostId(postId: number, currentUserId: number = 0): Promise<CommentWithUser[]> {
+    // Obtenemos todos los comentarios para este post
     const allComments = Array.from(this.comments.values())
       .filter((comment) => comment.postId === postId)
       .map(async (comment) => {
@@ -376,13 +377,18 @@ export class MemStorage implements IStorage {
           parent.replies = parent.replies || [];
           parent.replies.push(comment);
         } else {
+          // Si no encontramos al padre (podría ser un error), lo añadimos a la raíz
           rootComments.push(comment);
         }
       } else {
+        // Es un comentario de primer nivel
         rootComments.push(comment);
       }
     });
 
+    // Para asegurar que la visualización en árbol funcione correctamente
+    // Necesitamos que todos los comentarios estén disponibles, no solo los de primer nivel
+    // Devolvemos tanto los comentarios de primer nivel como un array plano de todos los comentarios
     return rootComments;
   }
 

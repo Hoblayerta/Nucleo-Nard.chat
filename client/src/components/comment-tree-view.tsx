@@ -36,11 +36,11 @@ interface CommentTreeViewProps {
   onCommentSelect?: (commentId: number) => void;
 }
 
-const CANVAS_PADDING = 40;
+const CANVAS_PADDING = 50;
 const NODE_RADIUS = 22;
-const SMALL_NODE_RADIUS = 12;
-const NODE_SPACING_H = 80; // Mayor espaciado horizontal
-const NODE_SPACING_V = 90; // Mayor espaciado vertical
+const SMALL_NODE_RADIUS = 14;
+const NODE_SPACING_H = 100; // Mayor espaciado horizontal para evitar solapamiento
+const NODE_SPACING_V = 100; // Mayor espaciado vertical para una mejor visualización
 const LINE_WIDTH = 3; // Líneas más gruesas para mejor visualización
 const COLOR_PALETTE = [
   '#1dd1c7', // Cian turquesa (más brillante, como en la imagen)
@@ -92,10 +92,10 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   // Build the comment tree
   useEffect(() => {
     if (comments.length > 0 && postData) {
-      // Convert flat comments to hierarchical tree
+      // Convertir comentarios planos a una estructura jerárquica
       const commentMap = new Map<number, CommentNode>();
 
-      // First pass: create all nodes
+      // Primera pasada: crear todos los nodos
       comments.forEach(comment => {
         commentMap.set(comment.id, {
           id: comment.id,
@@ -113,7 +113,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         });
       });
 
-      // Second pass: build the tree structure
+      // Segunda pasada: construir la estructura de árbol
       const rootNodes: CommentNode[] = [];
 
       comments.forEach(comment => {
@@ -124,14 +124,32 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             if (parentNode) {
               parentNode.children.push(node);
               node.level = parentNode.level + 1;
+            } else {
+              // Si no encontramos el padre (puede ser un error), añadirlo como comentario raíz
+              rootNodes.push(node);
             }
           } else {
+            // Es un comentario de primer nivel
             rootNodes.push(node);
           }
         }
       });
 
-      // Create a root node for the post
+      // Reordenar los comentarios por nivel para mejor visualización
+      // Primero los comentarios con más votos
+      rootNodes.sort((a, b) => b.voteScore - a.voteScore);
+      
+      // Ordenar cada nivel de hijos recursivamente
+      const sortChildrenByVotes = (node: CommentNode) => {
+        if (node.children.length > 0) {
+          node.children.sort((a, b) => b.voteScore - a.voteScore);
+          node.children.forEach(sortChildrenByVotes);
+        }
+      };
+      
+      rootNodes.forEach(sortChildrenByVotes);
+
+      // Crear un nodo raíz para el post
       const postRoot: CommentNode = {
         id: postData.id,
         content: postData.content || postData.title,
@@ -190,9 +208,20 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       
       // Posicionar todos los hijos (comentarios de primer nivel)
       let childIndex = 0;
+      
+      // Primero calculamos cuántos nodos hay en total para mejor distribución
+      const totalComments = countTotalNodes(node) - 1; // -1 para excluir el post
+      
+      // El espacio horizontal debe ser proporcional a la cantidad de comentarios
+      // para evitar que se amontonen o queden muy separados
+      const spacingMultiplier = Math.min(1.5, Math.max(0.8, 1 - totalComments * 0.01));
+      
       node.children.forEach(child => {
         // Espaciamos horizontalmente los comentarios de primer nivel
-        const horizontalOffset = (childIndex - (node.children.length - 1) / 2) * NODE_SPACING_H * 1.2;
+        // Usamos una distribución más amplia para los comentarios de primer nivel
+        const horizontalOffset = (childIndex - (node.children.length - 1) / 2) * 
+                                 NODE_SPACING_H * 1.5 * spacingMultiplier;
+        
         calculateNodePositions(child, 0, childIndex, node.children.length, horizontalOffset);
         childIndex++;
       });
@@ -205,15 +234,17 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     node.x = xOffset;
     node.y = depth * NODE_SPACING_V;
     
-    // Si tiene muchos hijos, los distribuimos en un arco
+    // Si tiene muchos hijos, los distribuimos horizontalmente
     if (node.children.length > 1) {
       // Calculamos el ancho total que ocuparán los hijos
-      const totalWidth = NODE_SPACING_H * (node.children.length - 1);
+      // Si hay muchos hijos, reducimos el espaciado para que no queden muy separados
+      const spacingFactor = Math.min(1, Math.max(0.5, 1 - (node.children.length * 0.05)));
+      const totalWidth = NODE_SPACING_H * spacingFactor * (node.children.length - 1);
       const startX = node.x - totalWidth / 2;
       
       // Posicionar cada hijo con su propio desplazamiento
       node.children.forEach((child, i) => {
-        const childX = startX + i * NODE_SPACING_H;
+        const childX = startX + i * NODE_SPACING_H * spacingFactor;
         calculateNodePositions(child, depth + 1, i, node.children.length, childX);
       });
     } 
@@ -221,6 +252,18 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     else if (node.children.length === 1) {
       calculateNodePositions(node.children[0], depth + 1, 0, 1, node.x);
     }
+  }
+  
+  // Función para contar recursivamente el número total de nodos en el árbol
+  function countTotalNodes(node: CommentNode): number {
+    if (!node) return 0;
+    let count = 1; // Contar este nodo
+    
+    for (const child of node.children) {
+      count += countTotalNodes(child);
+    }
+    
+    return count;
   }
 
   // Draw the tree on the canvas
@@ -354,6 +397,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     // Draw all children nodes
     node.children.forEach((child, idx) => {
       if (!child.collapsed) {
+        // Asignar índices jerárquicos (1, 1.1, 1.2, etc.)
         child.index = node.index ? `${node.index}.${idx + 1}` : `${idx + 1}`;
         drawNode(ctx, child, centerX, centerY);
       }
