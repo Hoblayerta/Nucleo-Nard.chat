@@ -89,14 +89,14 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         // Añadir una clase para destacar brevemente el comentario con mayor tiempo
         commentRef.current?.classList.add('highlight-comment');
         
-        // Agitar suavemente el comentario para llamar la atención
-        commentRef.current?.classList.add('comment-shake');
+        // Aplicar un efecto de flash para llamar la atención
+        commentRef.current?.classList.add('comment-flash');
         
         // Quitar las clases de efecto después de un tiempo
         setTimeout(() => {
           commentRef.current?.classList.remove('highlight-comment');
-          commentRef.current?.classList.remove('comment-shake');
-        }, 5000);
+          commentRef.current?.classList.remove('comment-flash');
+        }, 3000); // Reducir a 3 segundos para un efecto más rápido
       }, 800);
     }
   }, [comment.id, expanded, highlightedCommentId, window.location.search]);
@@ -405,6 +405,8 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
 }
 
 export default function CommentThread({ postId, highlightedCommentId, isFrozen = false, slowModeInterval = 0 }: CommentThreadProps) {
+  // Referencia para desplazamiento automático
+  const highlightedCommentRef = useRef<HTMLDivElement>(null);
   const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
   });

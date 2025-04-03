@@ -61,11 +61,12 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   const containerRef = useRef<HTMLDivElement>(null);
   const [tree, setTree] = useState<CommentNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<CommentNode | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.9); // Escala inicial reducida para ver más contenido
   const [isDragging, setIsDragging] = useState(false);
   const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
   const [currentDragPosition, setCurrentDragPosition] = useState({ x: 0, y: 0 });
@@ -609,6 +610,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
 
     if (clickedNode && onCommentSelect && clickedNode.id !== postData?.id) {
+      // Guardar el ID del nodo seleccionado para aplicar efecto visual
+      setSelectedNodeId(clickedNode.id);
       onCommentSelect(clickedNode.id);
     }
   };
@@ -666,6 +669,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         
         if (touchedNode && onCommentSelect && touchedNode.id !== postData?.id) {
           e.preventDefault(); // Prevenir zoom del navegador
+          // Añadir efecto de flash cuando se selecciona un comentario
+          setSelectedNodeId(touchedNode.id);
           onCommentSelect(touchedNode.id);
           return;
         }
@@ -899,7 +904,12 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                     variant="link" 
                     size="sm" 
                     className="text-xs p-0 h-auto text-primary"
-                    onClick={() => onCommentSelect && onCommentSelect(selectedNode.id)}
+                    onClick={() => {
+                      if (onCommentSelect && selectedNode) {
+                        setSelectedNodeId(selectedNode.id);
+                        onCommentSelect(selectedNode.id);
+                      }
+                    }}
                   >
                     Ver comentario
                   </Button>
@@ -1040,6 +1050,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               size="sm"
               onClick={() => {
                 if (onCommentSelect) {
+                  setSelectedNodeId(selectedNode.id);
                   onCommentSelect(selectedNode.id);
                 }
               }}

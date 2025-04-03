@@ -183,29 +183,32 @@
 
 /* Estilo para comentario resaltado cuando se accede desde un enlace compartido */
 .highlight-comment {
-  animation: highlight-pulse 2s ease-in-out;
+  background-color: rgba(59, 130, 246, 0.06);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-@keyframes highlight-pulse {
-  0% {
-    background-color: transparent;
-  }
+/* Efecto de destello (flash) para llamar la atención */
+.comment-flash {
+  animation: flash-effect 2s ease-out;
+}
 
-  25% {
-    background-color: rgba(59, 130, 246, 0.15);
+@keyframes flash-effect {
+  0% { 
+    background-color: rgba(255, 193, 7, 0.3); /* Amarillo más fuerte */
+    box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.4);
   }
-
-  /* Azul con baja opacidad */
-  50% {
-    background-color: rgba(59, 130, 246, 0.2);
+  25% { 
+    background-color: rgba(255, 193, 7, 0.2);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
   }
-
-  75% {
-    background-color: rgba(59, 130, 246, 0.15);
+  50% { 
+    background-color: rgba(255, 193, 7, 0.15);
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
   }
-
-  100% {
-    background-color: transparent;
+  100% { 
+    background-color: rgba(59, 130, 246, 0.06); /* Volver al azul */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 }
 
