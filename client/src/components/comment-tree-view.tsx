@@ -91,12 +91,13 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
   // Build the comment tree
   useEffect(() => {
-    if (comments.length > 0 && postData) {
-      // Convertir comentarios planos a una estructura jerárquica
+    if (postData) {
+      // Convertir todos los comentarios (incluido si no hay ninguno) en un árbol jerárquico
       const commentMap = new Map<number, CommentNode>();
 
-      // Primera pasada: crear todos los nodos
+      // Primera pasada: crear todos los nodos para todos los comentarios
       comments.forEach(comment => {
+        // Extraer la información de cada comentario
         commentMap.set(comment.id, {
           id: comment.id,
           content: comment.content,
@@ -113,19 +114,22 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         });
       });
 
-      // Segunda pasada: construir la estructura de árbol
+      // Segunda pasada: construir la estructura jerárquica del árbol
       const rootNodes: CommentNode[] = [];
 
+      // Para cada comentario, establecer correctamente sus padres e hijos
       comments.forEach(comment => {
         const node = commentMap.get(comment.id);
         if (node) {
           if (comment.parentId) {
+            // Es una respuesta a otro comentario
             const parentNode = commentMap.get(comment.parentId);
             if (parentNode) {
+              // Añadirlo como hijo del padre
               parentNode.children.push(node);
               node.level = parentNode.level + 1;
             } else {
-              // Si no encontramos el padre (puede ser un error), añadirlo como comentario raíz
+              // Si por alguna razón no se encuentra el padre, lo añadimos como comentario raíz
               rootNodes.push(node);
             }
           } else {
@@ -149,7 +153,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       
       rootNodes.forEach(sortChildrenByVotes);
 
-      // Crear un nodo raíz para el post
+      // Crear un nodo raíz para el post (siempre está presente)
       const postRoot: CommentNode = {
         id: postData.id,
         content: postData.content || postData.title,
@@ -160,7 +164,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         upvotes: postData.upvotes || 0,
         downvotes: postData.downvotes || 0,
         voteScore: postData.voteScore || 0,
-        children: rootNodes,
+        children: rootNodes, // Todos los comentarios de primer nivel
         level: -1,
         isPost: true  // Marca este nodo como el post principal
       };
@@ -214,13 +218,22 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       
       // El espacio horizontal debe ser proporcional a la cantidad de comentarios
       // para evitar que se amontonen o queden muy separados
-      const spacingMultiplier = Math.min(1.5, Math.max(0.8, 1 - totalComments * 0.01));
+      const spacingMultiplier = Math.min(1.8, Math.max(0.8, 1 - totalComments * 0.01));
+      
+      // Mostrar mensaje si no hay comentarios
+      if (node.children.length === 0) {
+        // Aunque no hay comentarios, el nodo raíz siempre está presente
+        // Aseguramos que sea visible
+        node.x = 0;
+        node.y = 0;
+        return;
+      }
       
       node.children.forEach(child => {
         // Espaciamos horizontalmente los comentarios de primer nivel
         // Usamos una distribución más amplia para los comentarios de primer nivel
         const horizontalOffset = (childIndex - (node.children.length - 1) / 2) * 
-                                 NODE_SPACING_H * 1.5 * spacingMultiplier;
+                                 NODE_SPACING_H * 1.8 * spacingMultiplier;
         
         calculateNodePositions(child, 0, childIndex, node.children.length, horizontalOffset);
         childIndex++;
@@ -238,7 +251,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     if (node.children.length > 1) {
       // Calculamos el ancho total que ocuparán los hijos
       // Si hay muchos hijos, reducimos el espaciado para que no queden muy separados
-      const spacingFactor = Math.min(1, Math.max(0.5, 1 - (node.children.length * 0.05)));
+      const spacingFactor = Math.min(1, Math.max(0.6, 1 - (node.children.length * 0.05)));
       const totalWidth = NODE_SPACING_H * spacingFactor * (node.children.length - 1);
       const startX = node.x - totalWidth / 2;
       
@@ -252,6 +265,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     else if (node.children.length === 1) {
       calculateNodePositions(node.children[0], depth + 1, 0, 1, node.x);
     }
+    // Si no tiene hijos, no hace falta hacer nada más (ya está posicionado correctamente)
   }
   
   // Función para contar recursivamente el número total de nodos en el árbol
@@ -289,6 +303,15 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
     // Draw the tree (skip the virtual root)
     drawNode(ctx, tree, centerX, centerY);
+
+    // Si no hay comentarios, mostrar un mensaje
+    if (tree.children.length === 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('No hay comentarios aún', centerX, centerY + 60);
+    }
 
   }, [tree, offsetX, offsetY, scale, containerRef.current?.clientWidth, containerRef.current?.clientHeight]);
 

@@ -316,7 +316,7 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentsByPostId(postId: number, currentUserId: number = 0): Promise<CommentWithUser[]> {
-    // Obtenemos todos los comentarios para este post
+    // Obtenemos todos los comentarios para este post, incluyendo respuestas
     const allComments = Array.from(this.comments.values())
       .filter((comment) => comment.postId === postId)
       .map(async (comment) => {
@@ -358,18 +358,19 @@ export class MemStorage implements IStorage {
         };
       });
 
-    const comments = await Promise.all(allComments);
+    const commentsWithUser = await Promise.all(allComments);
 
     // Build comment tree
     const commentMap = new Map<number, CommentWithUser>();
     const rootComments: CommentWithUser[] = [];
 
     // First pass: Create a map of all comments by ID
-    comments.forEach(comment => {
+    commentsWithUser.forEach(comment => {
       commentMap.set(comment.id, {...comment, replies: []});
     });
 
     // Second pass: Arrange comments into a tree structure
+    // Asegurarnos de que todas las respuestas estén correctamente anidadas
     commentMap.forEach(comment => {
       if (comment.parentId) {
         const parent = commentMap.get(comment.parentId);
@@ -386,9 +387,13 @@ export class MemStorage implements IStorage {
       }
     });
 
-    // Para asegurar que la visualización en árbol funcione correctamente
-    // Necesitamos que todos los comentarios estén disponibles, no solo los de primer nivel
-    // Devolvemos tanto los comentarios de primer nivel como un array plano de todos los comentarios
+    // Si no hay comentarios para este post, devolvemos un array vacío pero no null
+    // Esto garantiza que siempre haya una estructura para el árbol
+    if (rootComments.length === 0) {
+      return [];
+    }
+
+    // Devolvemos todos los comentarios de primer nivel con sus respuestas anidadas
     return rootComments;
   }
 
