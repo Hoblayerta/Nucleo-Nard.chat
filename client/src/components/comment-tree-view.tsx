@@ -95,8 +95,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       // Convertir todos los comentarios (incluido si no hay ninguno) en un árbol jerárquico
       const commentMap = new Map<number, CommentNode>();
 
-      // Función recursiva para procesar comentarios y sus respuestas
-      function processCommentsRecursively(commentList: CommentWithUser[]) {
+      // Definir función recursiva fuera del bloque
+      const processCommentsRecursively = (commentList: CommentWithUser[]) => {
         // Para cada comentario en la lista
         commentList.forEach(comment => {
           // Crear un nodo para este comentario
@@ -132,7 +132,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       const rootNodes: CommentNode[] = [];
       
       // Función para construir las relaciones padre-hijo
-      function buildHierarchy(commentList: CommentWithUser[]) {
+      const buildHierarchy = (commentList: CommentWithUser[]) => {
         commentList.forEach(comment => {
           const node = commentMap.get(comment.id);
           if (!node) return; // Protección contra nodos no existentes
@@ -182,12 +182,12 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         id: postData.id,
         content: postData.content || postData.title,
         userId: postData.user.id,
-        username: postData.user.username,
-        role: postData.user.role,
+        username: postData.user.username || "unknown",
+        role: postData.user.role || "user",
         badges: postData.user.badges || [],
         upvotes: postData.upvotes || 0,
         downvotes: postData.downvotes || 0,
-        voteScore: postData.voteScore || 0,
+        voteScore: (postData.upvotes || 0) - (postData.downvotes || 0),
         children: rootNodes, // Todos los comentarios de primer nivel
         level: -1,
         isPost: true  // Marca este nodo como el post principal
@@ -527,8 +527,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
 
     if (clickedNode) {
-      // Handle double click - navigate to comment
-      if (e.detail === 2 && onCommentSelect) {
+      // Al hacer clic en cualquier nodo, ir directamente al comentario (como con "share")
+      if (onCommentSelect && clickedNode.id !== postData?.id) {
         onCommentSelect(clickedNode.id);
         return;
       }
@@ -788,11 +788,11 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     );
   }
 
-  // Para la visualización modal
+  // Para la visualización modal (pantalla completa)
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm" 
+      className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col" 
       onClick={() => {
         if (infoModalOpen) {
           setInfoModalOpen(false);
