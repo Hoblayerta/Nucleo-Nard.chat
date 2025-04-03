@@ -14,45 +14,52 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { CommentWithUser } from "@shared/schema";
 
-// Componente Layout para el visualizador de comentarios
-interface CommentTreeViewLayoutProps {
+// Componente que muestra el árbol de comentarios directamente en el sidebar
+interface SidebarCommentTreeProps {
   postId: number;
-  onClose: () => void;
 }
 
-function CommentTreeViewLayout({ postId, onClose }: CommentTreeViewLayoutProps) {
-  // Esta función se llamará cuando el usuario seleccione un comentario específico
+function SidebarCommentTree({ postId }: SidebarCommentTreeProps) {
+  const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
+  
+  // Función que se llama cuando se selecciona un comentario
   const handleCommentSelect = (commentId: number) => {
-    // Cerrar el visualizador
-    onClose();
+    setSelectedCommentId(commentId);
     
     // Desplazarse al comentario seleccionado
     setTimeout(() => {
       const commentElement = document.getElementById(`comment-${commentId}`);
       if (commentElement) {
-        commentElement.scrollIntoView({ behavior: 'smooth' });
+        // Para dispositivos móviles, es importante asegurarse de que el usuario vea el comentario
+        // scrollIntoView puede funcionar de manera diferente dependiendo del navegador
+        commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
         // Resaltar brevemente el comentario
-        commentElement.classList.add('bg-primary/10');
+        commentElement.classList.add('bg-primary/20');
         setTimeout(() => {
-          commentElement.classList.remove('bg-primary/10');
+          commentElement.classList.remove('bg-primary/20');
         }, 2000);
       }
     }, 100);
   };
   
   return (
-    <CommentTreeView 
-      postId={postId} 
-      onClose={onClose} 
-      onCommentSelect={handleCommentSelect}
-    />
+    <div className="h-[400px] relative overflow-hidden rounded-md border border-muted">
+      <CommentTreeView 
+        postId={postId} 
+        onClose={() => {}} // No hay nada que cerrar aquí ya que está integrado en el sidebar
+        onCommentSelect={handleCommentSelect}
+      />
+    </div>
   );
 }
 
 export default function Sidebar() {
   const [location] = useLocation();
-  const [showCommentTree, setShowCommentTree] = useState(false);
   const [currentPostId, setCurrentPostId] = useState<number | null>(null);
 
   const navigation = [
@@ -74,7 +81,7 @@ export default function Sidebar() {
     },
   ];
 
-  // Check if the current path is a post page
+  // Verificar si estamos en una página de post
   useEffect(() => {
     const match = location.match(/\/post\/(\d+)/);
     if (match && match[1]) {
@@ -84,10 +91,21 @@ export default function Sidebar() {
     }
   }, [location]);
 
+  // Consultar la información de comentarios para el post actual
+  const { data: comments = [], isLoading } = useQuery<CommentWithUser[]>({
+    queryKey: [`/api/posts/${currentPostId}/comments`],
+    queryFn: async () => {
+      if (!currentPostId) return [];
+      const res = await apiRequest("GET", `/api/posts/${currentPostId}/comments`);
+      return res.json();
+    },
+    enabled: !!currentPostId, // Solo consultar cuando hay un ID de post
+  });
+
   return (
     <aside className="w-full md:w-64 space-y-6">
       <div className="bg-card p-4 rounded-md shadow">
-        <h3 className="font-medium text-lg mb-3 border-b border-border pb-2">Navigation</h3>
+        <h3 className="font-medium text-lg mb-3 border-b border-border pb-2">Navegación</h3>
         <ul className="space-y-2">
           {navigation.map((item) => {
             const isActive = location === item.href;
@@ -121,29 +139,22 @@ export default function Sidebar() {
         </ul>
       </div>
       
-      {/* Visualizador de Comentarios se muestra solo en páginas de post */}
-      {currentPostId ? (
+      {/* Visualizador de árbol de comentarios en lugar de Top Comments cuando estamos en una página de post */}
+      {currentPostId && comments.length > 0 ? (
         <div className="bg-card p-4 rounded-md shadow">
           <h3 className="font-medium text-lg mb-3 border-b border-border pb-2">
-            Visualización de Comentarios
+            Árbol de Comentarios
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Visualiza los comentarios del post en un formato gráfico tipo árbol.
+            Visualización jerárquica de los comentarios del post. Haz clic en un nodo para ver ese comentario.
           </p>
-          <Button 
-            variant="outline" 
-            className="w-full flex items-center justify-center"
-            onClick={() => setShowCommentTree(true)}
-          >
-            <Network className="w-4 h-4 mr-2" />
-            Ver Árbol de Comentarios
-          </Button>
-          
-          {showCommentTree && currentPostId && (
-            <CommentTreeViewLayout 
-              postId={currentPostId} 
-              onClose={() => setShowCommentTree(false)} 
-            />
+          {isLoading ? (
+            <div className="flex items-center justify-center h-[200px]">
+              <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+              <span className="ml-2">Cargando...</span>
+            </div>
+          ) : (
+            <SidebarCommentTree postId={currentPostId} />
           )}
         </div>
       ) : (

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { CommentWithUser } from '@shared/schema';
-import { X, Minimize2, Maximize2 } from 'lucide-react';
+import { X, Minimize2, Maximize2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +66,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   const [isDragging, setIsDragging] = useState(false);
   const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
   const [currentDragPosition, setCurrentDragPosition] = useState({ x: 0, y: 0 });
+  const [fullscreen, setFullscreen] = useState(false);
   const isMobile = useIsMobile();
 
   // Fetch comments data
@@ -513,7 +514,88 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     setOffsetY(0);
     setScale(1);
   };
+  
+  // Toggle fullscreen mode
+  const toggleFullscreen = () => {
+    setFullscreen(!fullscreen);
+  };
 
+  // Verificamos si el componente se está mostrando como modal completo o integrado
+  const isModal = !!onClose;
+  
+  // Para la visualización integrada (no modal)
+  if (!isModal) {
+    return (
+      <div ref={containerRef} className="w-full h-full relative">
+        {/* Mini controles para la vista integrada */}
+        <div className="absolute top-2 right-2 z-10 flex gap-1">
+          <Button variant="outline" size="icon" className="h-6 w-6 p-0" onClick={handleZoomIn}>
+            <ZoomIn className="h-3 w-3" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-6 w-6 p-0" onClick={handleZoomOut}>
+            <ZoomOut className="h-3 w-3" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-6 w-6 p-0" onClick={handleResetView}>
+            <RotateCcw className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        {isLoading ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        ) : (
+          <div className="w-full h-full">
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full cursor-grab active:cursor-grabbing"
+              onClick={handleCanvasClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            />
+            
+            {/* Información del nodo seleccionado (versión compacta) */}
+            {selectedNode && (
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-md rounded-md p-2 max-w-[90%] z-10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="font-semibold text-sm">{selectedNode.username}</span>
+                  {selectedNode.role === 'admin' && (
+                    <Badge className="text-xs bg-red-100 text-red-800 px-1.5 py-0">Admin</Badge>
+                  )}
+                  {selectedNode.role === 'moderator' && (
+                    <Badge className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0">Mod</Badge>
+                  )}
+                </div>
+                <p className="text-xs line-clamp-2">{selectedNode.content}</p>
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <div>
+                    Votos: <span className={selectedNode.voteScore > 0 ? 'text-green-600' : (selectedNode.voteScore < 0 ? 'text-red-600' : '')}>
+                      {selectedNode.voteScore}
+                    </span>
+                  </div>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    className="text-xs p-0 h-auto text-primary"
+                    onClick={() => onCommentSelect && onCommentSelect(selectedNode.id)}
+                  >
+                    Ver comentario
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Para la visualización modal
   return (
     <div 
       ref={containerRef}
@@ -527,22 +609,28 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     >
       {/* Header */}
       <div className="flex items-center justify-between w-full p-4 border-b">
-        <h3 className="text-lg font-medium">Visualización de Comentarios</h3>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-5 w-5" />
-        </Button>
+        <h3 className="text-lg font-medium">Visualización de Árbol de Comentarios</h3>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={toggleFullscreen}>
+            {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
       
       {/* Controls */}
       <div className="absolute top-16 left-4 z-10 flex flex-col gap-2">
         <Button variant="outline" size="icon" onClick={handleZoomIn}>
-          <Maximize2 className="h-4 w-4" />
+          <ZoomIn className="h-4 w-4" />
         </Button>
         <Button variant="outline" size="icon" onClick={handleZoomOut}>
-          <Minimize2 className="h-4 w-4" />
+          <ZoomOut className="h-4 w-4" />
         </Button>
         <Button variant="outline" size="sm" onClick={handleResetView}>
-          Reset
+          <RotateCcw className="h-4 w-4 mr-1" />
+          <span>Reset</span>
         </Button>
       </div>
 
@@ -552,10 +640,10 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           <span className="ml-2">Cargando comentarios...</span>
         </div>
       ) : (
-        <div className="h-full w-full overflow-hidden">
+        <div className={`h-[calc(100vh-${fullscreen ? '4rem' : '5rem'})] w-full overflow-hidden`}>
           <canvas
             ref={canvasRef}
-            className="h-full w-full cursor-move"
+            className="h-full w-full cursor-grab active:cursor-grabbing"
             onClick={handleCanvasClick}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}

@@ -20,6 +20,7 @@ export default function Post() {
   const isMobile = useIsMobile();
   const { user, isAdmin, isModerator } = useAuth();
   const [showCommentTree, setShowCommentTree] = useState(false);
+  const [splitView, setSplitView] = useState(false); // Para la visualización dividida en móvil
   
   // Analizamos los parámetros de consulta para obtener el ID del comentario
   const searchParams = new URLSearchParams(window.location.search);
@@ -182,52 +183,124 @@ export default function Post() {
       
       {/* Ya se añadieron los botones de exportación en el componente PostCard */}
       
-      {/* Sección de comentarios existentes */}
-      <section className="bg-card rounded-lg shadow-sm p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Comentarios</h3>
-          
+      {/* Interfaz móvil: botones para vista normal o vista dividida */}
+      {isMobile && (
+        <div className="flex items-center gap-2 mb-4">
           <Button 
-            variant="outline" 
-            size="sm"
-            className="flex items-center gap-1"
-            onClick={() => setShowCommentTree(true)}
+            variant={!splitView ? "default" : "outline"}
+            className="flex-1"
+            onClick={() => {
+              setSplitView(false);
+              setShowCommentTree(false);
+            }}
           >
-            <Network className="h-4 w-4" />
-            Ver árbol de comentarios
+            Vista normal
+          </Button>
+          <Button 
+            variant={splitView ? "default" : "outline"}
+            className="flex-1"
+            onClick={() => {
+              setSplitView(true);
+              setShowCommentTree(true);
+            }}
+          >
+            Vista dividida
           </Button>
         </div>
-        
-        <CommentThread 
-          postId={post.id} 
-          highlightedCommentId={commentId} 
-          isFrozen={post.frozen}
-          slowModeInterval={post.slowModeInterval}
-        />
-        
-        {showCommentTree && (
-          <CommentTreeView 
-            postId={post.id} 
-            onClose={() => setShowCommentTree(false)}
-            onCommentSelect={(commentId) => {
-              setShowCommentTree(false);
-              
-              // Desplazarse al comentario seleccionado
-              setTimeout(() => {
-                const commentElement = document.getElementById(`comment-${commentId}`);
-                if (commentElement) {
-                  commentElement.scrollIntoView({ behavior: 'smooth' });
-                  // Resaltar brevemente el comentario
-                  commentElement.classList.add('bg-primary/10');
+      )}
+
+      {/* Vista dividida para móvil */}
+      {isMobile && splitView ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Árbol de comentarios (lado izquierdo en vista dividida) */}
+          <div className="bg-card rounded-lg shadow-sm p-4 h-[50vh] mb-4">
+            <h3 className="text-lg font-bold mb-2">Árbol de comentarios</h3>
+            <div className="h-[calc(50vh-4rem)] relative overflow-hidden">
+              <CommentTreeView 
+                postId={post.id} 
+                onClose={() => {}}
+                onCommentSelect={(commentId) => {
+                  // No cerramos la vista en el modo dividido, solo desplazamos
+                  // Desplazarse al comentario seleccionado
                   setTimeout(() => {
-                    commentElement.classList.remove('bg-primary/10');
-                  }, 2000);
-                }
-              }, 100);
-            }}
+                    const commentElement = document.getElementById(`comment-${commentId}`);
+                    if (commentElement) {
+                      commentElement.scrollIntoView({ behavior: 'smooth' });
+                      // Resaltar brevemente el comentario
+                      commentElement.classList.add('bg-primary/20');
+                      setTimeout(() => {
+                        commentElement.classList.remove('bg-primary/20');
+                      }, 2000);
+                    }
+                  }, 100);
+                }}
+              />
+            </div>
+          </div>
+          
+          {/* Lista de comentarios (lado derecho en vista dividida) */}
+          <div className="bg-card rounded-lg shadow-sm p-4 max-h-[50vh] overflow-y-auto">
+            <h3 className="text-lg font-bold mb-2">Comentarios</h3>
+            <CommentThread 
+              postId={post.id} 
+              highlightedCommentId={commentId} 
+              isFrozen={post.frozen}
+              slowModeInterval={post.slowModeInterval}
+            />
+          </div>
+        </div>
+      ) : (
+        /* Vista normal (escritorio y móvil sin vista dividida) */
+        <section className="bg-card rounded-lg shadow-sm p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">Comentarios</h3>
+            
+            {/* En escritorio, mostramos el botón para abrir la visualización del árbol */}
+            {!isMobile && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+                onClick={() => setShowCommentTree(true)}
+              >
+                <Network className="h-4 w-4" />
+                Ver árbol de comentarios
+              </Button>
+            )}
+          </div>
+          
+          <CommentThread 
+            postId={post.id} 
+            highlightedCommentId={commentId} 
+            isFrozen={post.frozen}
+            slowModeInterval={post.slowModeInterval}
           />
-        )}
-      </section>
+          
+          {/* Visualización modal del árbol de comentarios (solo en escritorio) */}
+          {!isMobile && showCommentTree && (
+            <CommentTreeView 
+              postId={post.id} 
+              onClose={() => setShowCommentTree(false)}
+              onCommentSelect={(commentId) => {
+                setShowCommentTree(false);
+                
+                // Desplazarse al comentario seleccionado
+                setTimeout(() => {
+                  const commentElement = document.getElementById(`comment-${commentId}`);
+                  if (commentElement) {
+                    commentElement.scrollIntoView({ behavior: 'smooth' });
+                    // Resaltar brevemente el comentario
+                    commentElement.classList.add('bg-primary/10');
+                    setTimeout(() => {
+                      commentElement.classList.remove('bg-primary/10');
+                    }, 2000);
+                  }
+                }, 100);
+              }}
+            />
+          )}
+        </section>
+      )}
     </div>
   );
 }
