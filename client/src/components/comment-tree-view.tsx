@@ -36,22 +36,23 @@ interface CommentTreeViewProps {
 }
 
 const CANVAS_PADDING = 40;
-const NODE_RADIUS = 20;
-const SMALL_NODE_RADIUS = 10;
-const NODE_SPACING_H = 60;
-const NODE_SPACING_V = 80;
-const LINE_WIDTH = 2;
+const NODE_RADIUS = 22;
+const SMALL_NODE_RADIUS = 12;
+const NODE_SPACING_H = 80; // Mayor espaciado horizontal
+const NODE_SPACING_V = 90; // Mayor espaciado vertical
+const LINE_WIDTH = 3; // Líneas más gruesas para mejor visualización
 const COLOR_PALETTE = [
-  '#1abc9c', // Turquoise
-  '#2ecc71', // Emerald
-  '#3498db', // Peter River
-  '#9b59b6', // Amethyst
-  '#f1c40f', // Sunflower
-  '#e67e22', // Carrot
-  '#e74c3c', // Alizarin
-  '#d35400', // Pumpkin
-  '#8e44ad', // Wisteria
-  '#16a085', // Green Sea
+  '#1dd1c7', // Cian turquesa (más brillante, como en la imagen)
+  '#45deb7', // verde turquesa
+  '#2ecc71', // verde
+  '#a3e048', // verde lima
+  '#f1c40f', // amarillo
+  '#e67e22', // naranja
+  '#e74c3c', // rojo
+  '#e84acf', // magenta
+  '#9b59b6', // violeta
+  '#7552e0', // púrpura
+  '#3498db', // azul
 ];
 
 export default function CommentTreeView({ postId, onClose, onCommentSelect }: CommentTreeViewProps) {
@@ -243,31 +244,25 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       if (node.isPost) {
         // Posición del nodo raíz
         const x = centerX;
-        const y = centerY - 20; // Un poco más arriba que los comentarios
+        const y = centerY - 40; // Más arriba que los comentarios para mejor visibilidad
         
         // Dibuja un nodo más grande para el post
-        const postRadius = NODE_RADIUS * 1.5;
+        const postRadius = NODE_RADIUS * 1.3;
         
         // Dibuja circulo para el post
         ctx.beginPath();
         ctx.arc(x, y, postRadius, 0, Math.PI * 2);
         
-        // Estilo especial para el post
-        ctx.fillStyle = '#3498db'; // Color azul para distinguirlo
+        // Estilo especial para el post - usar el color turquesa de la imagen
+        ctx.fillStyle = '#1dd1c7'; // Color turquesa brillante
         ctx.globalAlpha = 0.3;
         ctx.fill();
         ctx.globalAlpha = 1;
         
         // Borde para el post
-        ctx.strokeStyle = '#2980b9';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#1dd1c7';
+        ctx.lineWidth = LINE_WIDTH;
         ctx.stroke();
-        
-        // Texto "POST" encima del nodo
-        ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('POST', x, y - postRadius - 5);
         
         // Guarda las coordenadas reales para poder detectar clics
         node.x = 0;
@@ -279,31 +274,24 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         // Si es un post, conectar los comentarios raíz con el nodo del post
         if (node.isPost) {
           const postX = centerX;
-          const postY = centerY - 20;
+          const postY = centerY - 40;
           
           const childX = centerX + (child.x || 0) * scale + offsetX;
           const childY = centerY + (child.y || 0) * scale + offsetY;
           
           // Dibuja la conexión del post a este comentario
           ctx.beginPath();
-          ctx.moveTo(postX, postY + NODE_RADIUS * 1.5);
+          ctx.moveTo(postX, postY + NODE_RADIUS * 1.3);
           
           // Determina si este comentario está en el camino destacado
           const isOnBestPath = child.highlighted;
           
-          // Línea curva
-          const controlPointY = (postY + childY) / 2 + 20;
+          // Línea recta (como en la imagen de referencia)
+          ctx.strokeStyle = '#1dd1c7'; // Siempre usar el mismo color turquesa para las líneas desde el post
+          ctx.lineWidth = LINE_WIDTH;
           
-          // Establece el color y grosor de la línea
-          ctx.strokeStyle = isOnBestPath ? '#2ecc71' : '#3498db';
-          ctx.lineWidth = isOnBestPath ? LINE_WIDTH * 1.5 : LINE_WIDTH;
-          
-          // Dibuja la curva bezier
-          ctx.bezierCurveTo(
-            postX, controlPointY,
-            childX, controlPointY,
-            childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS)
-          );
+          // Solo dibuja líneas rectas, no curvas, como en la imagen de referencia
+          ctx.lineTo(childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
           
           ctx.stroke();
         }
@@ -333,19 +321,18 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       // Determine if the child is on the best path
       const isOnBestPath = child.highlighted && node.highlighted;
       
-      // Curved line
-      const controlPointY = (y + childY) / 2 + 20;
+      // Set line color based on level (like in the image)
+      ctx.strokeStyle = COLOR_PALETTE[node.level % COLOR_PALETTE.length];
       
-      // Set line color and width
-      ctx.strokeStyle = isOnBestPath ? '#2ecc71' : COLOR_PALETTE[node.level % COLOR_PALETTE.length];
-      ctx.lineWidth = isOnBestPath ? LINE_WIDTH * 1.5 : LINE_WIDTH;
+      // Highlight the best path with yellow (como en la imagen)
+      if (isOnBestPath) {
+        ctx.strokeStyle = '#f1c40f'; // Amarillo para la ruta destacada
+      }
       
-      // Draw bezier curve
-      ctx.bezierCurveTo(
-        x, controlPointY,
-        childX, controlPointY,
-        childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS)
-      );
+      ctx.lineWidth = LINE_WIDTH;
+      
+      // Dibujar línea recta en lugar de curva, como en la imagen de referencia
+      ctx.lineTo(childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
       
       ctx.stroke();
     });
@@ -534,10 +521,10 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     if (node.level === -1) {
       // Si es un post, comprobar si se hizo clic en él
       if (node.isPost) {
-        // Calcular posición del nodo del post
+        // Calcular posición del nodo del post (debe coincidir con la posición en drawNode)
         const postX = centerX;
-        const postY = centerY - 20;
-        const postRadius = NODE_RADIUS * 1.5;
+        const postY = centerY - 40; // Misma posición que en el drawNode del post
+        const postRadius = NODE_RADIUS * 1.3; // Mismo radio que en el drawNode del post
         
         // Comprobar si el clic está dentro del nodo del post
         const distanceSquared = Math.pow(clickX - postX, 2) + Math.pow(clickY - postY, 2);
