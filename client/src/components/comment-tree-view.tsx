@@ -95,32 +95,48 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       // Convertir todos los comentarios (incluido si no hay ninguno) en un árbol jerárquico
       const commentMap = new Map<number, CommentNode>();
 
-      // Primera pasada: crear todos los nodos para todos los comentarios
-      comments.forEach(comment => {
-        // Extraer la información de cada comentario
-        commentMap.set(comment.id, {
-          id: comment.id,
-          content: comment.content,
-          userId: comment.user.id,
-          username: comment.user.username,
-          role: comment.user.role,
-          badges: comment.user.badges,
-          upvotes: comment.upvotes,
-          downvotes: comment.downvotes,
-          voteScore: comment.voteScore,
-          children: [],
-          level: 0,
-          negativeScore: comment.voteScore < 0
+      // Función recursiva para procesar comentarios y sus respuestas
+      function processCommentsRecursively(commentList: CommentWithUser[]) {
+        // Para cada comentario en la lista
+        commentList.forEach(comment => {
+          // Crear un nodo para este comentario
+          const commentNode: CommentNode = {
+            id: comment.id,
+            content: comment.content,
+            userId: comment.user.id,
+            username: comment.user.username,
+            role: comment.user.role,
+            badges: comment.user.badges,
+            upvotes: comment.upvotes,
+            downvotes: comment.downvotes,
+            voteScore: comment.voteScore,
+            children: [],
+            level: 0,
+            negativeScore: comment.voteScore < 0
+          };
+          
+          // Añadir el nodo al mapa
+          commentMap.set(comment.id, commentNode);
+          
+          // Si tiene respuestas, procesarlas recursivamente
+          if (comment.replies && comment.replies.length > 0) {
+            processCommentsRecursively(comment.replies);
+          }
         });
-      });
-
+      }
+      
+      // Primera pasada: procesar todos los comentarios y respuestas recursivamente
+      processCommentsRecursively(comments);
+      
       // Segunda pasada: construir la estructura jerárquica del árbol
       const rootNodes: CommentNode[] = [];
-
-      // Para cada comentario, establecer correctamente sus padres e hijos
-      comments.forEach(comment => {
-        const node = commentMap.get(comment.id);
-        if (node) {
+      
+      // Función para construir las relaciones padre-hijo
+      function buildHierarchy(commentList: CommentWithUser[]) {
+        commentList.forEach(comment => {
+          const node = commentMap.get(comment.id);
+          if (!node) return; // Protección contra nodos no existentes
+          
           if (comment.parentId) {
             // Es una respuesta a otro comentario
             const parentNode = commentMap.get(comment.parentId);
@@ -136,8 +152,16 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             // Es un comentario de primer nivel
             rootNodes.push(node);
           }
-        }
-      });
+          
+          // Procesar recursivamente las respuestas
+          if (comment.replies && comment.replies.length > 0) {
+            buildHierarchy(comment.replies);
+          }
+        });
+      }
+      
+      // Construir la jerarquía
+      buildHierarchy(comments);
 
       // Reordenar los comentarios por nivel para mejor visualización
       // Primero los comentarios con más votos
