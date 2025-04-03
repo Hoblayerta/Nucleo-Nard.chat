@@ -37,11 +37,11 @@ interface CommentTreeViewProps {
 }
 
 const CANVAS_PADDING = 50;
-const NODE_RADIUS = 22;
-const SMALL_NODE_RADIUS = 14;
-const NODE_SPACING_H = 100; // Mayor espaciado horizontal para evitar solapamiento
-const NODE_SPACING_V = 100; // Mayor espaciado vertical para una mejor visualización
-const LINE_WIDTH = 3; // Líneas más gruesas para mejor visualización
+const NODE_RADIUS = 25; // Nodos más grandes para mejor visibilidad en móvil
+const SMALL_NODE_RADIUS = 16; // Nodos negativos también más visibles
+const NODE_SPACING_H = 120; // Mayor espaciado horizontal para evitar solapamiento
+const NODE_SPACING_V = 120; // Mayor espaciado vertical para una mejor visualización
+const LINE_WIDTH = 3.5; // Líneas más gruesas para mejor visualización
 const COLOR_PALETTE = [
   '#1dd1c7', // Cian turquesa (más brillante, como en la imagen)
   '#45deb7', // verde turquesa
@@ -393,8 +393,17 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           ctx.strokeStyle = '#1dd1c7'; // Siempre usar el mismo color turquesa para las líneas desde el post
           ctx.lineWidth = LINE_WIDTH;
 
-          // Solo dibuja líneas rectas, no curvas, como en la imagen de referencia
-          ctx.lineTo(childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
+          // Dibujar líneas curvas (Bezier) para conexiones más armoniosas
+          const startY = postY + NODE_RADIUS * 1.3;
+          const endY = childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS);
+          
+          // Usar curva de Bezier para conectar el post con los comentarios
+          ctx.moveTo(postX, startY);
+          ctx.bezierCurveTo(
+            postX, startY + (endY - startY) * 0.3, // Punto de control 1
+            childX, startY + (endY - startY) * 0.7, // Punto de control 2
+            childX, endY // Punto final
+          );
 
           ctx.stroke();
         }
@@ -435,8 +444,17 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
       ctx.lineWidth = LINE_WIDTH;
 
-      // Dibujar línea recta en lugar de curva, como en la imagen de referencia
-      ctx.lineTo(childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
+      // Dibujar líneas curvas (Bezier) para conexiones más suaves
+      const startY = y + (node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS);
+      const endY = childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS);
+      
+      // Usar curva de Bezier para conectar los nodos
+      ctx.moveTo(x, startY);
+      ctx.bezierCurveTo(
+        x, startY + (endY - startY) * 0.3, // Punto de control 1
+        childX, startY + (endY - startY) * 0.7, // Punto de control 2
+        childX, endY // Punto final
+      );
 
       ctx.stroke();
     });
