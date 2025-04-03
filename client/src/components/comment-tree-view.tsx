@@ -27,6 +27,7 @@ interface CommentNode {
   collapsed?: boolean;
   negativeScore?: boolean;
   isPost?: boolean;
+  index?: string; // Added to store index for display
 }
 
 interface CommentTreeViewProps {
@@ -93,7 +94,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     if (comments.length > 0 && postData) {
       // Convert flat comments to hierarchical tree
       const commentMap = new Map<number, CommentNode>();
-      
+
       // First pass: create all nodes
       comments.forEach(comment => {
         commentMap.set(comment.id, {
@@ -111,10 +112,10 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           negativeScore: comment.voteScore < 0
         });
       });
-      
+
       // Second pass: build the tree structure
       const rootNodes: CommentNode[] = [];
-      
+
       comments.forEach(comment => {
         const node = commentMap.get(comment.id);
         if (node) {
@@ -129,7 +130,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           }
         }
       });
-      
+
       // Create a root node for the post
       const postRoot: CommentNode = {
         id: postData.id,
@@ -145,13 +146,13 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         level: -1,
         isPost: true  // Marca este nodo como el post principal
       };
-      
+
       // Calculate best path (canonical path with highest votes)
       markBestPath(postRoot);
-      
+
       // Calculate positions for all nodes
       calculateNodePositions(postRoot);
-      
+
       setTree(postRoot);
     }
   }, [comments, postData]);
@@ -159,23 +160,23 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   // Mark the best path based on vote scores
   function markBestPath(node: CommentNode): number {
     if (node.children.length === 0) return 0;
-    
+
     // Calculate total score for each child path
     type PathScore = { child: CommentNode, score: number };
     const pathScores: PathScore[] = node.children.map(child => {
       const childPathScore: number = markBestPath(child);
       return { child, score: child.voteScore + childPathScore };
     });
-    
+
     // Find the best path
     const bestPath: PathScore | undefined = pathScores.reduce((prev: PathScore, current: PathScore): PathScore => 
       current.score > prev.score ? current : prev, pathScores[0]);
-    
+
     // Mark the child node in the best path
     if (bestPath) {
       bestPath.child.highlighted = true;
     }
-    
+
     // Return the best path score
     return bestPath ? bestPath.score : 0;
   }
@@ -186,22 +187,22 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     if (node.level === -1) {
       node.x = 0;
       node.y = 0;
-      
+
       // Position all children
       let childIndex = 0;
       node.children.forEach(child => {
         calculateNodePositions(child, 0, childIndex, node.children.length);
         childIndex++;
       });
-      
+
       return;
     }
-    
+
     // Calculate node's position
     const horizontalSpacing = NODE_SPACING_H * (siblingCount > 1 ? 1.5 : 1);
     node.x = index * horizontalSpacing - ((siblingCount - 1) * horizontalSpacing / 2);
     node.y = depth * NODE_SPACING_V;
-    
+
     // Position all children
     let childIndex = 0;
     node.children.forEach(child => {
@@ -213,31 +214,31 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   // Draw the tree on the canvas
   useEffect(() => {
     if (!tree || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Update canvas size
     if (containerRef.current) {
       canvas.width = containerRef.current.clientWidth;
       canvas.height = containerRef.current.clientHeight;
     }
-    
+
     // Calculate center offset
     const centerX = canvas.width / 2;
     const centerY = CANVAS_PADDING * 2;
-    
+
     // Draw the tree (skip the virtual root)
     drawNode(ctx, tree, centerX, centerY);
-    
+
   }, [tree, offsetX, offsetY, scale, containerRef.current?.clientWidth, containerRef.current?.clientHeight]);
 
   // Function to draw a node and its connections
-  function drawNode(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number) {
+  function drawNode(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number, parentIndex?: string) {
     // Si es el nodo raíz (post), dibujarlo de manera especial
     if (node.level === -1) {
       // Dibujamos el post como raíz visible
@@ -245,112 +246,114 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         // Posición del nodo raíz
         const x = centerX;
         const y = centerY - 40; // Más arriba que los comentarios para mejor visibilidad
-        
+
         // Dibuja un nodo más grande para el post
         const postRadius = NODE_RADIUS * 1.3;
-        
+
         // Dibuja circulo para el post
         ctx.beginPath();
         ctx.arc(x, y, postRadius, 0, Math.PI * 2);
-        
+
         // Estilo especial para el post - usar el color turquesa de la imagen
         ctx.fillStyle = '#1dd1c7'; // Color turquesa brillante
         ctx.globalAlpha = 0.3;
         ctx.fill();
         ctx.globalAlpha = 1;
-        
+
         // Borde para el post
         ctx.strokeStyle = '#1dd1c7';
         ctx.lineWidth = LINE_WIDTH;
         ctx.stroke();
-        
+
         // Guarda las coordenadas reales para poder detectar clics
         node.x = 0;
         node.y = y - centerY;
       }
-      
+
       // Dibuja todos los comentarios hijos (comentarios de primer nivel)
-      node.children.forEach(child => {
+      node.children.forEach((child, idx) => {
         // Si es un post, conectar los comentarios raíz con el nodo del post
         if (node.isPost) {
           const postX = centerX;
           const postY = centerY - 40;
-          
+
           const childX = centerX + (child.x || 0) * scale + offsetX;
           const childY = centerY + (child.y || 0) * scale + offsetY;
-          
+
           // Dibuja la conexión del post a este comentario
           ctx.beginPath();
           ctx.moveTo(postX, postY + NODE_RADIUS * 1.3);
-          
+
           // Determina si este comentario está en el camino destacado
           const isOnBestPath = child.highlighted;
-          
+
           // Línea recta (como en la imagen de referencia)
           ctx.strokeStyle = '#1dd1c7'; // Siempre usar el mismo color turquesa para las líneas desde el post
           ctx.lineWidth = LINE_WIDTH;
-          
+
           // Solo dibuja líneas rectas, no curvas, como en la imagen de referencia
           ctx.lineTo(childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
-          
+
           ctx.stroke();
         }
-        
+
         // Dibuja el comentario y sus hijos
+        child.index = `${idx + 1}`;
         drawNode(ctx, child, centerX, centerY);
       });
-      
+
       return;
     }
-    
+
     // Calculate final position with offsets and scale
     const x = centerX + (node.x || 0) * scale + offsetX;
     const y = centerY + (node.y || 0) * scale + offsetY;
-    
+
     // Draw connections to children first (behind nodes)
     node.children.forEach(child => {
       if (child.collapsed) return;
-      
+
       const childX = centerX + (child.x || 0) * scale + offsetX;
       const childY = centerY + (child.y || 0) * scale + offsetY;
-      
+
       // Draw line
       ctx.beginPath();
       ctx.moveTo(x, y + (node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
-      
+
       // Determine if the child is on the best path
       const isOnBestPath = child.highlighted && node.highlighted;
-      
+
       // Set line color based on level (like in the image)
       ctx.strokeStyle = COLOR_PALETTE[node.level % COLOR_PALETTE.length];
-      
+
       // Highlight the best path with yellow (como en la imagen)
       if (isOnBestPath) {
         ctx.strokeStyle = '#f1c40f'; // Amarillo para la ruta destacada
       }
-      
+
       ctx.lineWidth = LINE_WIDTH;
-      
+
       // Dibujar línea recta en lugar de curva, como en la imagen de referencia
       ctx.lineTo(childX, childY - (child.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS));
-      
+
       ctx.stroke();
     });
-    
+
     // Draw all children nodes
-    node.children.forEach(child => {
+    node.children.forEach((child, idx) => {
       if (!child.collapsed) {
+        child.index = parentIndex ? `${parentIndex}.${idx + 1}` : `${idx + 1}`;
         drawNode(ctx, child, centerX, centerY);
       }
     });
-    
+
     // Draw this node
     const radius = node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS;
-    
+
     // Draw circle for node
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
-    
+
     // Fill style based on path status
     if (node.highlighted) {
       // Green for highlighted/canonical path
@@ -362,31 +365,31 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       ctx.fillStyle = color;
       ctx.strokeStyle = color;
     }
-    
+
     // Fill with slightly transparent background
     ctx.globalAlpha = 0.2;
     ctx.fill();
     ctx.globalAlpha = 1;
-    
+
     // Draw outline
     ctx.lineWidth = 2;
     ctx.stroke();
-    
+
     // Draw progress circle showing upvote percentage if any votes exist
     const totalVotes = node.upvotes + node.downvotes;
     if (totalVotes > 0) {
       const upvotePercentage = node.upvotes / totalVotes;
-      
+
       // Draw progress arc
       ctx.beginPath();
       ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * upvotePercentage));
-      
+
       // Use color from palette or highlighted color
       ctx.strokeStyle = node.highlighted ? '#27ae60' : COLOR_PALETTE[node.level % COLOR_PALETTE.length];
       ctx.lineWidth = 3;
       ctx.stroke();
     }
-    
+
     // Add bookmark icon if this is a selected node
     if (selectedNode && selectedNode.id === node.id) {
       ctx.fillStyle = '#ffffff';
@@ -395,46 +398,53 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       ctx.textBaseline = 'middle';
       ctx.fillText('★', x, y);
     }
+
+    // Draw the index number
+    ctx.fillStyle = 'black';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(node.index || '', x, y + radius + 2); //added 2 for better spacing
   }
 
   // Handle click on canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!tree || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    
+
     // Calculate center offset
     const centerX = canvas.width / 2;
     const centerY = CANVAS_PADDING * 2;
-    
+
     // Find clicked node
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
-    
+
     if (clickedNode) {
       // Handle double click - navigate to comment
       if (e.detail === 2 && onCommentSelect) {
         onCommentSelect(clickedNode.id);
         return;
       }
-      
+
       // Handle single click - show info
       setSelectedNode(clickedNode);
       setInfoModalOpen(true);
-      
+
       // Position the modal near the clicked node but within view
       const modalX = Math.min(
         Math.max(CANVAS_PADDING, clickX),
         canvas.width - 300 // Modal width approx
       );
-      
+
       const modalY = Math.min(
         Math.max(CANVAS_PADDING, clickY),
         canvas.height - 200 // Modal height approx
       );
-      
+
       setModalPosition({ x: modalX, y: modalY });
     } else {
       // Click on empty space - close info modal
@@ -453,15 +463,15 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   // Handle mouse move for drag and pan
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDragging) return;
-    
+
     setCurrentDragPosition({ x: e.clientX, y: e.clientY });
-    
+
     const deltaX = currentDragPosition.x - startDragPosition.x;
     const deltaY = currentDragPosition.y - startDragPosition.y;
-    
+
     setOffsetX(offsetX + deltaX);
     setOffsetY(offsetY + deltaY);
-    
+
     setStartDragPosition({ x: e.clientX, y: e.clientY });
   };
 
@@ -487,18 +497,18 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDragging || e.touches.length !== 1) return;
-    
+
     setCurrentDragPosition({ 
       x: e.touches[0].clientX, 
       y: e.touches[0].clientY 
     });
-    
+
     const deltaX = currentDragPosition.x - startDragPosition.x;
     const deltaY = currentDragPosition.y - startDragPosition.y;
-    
+
     setOffsetX(offsetX + deltaX);
     setOffsetY(offsetY + deltaY);
-    
+
     setStartDragPosition({ 
       x: e.touches[0].clientX, 
       y: e.touches[0].clientY 
@@ -525,14 +535,14 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         const postX = centerX;
         const postY = centerY - 40; // Misma posición que en el drawNode del post
         const postRadius = NODE_RADIUS * 1.3; // Mismo radio que en el drawNode del post
-        
+
         // Comprobar si el clic está dentro del nodo del post
         const distanceSquared = Math.pow(clickX - postX, 2) + Math.pow(clickY - postY, 2);
         if (distanceSquared <= Math.pow(postRadius, 2)) {
           return node;
         }
       }
-      
+
       // Verificar clics en los comentarios hijos
       for (const child of node.children) {
         const foundNode = findNodeAtPosition(child, clickX, clickY, centerX, centerY);
@@ -540,18 +550,18 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       }
       return null;
     }
-    
+
     // Calculate node position with offsets and scale
     const x = centerX + (node.x || 0) * scale + offsetX;
     const y = centerY + (node.y || 0) * scale + offsetY;
     const radius = node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS;
-    
+
     // Check if click is within this node
     const distanceSquared = Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2);
     if (distanceSquared <= Math.pow(radius, 2)) {
       return node;
     }
-    
+
     // Check all children
     if (!node.collapsed) {
       for (const child of node.children) {
@@ -559,7 +569,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         if (foundNode) return foundNode;
       }
     }
-    
+
     return null;
   }
 
@@ -594,7 +604,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     setOffsetY(0);
     setScale(1);
   };
-  
+
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
     setFullscreen(!fullscreen);
@@ -602,7 +612,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
   // Verificamos si el componente se está mostrando como modal completo o integrado
   const isModal = !!onClose;
-  
+
   // Para la visualización integrada (no modal)
   if (!isModal) {
     return (
@@ -619,7 +629,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             <RotateCcw className="h-3 w-3" />
           </Button>
         </div>
-        
+
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
             <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -638,7 +648,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             />
-            
+
             {/* Información del nodo seleccionado (versión compacta) */}
             {selectedNode && (
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-md rounded-md p-2 max-w-[90%] z-10">
@@ -674,7 +684,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       </div>
     );
   }
-  
+
   // Para la visualización modal
   return (
     <div 
@@ -699,7 +709,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           </Button>
         </div>
       </div>
-      
+
       {/* Controls */}
       <div className="absolute top-16 left-4 z-10 flex flex-col gap-2">
         <Button variant="outline" size="icon" onClick={handleZoomIn}>
@@ -735,7 +745,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           />
         </div>
       )}
-      
+
       {/* Node info modal */}
       {infoModalOpen && selectedNode && (
         <div 
@@ -757,7 +767,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                   <Badge variant="default" className="text-xs">Mod</Badge>
                 )}
               </div>
-              
+
               {selectedNode.badges.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {selectedNode.badges.map(badge => (
@@ -775,14 +785,14 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                 </div>
               )}
             </div>
-            
+
             {formatVotes(selectedNode.upvotes, selectedNode.downvotes, selectedNode.voteScore)}
           </div>
-          
+
           <div className="border-t border-b py-2 my-2">
             <p className="text-sm line-clamp-4">{selectedNode.content}</p>
           </div>
-          
+
           <div className="flex justify-between items-center mt-2">
             <Button 
               variant="ghost" 
@@ -794,7 +804,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             >
               Cerrar
             </Button>
-            
+
             <Button 
               variant="default" 
               size="sm"
@@ -809,7 +819,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           </div>
         </div>
       )}
-      
+
       {/* Legend */}
       <div className="absolute bottom-4 right-4 bg-card border rounded-lg p-3 shadow-lg">
         <div className="text-xs font-medium mb-2">Leyenda:</div>
@@ -832,6 +842,6 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           </div>
         </div>
       </div>
-    </div>
+        </div>
   );
 }
