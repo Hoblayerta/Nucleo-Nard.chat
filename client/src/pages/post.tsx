@@ -9,8 +9,8 @@ import CommentThread from "@/components/comment-thread";
 import CommentForm from "@/components/comment-form";
 import CommentTreeView from "@/components/comment-tree-view";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Clock } from "lucide-react";
 import type { PostWithDetails } from "@shared/schema";
 
 export default function Post() {
@@ -200,7 +200,11 @@ export default function Post() {
                   setShowCommentTree(true);
                 }}
               >
-                <Network className="h-5 w-5" />
+                <div className="w-5 h-5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
+                  </svg>
+                </div>
                 Ver árbol interactivo
               </Button>
             ) : (
@@ -209,7 +213,11 @@ export default function Post() {
                 className="bg-primary hover:bg-primary/90 text-white gap-2"
                 onClick={() => setShowCommentTree(true)}
               >
-                <Network className="h-5 w-5" />
+                <div className="w-5 h-5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
+                  </svg>
+                </div>
                 Ver árbol interactivo
               </Button>
             )}
@@ -289,7 +297,11 @@ export default function Post() {
                 className="flex items-center gap-1"
                 onClick={() => setShowCommentTree(true)}
               >
-                <Network className="h-4 w-4" />
+                <div className="w-4 h-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
+                  </svg>
+                </div>
                 Ver árbol de comentarios
               </Button>
             )}
