@@ -477,12 +477,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Exportar comentarios de un post (solo para admin/mod) en formato CSV
-  app.get("/api/posts/:id/comments/export", async (req, res) => {
+  app.get("/api/posts/:id/comments/export", requireModerator, async (req, res) => {
     try {
       console.log('Iniciando exportación CSV - Usuario:', req.session?.username || 'Anónimo');
-      
-      // Temporalmente permitimos a cualquier usuario exportar para facilitar las pruebas
-      // En producción deberíamos volver a activar esta restricción
       
       const postId = parseInt(req.params.id, 10);
       const currentUserId = req.session.userId;
@@ -637,12 +634,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Exportar post y comentarios en formato de texto como alternativa temporal
-  app.get("/api/posts/:id/comments/export-text", async (req, res) => {
+  app.get("/api/posts/:id/comments/export-text", requireModerator, async (req, res) => {
     try {
       console.log('Iniciando exportación alternativa - Usuario:', req.session?.username || 'Anónimo');
-      
-      // Temporalmente permitimos a cualquier usuario exportar para facilitar las pruebas
-      // En producción deberíamos volver a activar esta restricción
       
       const postId = parseInt(req.params.id, 10);
       const currentUserId = req.session.userId;
@@ -792,7 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Obtener usuarios del tablero de un post (PostBoard)
-  app.get("/api/posts/:id/board", async (req, res) => {
+  app.get("/api/posts/:id/board", requireModerator, async (req, res) => {
     try {
       const postId = parseInt(req.params.id, 10);
       
@@ -884,12 +878,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Exportar post y comentarios en formato Word (DOCX)
-  app.get("/api/posts/:id/comments/export-word", async (req, res) => {
+  app.get("/api/posts/:id/comments/export-word", requireModerator, async (req, res) => {
     try {
       console.log('Iniciando exportación Word - Usuario:', req.session?.username || 'Anónimo');
-      
-      // Temporalmente permitimos a cualquier usuario exportar para facilitar las pruebas
-      // En producción deberíamos volver a activar esta restricción
       
       const postId = parseInt(req.params.id, 10);
       const currentUserId = req.session.userId;
