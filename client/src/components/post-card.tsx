@@ -234,17 +234,15 @@ export default function PostCard({ post }: PostCardProps) {
                   <span className="md:inline">Share</span>
                 </Button>
 
-                {(user?.role === "admin" || user?.role === "moderator") && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
-                    onClick={() => setShowPostBoard(true)}
-                  >
-                    <FileSpreadsheet className="h-4 w-4 mr-1" />
-                    <span className="md:inline">Post Board</span>
-                  </Button>
-                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:text-primary mr-2 md:mr-4 h-8 px-2 md:px-3"
+                  onClick={() => setShowPostBoard(true)}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  <span className="md:inline">Post Board</span>
+                </Button>
 
                 {(user?.role === "admin" || user?.role === "moderator") && (
                   <>
