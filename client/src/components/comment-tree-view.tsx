@@ -70,6 +70,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
   const [currentDragPosition, setCurrentDragPosition] = useState({ x: 0, y: 0 });
   const [fullscreen, setFullscreen] = useState(false);
+  const [lastTouchTime, setLastTouchTime] = useState(0);
   const isMobile = useIsMobile();
 
   // Fetch comments data
@@ -323,8 +324,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         canvas.height = containerRef.current.clientHeight;
       } else {
         // Para el modo modal (pantalla completa) con área de desplazamiento
-        canvas.width = Math.max(1500, containerRef.current.clientWidth);
-        canvas.height = Math.max(2500, containerRef.current.clientHeight);
+        canvas.width = Math.max(2200, containerRef.current.clientWidth);
+        canvas.height = Math.max(3500, containerRef.current.clientHeight);
       }
     }
 
@@ -641,16 +642,82 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
   // Handle touch events for mobile
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Si es un toque simple
     if (e.touches.length === 1) {
-      setIsDragging(true);
-      setStartDragPosition({ 
-        x: e.touches[0].clientX, 
-        y: e.touches[0].clientY 
-      });
-      setCurrentDragPosition({ 
-        x: e.touches[0].clientX, 
-        y: e.touches[0].clientY 
-      });
+      // Guardar la hora del toque para detectar doble toque
+      const now = new Date().getTime();
+      
+      // Detectar si es un doble toque (300ms entre toques)
+      if (now - lastTouchTime < 300) {
+        // Es un doble toque - navegar al comentario
+        const canvas = canvasRef.current;
+        if (!tree || !canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
+        
+        // Calcular offset del centro
+        const centerX = canvas.width / 2;
+        const centerY = CANVAS_PADDING * 2;
+        
+        // Buscar el nodo tocado
+        const touchedNode = findNodeAtPosition(tree, touchX, touchY, centerX, centerY);
+        
+        if (touchedNode && onCommentSelect && touchedNode.id !== postData?.id) {
+          e.preventDefault(); // Prevenir zoom del navegador
+          onCommentSelect(touchedNode.id);
+          return;
+        }
+      } else {
+        // Es un toque simple - mostrar información o iniciar arrastre
+        setIsDragging(true);
+        setStartDragPosition({ 
+          x: e.touches[0].clientX, 
+          y: e.touches[0].clientY 
+        });
+        setCurrentDragPosition({ 
+          x: e.touches[0].clientX, 
+          y: e.touches[0].clientY 
+        });
+        
+        // También mostrar información del nodo si se tocó uno
+        const canvas = canvasRef.current;
+        if (tree && canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const touchX = e.touches[0].clientX - rect.left;
+          const touchY = e.touches[0].clientY - rect.top;
+          
+          // Calcular offset del centro
+          const centerX = canvas.width / 2;
+          const centerY = CANVAS_PADDING * 2;
+          
+          // Buscar el nodo tocado
+          const touchedNode = findNodeAtPosition(tree, touchX, touchY, centerX, centerY);
+          
+          if (touchedNode) {
+            // Mostrar información del nodo
+            setSelectedNode(touchedNode);
+            setInfoModalOpen(true);
+            
+            // Posicionar el modal cerca del nodo tocado pero dentro de la vista
+            const modalX = Math.min(
+              Math.max(CANVAS_PADDING, touchX),
+              canvas.width - 300 // Modal width approx
+            );
+            
+            const modalY = Math.min(
+              Math.max(CANVAS_PADDING, touchY),
+              canvas.height - 200 // Modal height approx
+            );
+            
+            setModalPosition({ x: modalX, y: modalY });
+          }
+        }
+      }
+      
+      // Actualizar la hora del último toque
+      setLastTouchTime(now);
     }
   };
 
@@ -891,7 +958,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         </div>
       ) : (
         <div className={`h-[calc(100vh-${fullscreen ? '4rem' : '5rem'})] w-full overflow-auto`}>
-          <div className="min-h-full min-w-[1200px] h-[2000px] relative">
+          <div className="min-h-full min-w-[2000px] h-[3000px] relative">
             <canvas
               ref={canvasRef}
               className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0"
