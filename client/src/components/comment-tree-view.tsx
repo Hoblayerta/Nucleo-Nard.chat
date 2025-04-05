@@ -570,37 +570,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     // Establecer el nodo seleccionado
     setSelectedNode(node);
     
-    // Calcular una posición mejor para el modal
-    // Intentamos posicionarlo a la derecha del nodo por defecto
-    let modalX = clickX + 30; // 30px a la derecha del clic
-    const modalWidth = 350;
+    // Posicionar en el centro de la pantalla para mejor visibilidad
+    const modalWidth = 400; // Un poco más ancho para mejor legibilidad
     const modalHeight = 350;
     
-    // Si el modal se sale por la derecha, lo posicionamos a la izquierda
-    if (modalX + modalWidth > canvas.width) {
-      modalX = clickX - modalWidth - 10;
-    }
+    // Calcular la posición central
+    const centerX = Math.max(10, (canvas.width - modalWidth) / 2);
     
-    // Si aún así se sale (por ejemplo, en nodos en el borde), lo centramos
-    if (modalX < 10) {
-      modalX = Math.max(10, (canvas.width - modalWidth) / 2);
-    }
+    // Para la posición vertical, lo colocamos en el centro pero un poco más arriba
+    // para que no quede demasiado abajo en la pantalla
+    const centerY = Math.max(50, (canvas.height - modalHeight) / 2 - 50);
     
-    // Para la posición vertical, intentamos que quede centrado respecto al clic
-    let modalY = clickY - (modalHeight / 3);
-    
-    // Si se sale por arriba, lo bajamos
-    if (modalY < 10) {
-      modalY = 10;
-    }
-    
-    // Si se sale por abajo, lo subimos
-    if (modalY + modalHeight > canvas.height) {
-      modalY = canvas.height - modalHeight - 10;
-    }
-    
-    // Actualizar la posición del modal
-    setModalPosition({ x: modalX, y: modalY });
+    // Actualizar la posición del modal para que esté centrado
+    setModalPosition({ x: centerX, y: centerY });
     
     // Mostrar el modal
     setInfoModalOpen(true);
@@ -930,7 +912,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
             {/* Información del nodo seleccionado (versión compacta) */}
             {selectedNode && (
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-3 max-w-[90%] z-10 border-2 border-primary/30 animate-in fade-in-0 slide-in-from-bottom-5 duration-300">
+              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-3 max-w-[90%] z-50 border-2 border-primary/30 animate-in fade-in-0 zoom-in-90 duration-300">
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
@@ -1076,11 +1058,11 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       {/* Node info modal */}
       {infoModalOpen && selectedNode && (
         <div 
-          className="absolute bg-card border-2 border-primary shadow-xl rounded-lg p-4 z-20 w-[350px] animate-in fade-in-0 slide-in-from-left-5 duration-300 max-h-[450px] overflow-y-auto"
+          className="absolute bg-card border-2 border-primary shadow-xl rounded-lg p-4 z-20 w-[400px] animate-in fade-in-0 zoom-in-90 duration-300 max-h-[450px] overflow-y-auto"
           style={{
             left: modalPosition.x,
             top: modalPosition.y,
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 2px rgba(var(--primary), 0.25)'
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(var(--primary), 0.3)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
