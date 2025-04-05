@@ -383,18 +383,29 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
         // Estilo especial para el post - usar el color turquesa de la imagen
         ctx.fillStyle = '#1dd1c7'; // Color turquesa brillante
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = 0.4; // Más opaco para mejor visibilidad
         ctx.fill();
         ctx.globalAlpha = 1;
 
         // Borde para el post
         ctx.strokeStyle = '#1dd1c7';
-        ctx.lineWidth = LINE_WIDTH;
+        ctx.lineWidth = LINE_WIDTH + 1; // Línea más gruesa para el post
         ctx.stroke();
 
         // Guarda las coordenadas reales para poder detectar clics
         node.x = 0;
         node.y = y - centerY;
+        
+        // Añadir indicador de "POST" al nodo raíz
+        ctx.fillStyle = "white";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        // Añadir texto con borde negro para mejor visibilidad
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.strokeText("POST", x, y);
+        ctx.fillText("POST", x, y);
       }
 
       // Dibuja todos los comentarios hijos (comentarios de primer nivel)
@@ -517,8 +528,13 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Draw outline
-    ctx.lineWidth = 2;
+    // Draw outline with black border for better visibility and contrast
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    
+    // Second outline with black color for better contrast
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 1;
     ctx.stroke();
 
     // Draw progress circle showing upvote percentage if any votes exist
@@ -530,10 +546,26 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       ctx.beginPath();
       ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * upvotePercentage));
 
-      // Use color from palette or highlighted color
-      ctx.strokeStyle = node.highlighted ? '#27ae60' : COLOR_PALETTE[node.level % COLOR_PALETTE.length];
-      ctx.lineWidth = 3;
+      // Use color from palette or highlighted color but brighter for visibility
+      const progressColor = node.highlighted ? '#2ecc71' : COLOR_PALETTE[node.level % COLOR_PALETTE.length];
+      ctx.strokeStyle = progressColor;
+      ctx.lineWidth = 3.5;
       ctx.stroke();
+      
+      // Añadir pequeño texto con número de votos
+      const netVotes = node.voteScore;
+      ctx.fillStyle = netVotes >= 0 ? "#2ecc71" : "#e74c3c";
+      ctx.font = "bold 10px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      
+      // Contorno negro primero para mejor visibilidad
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 2;
+      ctx.strokeText(`${netVotes}`, x, y);
+      
+      // Texto encima
+      ctx.fillText(`${netVotes}`, x, y);
     }
 
     // Add bookmark icon if this is a selected node
@@ -542,6 +574,9 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       ctx.font = `${radius * 0.8}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.strokeText('★', x, y); // Contorno negro para la estrella
       ctx.fillText('★', x, y);
     }
 
@@ -918,7 +953,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
             {/* Información del nodo seleccionado (versión compacta) */}
             {selectedNode && (
-              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-3 max-w-[90%] z-50 border-2 border-primary/30 animate-in fade-in-0 zoom-in-90 duration-300">
+              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-4 max-w-[90%] z-50 border-2 border-primary animate-in fade-in-0 zoom-in-90 duration-300">
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
@@ -977,7 +1012,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                   <Button 
                     variant="default"
                     size="sm" 
-                    className="text-xs h-7 bg-primary hover:bg-primary/90"
+                    className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white font-medium"
                     onClick={() => {
                       if (onCommentSelect && selectedNode) {
                         setSelectedNodeId(selectedNode.id);
@@ -985,7 +1020,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                       }
                     }}
                   >
-                    <Share2 className="h-3 w-3 mr-1" />
+                    <Share2 className="h-3.5 w-3.5 mr-1.5" />
                     Ir al comentario
                   </Button>
                 </div>
@@ -1129,7 +1164,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             <Button 
               variant="default" 
               size="sm"
-              className="bg-primary hover:bg-primary/90"
+              className="bg-green-600 hover:bg-green-700 text-white font-medium"
               onClick={() => {
                 if (onCommentSelect) {
                   setSelectedNodeId(selectedNode.id);
