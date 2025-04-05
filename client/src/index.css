@@ -190,24 +190,32 @@
 
 /* Efecto de destello (flash) para llamar la atención */
 .comment-flash {
-  animation: flash-effect 2s ease-out;
+  animation: flash-effect 3s ease-out;
 }
 
 @keyframes flash-effect {
   0% { 
-    background-color: rgba(255, 193, 7, 0.3); /* Amarillo más fuerte */
-    box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.4);
+    background-color: rgba(255, 193, 7, 0.4); /* Amarillo más fuerte */
+    box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.5);
   }
-  25% { 
-    background-color: rgba(255, 193, 7, 0.2);
-    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
+  20% { 
+    background-color: rgba(255, 193, 7, 0.35);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.45);
   }
-  50% { 
+  40% { 
+    background-color: rgba(255, 193, 7, 0.25);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.35);
+  }
+  60% { 
     background-color: rgba(255, 193, 7, 0.15);
     box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
   }
+  80% { 
+    background-color: rgba(59, 130, 246, 0.1); /* Transición al azul */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
   100% { 
-    background-color: rgba(59, 130, 246, 0.06); /* Volver al azul */
+    background-color: rgba(59, 130, 246, 0.06); /* Finalizar en azul suave */
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 }

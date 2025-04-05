@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { CommentWithUser } from '@shared/schema';
-import { X, Minimize2, Maximize2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { X, Minimize2, Maximize2, ZoomIn, ZoomOut, RotateCcw, Share2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -883,7 +883,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
             {/* Información del nodo seleccionado (versión compacta) */}
             {selectedNode && (
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-md rounded-md p-2 max-w-[90%] z-10">
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-md rounded-md p-3 max-w-[90%] z-10 border border-primary/20">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="font-semibold text-sm">{selectedNode.username}</span>
                   {selectedNode.role === 'admin' && (
@@ -893,17 +893,27 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                     <Badge className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0">Mod</Badge>
                   )}
                 </div>
-                <p className="text-xs line-clamp-2">{selectedNode.content}</p>
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <p className="text-xs max-h-20 overflow-y-auto">{selectedNode.content}</p>
+                
+                {selectedNode.index && (
+                  <div className="mt-1 text-xs text-muted-foreground mb-1">
+                    Comentario #{selectedNode.index}
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center text-xs text-muted-foreground mt-2 pt-2 border-t border-border/40">
                   <div>
-                    Votos: <span className={selectedNode.voteScore > 0 ? 'text-green-600' : (selectedNode.voteScore < 0 ? 'text-red-600' : '')}>
-                      {selectedNode.voteScore}
+                    <span className={
+                      selectedNode.voteScore > 0 ? 'text-green-600 font-medium' : 
+                      (selectedNode.voteScore < 0 ? 'text-red-600 font-medium' : '')
+                    }>
+                      {selectedNode.voteScore > 0 ? '+' : ''}{selectedNode.voteScore} puntos
                     </span>
                   </div>
                   <Button 
-                    variant="link" 
+                    variant="default"
                     size="sm" 
-                    className="text-xs p-0 h-auto text-primary"
+                    className="text-xs h-7 bg-primary hover:bg-primary/90"
                     onClick={() => {
                       if (onCommentSelect && selectedNode) {
                         setSelectedNodeId(selectedNode.id);
@@ -911,7 +921,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                       }
                     }}
                   >
-                    Ver comentario
+                    <Share2 className="h-3 w-3 mr-1" />
+                    Ir al comentario
                   </Button>
                 </div>
               </div>
@@ -1030,7 +1041,12 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           </div>
 
           <div className="border-t border-b py-2 my-2">
-            <p className="text-sm line-clamp-4">{selectedNode.content}</p>
+            <p className="text-sm max-h-24 overflow-y-auto">{selectedNode.content}</p>
+            {selectedNode.index && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Comentario #{selectedNode.index}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between items-center mt-2">
@@ -1048,14 +1064,17 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             <Button 
               variant="default" 
               size="sm"
+              className="bg-primary hover:bg-primary/90"
               onClick={() => {
                 if (onCommentSelect) {
                   setSelectedNodeId(selectedNode.id);
+                  setInfoModalOpen(false); // Cerrar el modal automáticamente
                   onCommentSelect(selectedNode.id);
                 }
               }}
             >
-              Ver Comentario
+              <Share2 className="h-3.5 w-3.5 mr-1.5" />
+              Ir al Comentario
             </Button>
           </div>
         </div>
