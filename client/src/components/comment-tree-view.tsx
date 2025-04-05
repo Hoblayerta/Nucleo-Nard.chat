@@ -567,24 +567,30 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     clickY: number, 
     canvas: HTMLCanvasElement
   ) => {
-    // Establecer el nodo seleccionado
+    // Establecer el nodo seleccionado y guardar su ID para la navegación
     setSelectedNode(node);
+    setSelectedNodeId(node.id);
     
-    // Posicionar en el centro de la pantalla para mejor visibilidad
-    const modalWidth = 400; // Un poco más ancho para mejor legibilidad
+    console.log("Mostrando info del nodo:", node.id, node.username, node.content.substring(0, 20));
+    
+    // Usar posicionamiento diferente según el tipo de vista (compacta o modal)
+    const modalWidth = 450; // Más ancho para mejor legibilidad
     const modalHeight = 350;
     
-    // Calcular la posición central
-    const centerX = Math.max(10, (canvas.width - modalWidth) / 2);
+    // Si estamos en la vista compacta (barra lateral)
+    if (!onClose) {
+      // Centrar en la ventana del navegador, no en el canvas
+      setModalPosition({ x: 0, y: 0 }); // La posición exacta se maneja con CSS
+    } else {
+      // Para la vista modal, posicionamos cerca de donde hizo clic, pero ajustamos
+      // para que no se salga de los límites del canvas
+      const centerX = Math.max(20, Math.min(canvas.width - modalWidth - 20, clickX - modalWidth/2));
+      const centerY = Math.max(80, Math.min(canvas.height - modalHeight - 20, clickY - modalHeight/2));
+      
+      setModalPosition({ x: centerX, y: centerY });
+    }
     
-    // Para la posición vertical, lo colocamos en el centro pero un poco más arriba
-    // para que no quede demasiado abajo en la pantalla
-    const centerY = Math.max(50, (canvas.height - modalHeight) / 2 - 50);
-    
-    // Actualizar la posición del modal para que esté centrado
-    setModalPosition({ x: centerX, y: centerY });
-    
-    // Mostrar el modal
+    // Mostrar el modal con efecto de aparición
     setInfoModalOpen(true);
   };
 
@@ -779,7 +785,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     setIsDragging(false);
   };
 
-  // Find node at clicked position
+  // Find node at clicked position - con mejor detección para dispositivos táctiles
   function findNodeAtPosition(
     node: CommentNode, 
     clickX: number, 
