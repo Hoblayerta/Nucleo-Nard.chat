@@ -546,11 +546,18 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     }
 
     // Draw the index number
-    ctx.fillStyle = 'black';
-    ctx.font = '14px Arial';
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(node.index || '', x, y + radius + 2); //added 2 for better spacing
+    
+    // Añadir un contorno negro para mejor legibilidad
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(node.index || '', x, y + radius + 2);
+    
+    // Texto en blanco encima del contorno
+    ctx.fillText(node.index || '', x, y + radius + 2);
   }
 
   // Función auxiliar para mostrar información del nodo
@@ -1151,24 +1158,24 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-card border rounded-lg p-3 shadow-lg">
-        <div className="text-xs font-medium mb-2">Leyenda:</div>
+      <div className="absolute bottom-4 right-4 bg-card/90 backdrop-blur-sm border border-primary/20 rounded-lg p-3 shadow-lg">
+        <div className="text-xs font-medium mb-2 text-white">Leyenda:</div>
         <div className="grid grid-cols-1 gap-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-xs">Ruta canónica (más votos)</span>
+            <span className="text-xs text-white">Ruta canónica (más votos)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-blue-500 opacity-20 border border-blue-500"></div>
-            <span className="text-xs">Comentario normal</span>
+            <span className="text-xs text-white">Comentario normal</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500 opacity-20 border border-blue-500"></div>
-            <span className="text-xs">Comentario negativo</span>
+            <span className="text-xs text-white">Comentario negativo</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full border-2 border-green-500 border-r-transparent"></div>
-            <span className="text-xs">Progreso de votos positivos</span>
+            <span className="text-xs text-white">Progreso de votos positivos</span>
           </div>
         </div>
       </div>
