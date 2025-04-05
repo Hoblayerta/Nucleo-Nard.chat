@@ -608,21 +608,53 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     
     console.log("Mostrando info del nodo:", node.id, node.username, node.content.substring(0, 20));
     
-    // Usar posicionamiento diferente según el tipo de vista (compacta o modal)
-    const modalWidth = 450; // Más ancho para mejor legibilidad
-    const modalHeight = 350;
+    // Configuración para ventana emergente anclada al cursor
+    const modalWidth = 450; // Ancho fijo para mejor legibilidad
+    const modalHeight = 400; // Altura estimada para el modal
     
     // Si estamos en la vista compacta (barra lateral)
     if (!onClose) {
-      // Centrar en la ventana del navegador, no en el canvas
-      setModalPosition({ x: 0, y: 0 }); // La posición exacta se maneja con CSS
+      // Para la vista de barra lateral, centramos el popup de manera absoluta
+      const sidebarEl = document.querySelector('.sidebar-tree-view');
+      if (sidebarEl) {
+        const rect = sidebarEl.getBoundingClientRect();
+        setModalPosition({ 
+          x: rect.left + rect.width/2 - modalWidth/2, 
+          y: Math.max(50, rect.top + 100) 
+        });
+      } else {
+        // Fallback si no encontramos el elemento
+        setModalPosition({ x: 20, y: 50 });
+      }
     } else {
-      // Para la vista modal, posicionamos cerca de donde hizo clic, pero ajustamos
-      // para que no se salga de los límites del canvas
-      const centerX = Math.max(20, Math.min(canvas.width - modalWidth - 20, clickX - modalWidth/2));
-      const centerY = Math.max(80, Math.min(canvas.height - modalHeight - 20, clickY - modalHeight/2));
+      // Para la vista de pantalla completa, posicionamos junto al cursor
+      const canvasRect = canvas.getBoundingClientRect();
       
-      setModalPosition({ x: centerX, y: centerY });
+      // Convertir coordenadas del canvas a coordenadas de la ventana
+      const windowX = canvasRect.left + clickX;
+      const windowY = canvasRect.top + clickY;
+      
+      // Posicionar la ventana a la derecha del cursor por defecto
+      let posX = windowX + 25; // Un poco más separado para mejor visibilidad
+      let posY = windowY - 20; // Ligeramente por encima del cursor
+      
+      // Ajustes de posición basados en los límites de la pantalla
+      // Si no cabe a la derecha, colocar a la izquierda del cursor
+      if (posX + modalWidth > window.innerWidth - 20) {
+        posX = windowX - modalWidth - 25;
+      }
+      
+      // Si no cabe abajo, colocar más arriba
+      if (posY + modalHeight > window.innerHeight - 20) {
+        posY = Math.max(20, windowY - modalHeight + 20);
+      }
+      
+      // Asegurar que no se salga de la pantalla por arriba o izquierda
+      posX = Math.max(20, posX);
+      posY = Math.max(20, posY);
+      
+      console.log("Posicionando modal en:", posX, posY);
+      setModalPosition({ x: posX, y: posY });
     }
     
     // Mostrar el modal con efecto de aparición
@@ -951,7 +983,13 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
             {/* Información del nodo seleccionado (versión compacta) */}
             {selectedNode && (
-              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-4 max-w-[90%] z-50 border-2 border-primary animate-in fade-in-0 zoom-in-90 duration-300">
+              <div 
+                className="fixed bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-4 max-w-[90%] z-50 border-2 border-primary animate-in fade-in-0 zoom-in-90 duration-300"
+                style={{
+                  left: `${modalPosition.x}px`,
+                  top: `${modalPosition.y}px`,
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(var(--primary), 0.5)'
+                }}>
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
@@ -1013,8 +1051,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                     className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white font-medium"
                     onClick={() => {
                       if (onCommentSelect && selectedNode) {
+                        console.log("Navegando al comentario mediante botón compacto:", selectedNode.id);
+                        
+                        // Guardar el ID para referencia futura
                         setSelectedNodeId(selectedNode.id);
-                        onCommentSelect(selectedNode.id);
+                        
+                        // Cerrar el modal
+                        setSelectedNode(null);
+                        
+                        // Navegación hacia el comentario con un pequeño delay
+                        setTimeout(() => {
+                          // Llamada a la función de navegación que pasa el ID de comentario
+                          onCommentSelect(selectedNode.id);
+                        }, 100);
                       }
                     }}
                   >
@@ -1097,11 +1146,11 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       {/* Node info modal */}
       {infoModalOpen && selectedNode && (
         <div 
-          className="absolute bg-card border-2 border-primary shadow-xl rounded-lg p-4 z-20 w-[400px] animate-in fade-in-0 zoom-in-90 duration-300 max-h-[450px] overflow-y-auto"
+          className="fixed bg-card border-2 border-primary shadow-xl rounded-lg p-4 z-50 w-[400px] animate-in fade-in-0 zoom-in-90 duration-300 max-h-[450px] overflow-y-auto"
           style={{
-            left: modalPosition.x,
-            top: modalPosition.y,
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(var(--primary), 0.3)'
+            left: `${modalPosition.x}px`,
+            top: `${modalPosition.y}px`,
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(var(--primary), 0.5)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -1165,9 +1214,27 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               className="bg-green-600 hover:bg-green-700 text-white font-medium"
               onClick={() => {
                 if (onCommentSelect) {
+                  console.log("Navegando al comentario mediante botón:", selectedNode.id);
+                  
+                  // Guardar el ID para referencia futura
                   setSelectedNodeId(selectedNode.id);
-                  setInfoModalOpen(false); // Cerrar el modal automáticamente
-                  onCommentSelect(selectedNode.id);
+                  
+                  // Cerrar el modal
+                  setInfoModalOpen(false);
+                  setSelectedNode(null);
+                  
+                  // Navegación hacia el comentario con un pequeño delay
+                  setTimeout(() => {
+                    // Llamada a la función de navegación que pasa el ID de comentario
+                    onCommentSelect(selectedNode.id);
+                    
+                    // Cerrar la visualización del árbol después de navegar (si aplica)
+                    if (onClose) {
+                      setTimeout(() => {
+                        onClose();
+                      }, 100);
+                    }
+                  }, 100);
                 }
               }}
             >

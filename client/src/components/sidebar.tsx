@@ -48,7 +48,7 @@ function SidebarCommentTree({ postId }: SidebarCommentTreeProps) {
   };
   
   return (
-    <div className="h-[400px] relative overflow-hidden rounded-md border border-muted">
+    <div className="h-[400px] relative overflow-hidden rounded-md border border-muted sidebar-tree-view">
       <CommentTreeView 
         postId={postId} 
         onClose={() => {}} // No hay nada que cerrar aquí ya que está integrado en el sidebar
