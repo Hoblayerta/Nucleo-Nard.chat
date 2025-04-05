@@ -553,6 +553,52 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     ctx.fillText(node.index || '', x, y + radius + 2); //added 2 for better spacing
   }
 
+  // Función auxiliar para mostrar información del nodo
+  const showNodeInfo = (
+    node: CommentNode, 
+    clickX: number, 
+    clickY: number, 
+    canvas: HTMLCanvasElement
+  ) => {
+    // Establecer el nodo seleccionado
+    setSelectedNode(node);
+    
+    // Calcular una posición mejor para el modal
+    // Intentamos posicionarlo a la derecha del nodo por defecto
+    let modalX = clickX + 30; // 30px a la derecha del clic
+    const modalWidth = 350;
+    const modalHeight = 350;
+    
+    // Si el modal se sale por la derecha, lo posicionamos a la izquierda
+    if (modalX + modalWidth > canvas.width) {
+      modalX = clickX - modalWidth - 10;
+    }
+    
+    // Si aún así se sale (por ejemplo, en nodos en el borde), lo centramos
+    if (modalX < 10) {
+      modalX = Math.max(10, (canvas.width - modalWidth) / 2);
+    }
+    
+    // Para la posición vertical, intentamos que quede centrado respecto al clic
+    let modalY = clickY - (modalHeight / 3);
+    
+    // Si se sale por arriba, lo bajamos
+    if (modalY < 10) {
+      modalY = 10;
+    }
+    
+    // Si se sale por abajo, lo subimos
+    if (modalY + modalHeight > canvas.height) {
+      modalY = canvas.height - modalHeight - 10;
+    }
+    
+    // Actualizar la posición del modal
+    setModalPosition({ x: modalX, y: modalY });
+    
+    // Mostrar el modal
+    setInfoModalOpen(true);
+  };
+
   // Handle click on canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!tree || !canvasRef.current) return;
@@ -570,22 +616,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
 
     if (clickedNode) {
-      // Handle single click - show info
-      setSelectedNode(clickedNode);
-      setInfoModalOpen(true);
-
-      // Position the modal near the clicked node but within view
-      const modalX = Math.min(
-        Math.max(CANVAS_PADDING, clickX),
-        canvas.width - 300 // Modal width approx
-      );
-
-      const modalY = Math.min(
-        Math.max(CANVAS_PADDING, clickY),
-        canvas.height - 200 // Modal height approx
-      );
-
-      setModalPosition({ x: modalX, y: modalY });
+      // Si ya hay un nodo seleccionado, primero cerramos el modal
+      if (infoModalOpen) {
+        setInfoModalOpen(false);
+        setSelectedNode(null);
+        
+        // Pequeña pausa antes de abrir el nuevo modal para el efecto visual
+        setTimeout(() => {
+          showNodeInfo(clickedNode, clickX, clickY, canvas);
+        }, 100);
+      } else {
+        // Mostrar información del nodo directamente
+        showNodeInfo(clickedNode, clickX, clickY, canvas);
+      }
     } else {
       // Click on empty space - close info modal
       setInfoModalOpen(false);
@@ -701,22 +744,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           const touchedNode = findNodeAtPosition(tree, touchX, touchY, centerX, centerY);
           
           if (touchedNode) {
-            // Mostrar información del nodo
-            setSelectedNode(touchedNode);
-            setInfoModalOpen(true);
-            
-            // Posicionar el modal cerca del nodo tocado pero dentro de la vista
-            const modalX = Math.min(
-              Math.max(CANVAS_PADDING, touchX),
-              canvas.width - 300 // Modal width approx
-            );
-            
-            const modalY = Math.min(
-              Math.max(CANVAS_PADDING, touchY),
-              canvas.height - 200 // Modal height approx
-            );
-            
-            setModalPosition({ x: modalX, y: modalY });
+            // Si ya hay un modal abierto, lo cerramos primero
+            if (infoModalOpen) {
+              setInfoModalOpen(false);
+              setSelectedNode(null);
+              
+              // Pequeña pausa antes de abrir el nuevo modal
+              setTimeout(() => {
+                showNodeInfo(touchedNode, touchX, touchY, canvas);
+              }, 100);
+            } else {
+              // Mostrar información del nodo usando la función auxiliar
+              showNodeInfo(touchedNode, touchX, touchY, canvas);
+            }
           }
         }
       }
@@ -883,33 +923,62 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
             {/* Información del nodo seleccionado (versión compacta) */}
             {selectedNode && (
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-md rounded-md p-3 max-w-[90%] z-10 border border-primary/20">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="font-semibold text-sm">{selectedNode.username}</span>
-                  {selectedNode.role === 'admin' && (
-                    <Badge className="text-xs bg-red-100 text-red-800 px-1.5 py-0">Admin</Badge>
-                  )}
-                  {selectedNode.role === 'moderator' && (
-                    <Badge className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0">Mod</Badge>
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-card/95 backdrop-blur-sm shadow-xl rounded-md p-3 max-w-[90%] z-10 border-2 border-primary/30 animate-in fade-in-0 slide-in-from-bottom-5 duration-300">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-sm">{selectedNode.username}</span>
+                      {selectedNode.role === 'admin' && (
+                        <Badge className="text-xs bg-red-100 text-red-800 px-1.5 py-0">Admin</Badge>
+                      )}
+                      {selectedNode.role === 'moderator' && (
+                        <Badge className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0">Mod</Badge>
+                      )}
+                    </div>
+                    
+                    {selectedNode.badges && selectedNode.badges.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedNode.badges.map(badge => (
+                          <TooltipProvider key={badge}>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <BadgeIcon badge={badge} size={14} />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{badge}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {formatVotes(selectedNode.upvotes, selectedNode.downvotes, selectedNode.voteScore)}
+                </div>
+                
+                <div className="border-t border-b py-2 my-1.5">
+                  <p className="text-xs max-h-20 overflow-y-auto">{selectedNode.content}</p>
+                  
+                  {selectedNode.index && (
+                    <div className="mt-1.5 text-xs text-muted-foreground">
+                      Comentario #{selectedNode.index}
+                    </div>
                   )}
                 </div>
-                <p className="text-xs max-h-20 overflow-y-auto">{selectedNode.content}</p>
                 
-                {selectedNode.index && (
-                  <div className="mt-1 text-xs text-muted-foreground mb-1">
-                    Comentario #{selectedNode.index}
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-center text-xs text-muted-foreground mt-2 pt-2 border-t border-border/40">
-                  <div>
-                    <span className={
-                      selectedNode.voteScore > 0 ? 'text-green-600 font-medium' : 
-                      (selectedNode.voteScore < 0 ? 'text-red-600 font-medium' : '')
-                    }>
-                      {selectedNode.voteScore > 0 ? '+' : ''}{selectedNode.voteScore} puntos
-                    </span>
-                  </div>
+                <div className="flex justify-between items-center mt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-xs h-7 px-2"
+                    onClick={() => {
+                      setSelectedNode(null);
+                    }}
+                  >
+                    Cerrar
+                  </Button>
+                  
                   <Button 
                     variant="default"
                     size="sm" 
@@ -1000,10 +1069,11 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       {/* Node info modal */}
       {infoModalOpen && selectedNode && (
         <div 
-          className="absolute bg-card border shadow-lg rounded-lg p-4 z-20 w-[300px]"
+          className="absolute bg-card border-2 border-primary shadow-xl rounded-lg p-4 z-20 w-[350px] animate-in fade-in-0 slide-in-from-left-5 duration-300 max-h-[450px] overflow-y-auto"
           style={{
             left: modalPosition.x,
-            top: modalPosition.y
+            top: modalPosition.y,
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 2px rgba(var(--primary), 0.25)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
