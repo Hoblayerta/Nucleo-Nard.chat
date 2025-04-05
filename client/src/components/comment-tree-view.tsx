@@ -644,21 +644,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
     // Find clicked node
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
-
+    
+    console.log("¿Se ha hecho clic en un nodo?", !!clickedNode);
     if (clickedNode) {
-      // Si ya hay un nodo seleccionado, primero cerramos el modal
-      if (infoModalOpen) {
-        setInfoModalOpen(false);
-        setSelectedNode(null);
-        
-        // Pequeña pausa antes de abrir el nuevo modal para el efecto visual
-        setTimeout(() => {
-          showNodeInfo(clickedNode, clickX, clickY, canvas);
-        }, 100);
-      } else {
-        // Mostrar información del nodo directamente
+      console.log("Nodo clickeado:", clickedNode.id, clickedNode.username, "Contenido:", clickedNode.content.substring(0, 20));
+    
+      // Cerrar cualquier modal abierto inmediatamente
+      setInfoModalOpen(false);
+      setSelectedNode(null);
+      
+      // Pequeña pausa para que se note el efecto de cierre y apertura
+      setTimeout(() => {
         showNodeInfo(clickedNode, clickX, clickY, canvas);
-      }
+      }, 50);
     } else {
       // Click on empty space - close info modal
       setInfoModalOpen(false);
@@ -742,8 +740,12 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         
         if (touchedNode && onCommentSelect && touchedNode.id !== postData?.id) {
           e.preventDefault(); // Prevenir zoom del navegador
+          console.log("Doble toque en nodo:", touchedNode.id);
+          
           // Añadir efecto de flash cuando se selecciona un comentario
           setSelectedNodeId(touchedNode.id);
+          
+          // Navegar al comentario
           onCommentSelect(touchedNode.id);
           return;
         }
@@ -774,19 +776,15 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           const touchedNode = findNodeAtPosition(tree, touchX, touchY, centerX, centerY);
           
           if (touchedNode) {
-            // Si ya hay un modal abierto, lo cerramos primero
-            if (infoModalOpen) {
-              setInfoModalOpen(false);
-              setSelectedNode(null);
-              
-              // Pequeña pausa antes de abrir el nuevo modal
-              setTimeout(() => {
-                showNodeInfo(touchedNode, touchX, touchY, canvas);
-              }, 100);
-            } else {
-              // Mostrar información del nodo usando la función auxiliar
+            console.log("Toque en nodo:", touchedNode.id);
+            // Cerrar cualquier modal abierto inmediatamente
+            setInfoModalOpen(false);
+            setSelectedNode(null);
+            
+            // Abrir el nuevo modal después de una pausa
+            setTimeout(() => {
               showNodeInfo(touchedNode, touchX, touchY, canvas);
-            }
+            }, 50);
           }
         }
       }

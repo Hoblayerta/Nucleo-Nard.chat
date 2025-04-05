@@ -254,19 +254,42 @@ export default function Post() {
                 postId={post.id} 
                 onClose={() => {}}
                 onCommentSelect={(commentId) => {
-                  // No cerramos la vista en el modo dividido, solo desplazamos
-                  // Desplazarse al comentario seleccionado
-                  setTimeout(() => {
+                  console.log("Móvil: Navegando al comentario:", commentId);
+                  
+                  // Notificar al usuario
+                  toast({
+                    title: "Navegando al comentario",
+                    description: "Buscando el comentario seleccionado...",
+                    duration: 2000,
+                  });
+                  
+                  // Desplazarse al comentario seleccionado con reintento
+                  const findAndScrollToComment = (retryCount = 0) => {
                     const commentElement = document.getElementById(`comment-${commentId}`);
                     if (commentElement) {
+                      // Elemento encontrado, desplazarse y resaltar
                       commentElement.scrollIntoView({ behavior: 'smooth' });
-                      // Resaltar brevemente el comentario
-                      commentElement.classList.add('bg-primary/20');
+                      commentElement.classList.add('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
+                      
+                      // Quitar el resaltado después de unos segundos
                       setTimeout(() => {
-                        commentElement.classList.remove('bg-primary/20');
-                      }, 2000);
+                        commentElement.classList.remove('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
+                      }, 3000);
+                    } else if (retryCount < 5) {
+                      // Reintentar hasta 5 veces con incremento de tiempo
+                      setTimeout(() => findAndScrollToComment(retryCount + 1), 300 * (retryCount + 1));
+                    } else {
+                      // No se encontró después de varios intentos
+                      toast({
+                        title: "No se encontró el comentario",
+                        description: "Prueba a expandir los comentarios plegados.",
+                        variant: "destructive"
+                      });
                     }
-                  }, 100);
+                  };
+                  
+                  // Iniciar búsqueda con un pequeño retraso inicial
+                  setTimeout(() => findAndScrollToComment(), 200);
                 }}
               />
             </div>
@@ -320,20 +343,43 @@ export default function Post() {
               postId={post.id} 
               onClose={() => setShowCommentTree(false)}
               onCommentSelect={(commentId) => {
+                console.log("Navegando al comentario:", commentId);
                 setShowCommentTree(false);
                 
-                // Desplazarse al comentario seleccionado
-                setTimeout(() => {
+                // Notificar al usuario
+                toast({
+                  title: "Navegando al comentario",
+                  description: "Buscando el comentario seleccionado...",
+                  duration: 3000,
+                });
+                
+                // Desplazarse al comentario seleccionado con reintento
+                const findAndScrollToComment = (retryCount = 0) => {
                   const commentElement = document.getElementById(`comment-${commentId}`);
                   if (commentElement) {
+                    // Elemento encontrado, desplazarse y resaltar
                     commentElement.scrollIntoView({ behavior: 'smooth' });
-                    // Resaltar brevemente el comentario
-                    commentElement.classList.add('bg-primary/10');
+                    commentElement.classList.add('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
+                    
+                    // Quitar el resaltado después de unos segundos
                     setTimeout(() => {
-                      commentElement.classList.remove('bg-primary/10');
-                    }, 2000);
+                      commentElement.classList.remove('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
+                    }, 3000);
+                  } else if (retryCount < 5) {
+                    // Reintentar hasta 5 veces con incremento de tiempo
+                    setTimeout(() => findAndScrollToComment(retryCount + 1), 300 * (retryCount + 1));
+                  } else {
+                    // No se encontró después de varios intentos
+                    toast({
+                      title: "No se encontró el comentario",
+                      description: "El comentario seleccionado no pudo ser localizado en la vista actual.",
+                      variant: "destructive"
+                    });
                   }
-                }, 100);
+                };
+                
+                // Iniciar búsqueda con un pequeño retraso inicial
+                setTimeout(() => findAndScrollToComment(), 200);
               }}
             />
           )}

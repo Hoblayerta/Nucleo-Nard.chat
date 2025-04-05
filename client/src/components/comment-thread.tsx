@@ -60,44 +60,73 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
     const commentId = params.get('comment');
     
     if ((commentId === comment.id.toString() || highlightedCommentId === comment.id.toString()) && commentRef.current) {
-      // Si el comentario está en respuestas colapsadas, expandirlas
-      if ('parentId' in comment && comment.parentId && !expanded) {
+      console.log("Navegando al comentario:", comment.id);
+      
+      // Expandir este comentario si está colapsado
+      if (!expanded) {
         setExpanded(true);
       }
       
-      // Si algún comentario padre está colapsado, necesitamos encontrarlo y expandirlo también
+      // Función para expandir comentarios padres de forma recursiva
+      const expandParentComments = (parentId: number | null) => {
+        if (!parentId) return;
+        
+        // Buscar el elemento padre
+        const parentElements = document.querySelectorAll(`.comment-item[data-comment-id="${parentId}"]`);
+        
+        if (parentElements.length) {
+          parentElements.forEach(parent => {
+            // Buscar botones de expansión
+            const expandButtons = parent.querySelectorAll('button');
+            
+            expandButtons.forEach(button => {
+              if (button.textContent?.includes('Mostrar')) {
+                console.log("Expandiendo comentario padre:", parentId);
+                button.click();
+              }
+            });
+            
+            // Buscar el padreId de este padre para continuar la recursión
+            const parentIdAttr = parent.getAttribute('data-parent-id');
+            if (parentIdAttr) {
+              expandParentComments(parseInt(parentIdAttr, 10));
+            }
+          });
+        }
+      };
+      
+      // Iniciar la expansión recursiva si este comentario tiene un padre
       if ('parentId' in comment && comment.parentId) {
-        // Intentamos encontrar todos los elementos padre colapsados
-        const parentComments = document.querySelectorAll(`.comment-item[data-comment-id="${comment.parentId}"]`);
-        parentComments.forEach(parent => {
-          // Buscar el botón de expandir y hacer clic en él si está colapsado
-          const expandButton = parent.querySelector('.expand-button.collapsed');
-          if (expandButton && expandButton instanceof HTMLElement) {
-            expandButton.click();
-          }
-        });
+        expandParentComments(comment.parentId);
       }
       
-      // Añadir un pequeño delay más largo para asegurar que todos los elementos están expandidos
-      setTimeout(() => {
-        // Scroll con opciones para posicionamiento más preciso
-        commentRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-        
-        // Añadir una clase para destacar brevemente el comentario con mayor tiempo
-        commentRef.current?.classList.add('highlight-comment');
-        
-        // Aplicar un efecto de flash para llamar la atención
-        commentRef.current?.classList.add('comment-flash');
-        
-        // Quitar las clases de efecto después de un tiempo
-        setTimeout(() => {
-          commentRef.current?.classList.remove('highlight-comment');
-          commentRef.current?.classList.remove('comment-flash');
-        }, 3000); // Reducir a 3 segundos para un efecto más rápido
-      }, 800);
+      // Añadir un pequeño delay para asegurar que todos los elementos están expandidos
+      const scrollToComment = (retryCount = 0) => {
+        // Si el elemento existe y es visible
+        if (commentRef.current && commentRef.current.offsetParent !== null) {
+          // Scroll con opciones para posicionamiento más preciso
+          commentRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          
+          // Añadir clases para destacar el comentario
+          commentRef.current.classList.add('highlight-comment', 'border-l-4', 'border-primary', 'pl-4');
+          
+          // Quitar las clases de efecto después de un tiempo
+          setTimeout(() => {
+            if (commentRef.current) {
+              commentRef.current.classList.remove('highlight-comment', 'border-l-4', 'border-primary', 'pl-4');
+            }
+          }, 3000);
+        } else if (retryCount < 5) {
+          // Reintentar hasta 5 veces con incremento de tiempo
+          setTimeout(() => scrollToComment(retryCount + 1), 300 * (retryCount + 1));
+        }
+      };
+      
+      // Iniciar el desplazamiento con un retraso para permitir la expansión
+      setTimeout(() => scrollToComment(), 500);
     }
   }, [comment.id, expanded, highlightedCommentId, window.location.search]);
   
@@ -173,6 +202,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
     <div 
       id={`comment-${comment.id}`} 
       ref={commentRef} 
+      data-comment-id={comment.id}
       className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
       {isMobile && level > 0 && (
         <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
