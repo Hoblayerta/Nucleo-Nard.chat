@@ -689,6 +689,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   
   // Handle double click to navigate to comment
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!tree || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
@@ -703,18 +705,21 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     // Find clicked node
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
 
-    if (clickedNode && onCommentSelect && clickedNode.id !== postData?.id) {
+    if (clickedNode && clickedNode.id !== postData?.id) {
+      console.log("Doble clic en nodo:", clickedNode.id);
+      
       // Guardar el ID del nodo seleccionado para aplicar efecto visual
       setSelectedNodeId(clickedNode.id);
       
       // Obtener URL del comentario
       const commentUrl = `${window.location.origin}/posts/${postId}?comment=${clickedNode.id}`;
       
-      // Abrir en una nueva ventana/pestaña
-      window.open(commentUrl, '_blank');
+      // Abrir en una nueva ventana sin usar hooks dentro del evento
+      const newWindow = window.open(commentUrl, '_blank');
+      if (newWindow) newWindow.opener = null;
       
-      // También ejecutar la función de navegación para activar efectos visuales
-      onCommentSelect(clickedNode.id);
+      // Debido a que abrimos en una nueva pestana, no necesitamos usar onCommentSelect
+      // que podria causar problemas con React Hooks
     }
   };
 
@@ -769,15 +774,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         // Buscar el nodo tocado
         const touchedNode = findNodeAtPosition(tree, touchX, touchY, centerX, centerY);
         
-        if (touchedNode && onCommentSelect && touchedNode.id !== postData?.id) {
+        if (touchedNode && touchedNode.id !== postData?.id) {
           e.preventDefault(); // Prevenir zoom del navegador
           console.log("Doble toque en nodo:", touchedNode.id);
           
           // Añadir efecto de flash cuando se selecciona un comentario
           setSelectedNodeId(touchedNode.id);
           
-          // Navegar al comentario
-          onCommentSelect(touchedNode.id);
+          // Obtener URL del comentario
+          const commentUrl = `${window.location.origin}/posts/${postId}?comment=${touchedNode.id}`;
+          
+          // Abrir en una nueva ventana sin usar hooks en el evento
+          const newWindow = window.open(commentUrl, '_blank');
+          if (newWindow) newWindow.opener = null;
           return;
         }
       } else {
@@ -1054,20 +1063,22 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                     variant="default"
                     size="sm" 
                     className="text-xs h-7 bg-green-500 hover:bg-green-600 text-white font-bold border-2 border-green-700 shadow-md"
-                    onClick={() => {
-                      if (onCommentSelect && selectedNode) {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (selectedNode) {
                         console.log("Navegando al comentario mediante botón compacto:", selectedNode.id);
                         
-                        // Guardar el ID para referencia futura
-                        setSelectedNodeId(selectedNode.id);
+                        // Obtener URL del comentario
+                        const commentUrl = `${window.location.origin}/posts/${postId}?comment=${selectedNode.id}`;
+                        
+                        // Abrir en una nueva ventana sin usar hooks dentro del evento
+                        const newWindow = window.open(commentUrl, '_blank');
+                        if (newWindow) newWindow.opener = null;
                         
                         // Cerrar el modal
-                        setSelectedNode(null);
-                        
-                        // Navegación hacia el comentario con un pequeño delay
                         setTimeout(() => {
-                          // Llamada a la función de navegación que pasa el ID de comentario
-                          onCommentSelect(selectedNode.id);
+                          setSelectedNode(null);
                         }, 100);
                       }
                     }}
