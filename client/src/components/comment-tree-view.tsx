@@ -41,9 +41,9 @@ const NODE_RADIUS = 28; // Nodos más grandes para mejor visibilidad en móvil
 const SMALL_NODE_RADIUS = 18; // Nodos negativos también más visibles
 const NODE_SPACING_H = 140; // Mayor espaciado horizontal para evitar solapamiento
 const NODE_SPACING_V = 180; // Mucho mayor espaciado vertical entre filas jerárquicas
-const LINE_WIDTH = 3.5; // Líneas más gruesas para mejor visualización
+const LINE_WIDTH = 2.5; // Grosor de línea más similar a la imagen de referencia
 const COLOR_PALETTE = [
-  '#1dd1c7', // Cian turquesa (más brillante, como en la imagen)
+  '#37c6ee', // Azul cian (como en la imagen de referencia)
   '#45deb7', // verde turquesa
   '#2ecc71', // verde
   '#a3e048', // verde lima
@@ -523,8 +523,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       ctx.strokeStyle = color;
     }
 
-    // Fill with slightly transparent background
-    ctx.globalAlpha = 0.2;
+    // Fill with more visible background
+    ctx.globalAlpha = 0.6; // Mayor opacidad para mejorar la visibilidad
     ctx.fill();
     ctx.globalAlpha = 1;
 
@@ -887,9 +887,14 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     const y = centerY + (node.y || 0) * scale + offsetY;
     const radius = node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS;
 
-    // Check if click is within this node
+    // Check if click is within this node (área ampliada para mayor facilidad de clic)
     const distanceSquared = Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2);
-    if (distanceSquared <= Math.pow(radius, 2)) {
+    const hitRadius = radius * 1.5; // Área de clic ampliada en un 50% para facilitar la interacción
+    
+    // Mostrar información en consola para depurar
+    if (distanceSquared <= Math.pow(hitRadius, 2)) {
+      console.log("¡Nodo detectado!", node.id, node.username, "en posición", x, y);
+      console.log("Distancia al clic:", Math.sqrt(distanceSquared), "vs radio de detección:", hitRadius);
       return node;
     }
 
