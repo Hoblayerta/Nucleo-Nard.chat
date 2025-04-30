@@ -596,11 +596,10 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     
     console.log("Mostrando info del nodo:", node.id, node.username, node.content.substring(0, 20));
     
-    // Usar preferentemente el panel fijo para mostrar la información
-    setFixedPanelOpen(true);
+    // El panel fijo siempre está visible, no necesitamos activarlo
+    // solo necesitamos seleccionar el nodo para que muestre su información
     
-    // También configurar el modal flotante como respaldo/alternativa
-    // Solo para casos específicos donde necesitemos ambos (por ejemplo, en modo compacto)
+    // Configurar el modal flotante solo para casos específicos (vista compacta)
     const modalWidth = 450; // Ancho fijo para mejor legibilidad
     const modalHeight = 400; // Altura estimada para el modal
     
@@ -622,7 +621,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       // En vista compacta, usar el modal flotante
       setInfoModalOpen(true);
     } else {
-      // En vista completa, priorizar el panel fijo y NO mostrar el flotante
+      // En vista completa, no mostrar el flotante
       setInfoModalOpen(false);
       
       // Guardar la posición del modal por si necesitamos mostrarla en algún momento
@@ -707,6 +706,14 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     if (clickedNode && onCommentSelect && clickedNode.id !== postData?.id) {
       // Guardar el ID del nodo seleccionado para aplicar efecto visual
       setSelectedNodeId(clickedNode.id);
+      
+      // Obtener URL del comentario
+      const commentUrl = `${window.location.origin}/posts/${postId}?comment=${clickedNode.id}`;
+      
+      // Abrir en una nueva ventana/pestaña
+      window.open(commentUrl, '_blank');
+      
+      // También ejecutar la función de navegación para activar efectos visuales
       onCommentSelect(clickedNode.id);
     }
   };
@@ -1102,83 +1109,128 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         </div>
       </div>
 
-      {/* Panel de información fijo en la parte superior */}
-      {fixedPanelOpen && selectedNode && (
-        <div 
-          className="border rounded-md bg-card shadow-lg mx-auto my-2 p-4 max-w-3xl relative"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-primary">{selectedNode.username}</span>
-                
-                {selectedNode.role === 'admin' && (
-                  <Badge variant="destructive" className="text-xs">Admin</Badge>
-                )}
-                
-                {selectedNode.role === 'moderator' && (
-                  <Badge variant="default" className="text-xs">Mod</Badge>
-                )}
-                
-                {selectedNode.badges.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {selectedNode.badges.map(badge => (
-                      <TooltipProvider key={badge}>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <BadgeIcon badge={badge} size={16} />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{badge}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
-                )}
-              </div>
+      {/* Panel de información fijo siempre visible en la parte inferior derecha */}
+      <div 
+        className="fixed bottom-36 right-6 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-20 border-primary/30"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              {/* Mostrar nombre de usuario del nodo seleccionado o del post */}
+              <span className="font-semibold text-primary">
+                {selectedNode ? selectedNode.username : (postData?.user?.username || "Usuario")}
+              </span>
               
-              <div className="text-sm text-muted-foreground mt-1">
-                {selectedNode.index && <span className="mr-2">Comentario #{selectedNode.index}</span>}
-                <span className="flex items-center gap-1">
-                  <ArrowUp className="h-3 w-3 text-green-500" /> {selectedNode.upvotes} 
-                  <ArrowDown className="h-3 w-3 text-red-500 ml-2" /> {selectedNode.downvotes}
-                  <span className="ml-2">= {selectedNode.voteScore}</span>
-                </span>
-              </div>
+              {/* Roles para nodo seleccionado */}
+              {selectedNode?.role === 'admin' && (
+                <Badge variant="destructive" className="text-xs">Admin</Badge>
+              )}
+              
+              {selectedNode?.role === 'moderator' && (
+                <Badge variant="default" className="text-xs">Mod</Badge>
+              )}
+              
+              {/* Roles para post cuando no hay nodo seleccionado */}
+              {!selectedNode && postData?.user?.role === 'admin' && (
+                <Badge variant="destructive" className="text-xs">Admin</Badge>
+              )}
+              
+              {!selectedNode && postData?.user?.role === 'moderator' && (
+                <Badge variant="default" className="text-xs">Mod</Badge>
+              )}
+              
+              {/* Badges para nodo seleccionado */}
+              {selectedNode?.badges && selectedNode.badges.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedNode.badges.map((badge: string) => (
+                    <TooltipProvider key={badge}>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <BadgeIcon badge={badge} size={16} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{badge}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              )}
+              
+              {/* Badges para post cuando no hay nodo seleccionado */}
+              {!selectedNode && postData?.user?.badges && postData.user.badges.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {postData.user.badges.map((badge: string) => (
+                    <TooltipProvider key={badge}>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <BadgeIcon badge={badge} size={16} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{badge}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              )}
             </div>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => {
-                setFixedPanelOpen(false);
-                setSelectedNode(null);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="text-sm text-muted-foreground mt-1">
+              {/* Identificador del comentario o post */}
+              {selectedNode?.index && (
+                <span className="mr-2">Comentario #{selectedNode.index}</span>
+              )}
+              
+              {!selectedNode && (
+                <span className="mr-2 font-medium text-primary">POST PRINCIPAL</span>
+              )}
+              
+              {/* Información de votos */}
+              <span className="flex items-center gap-1">
+                <ArrowUp className="h-3 w-3 text-green-500" /> 
+                {selectedNode ? selectedNode.upvotes : (postData?.upvotes || 0)} 
+                
+                <ArrowDown className="h-3 w-3 text-red-500 ml-2" /> 
+                {selectedNode ? selectedNode.downvotes : (postData?.downvotes || 0)}
+                
+                <span className="ml-2">= 
+                  {selectedNode 
+                    ? selectedNode.voteScore 
+                    : ((postData?.upvotes || 0) - (postData?.downvotes || 0))
+                  }
+                </span>
+              </span>
+            </div>
           </div>
-          
-          <div className="border-t border-b py-2 my-2">
-            <p className="text-sm max-h-24 overflow-y-auto">{selectedNode.content}</p>
-          </div>
-          
+        </div>
+        
+        <div className="border-t border-b py-2 my-2">
+          <p className="text-sm max-h-24 overflow-y-auto">
+            {selectedNode 
+              ? selectedNode.content 
+              : (postData?.content || postData?.title || "Cargando información...")
+            }
+          </p>
+        </div>
+        
+        {/* Mostrar botón solo si hay un comentario seleccionado y no es el post */}
+        {selectedNode && selectedNode.id !== postData?.id && (
           <div className="flex justify-end gap-2 mt-2">
             <Button 
               variant="default" 
               size="sm"
               className="bg-primary hover:bg-primary/90 text-white font-semibold border border-primary/50 shadow-sm"
               onClick={() => {
-                if (onCommentSelect && selectedNode.id !== postData?.id) {
-                  console.log("Navegando al comentario desde el panel fijo:", selectedNode.id);
-                  // Cerrar el panel antes de navegar
-                  setFixedPanelOpen(false);
-                  // Navegar al comentario
-                  onCommentSelect(selectedNode.id);
-                  // Si es necesario, cerrar el modal completo
-                  if (onClose) onClose();
+                if (onCommentSelect) {
+                  console.log("Abriendo comentario en una nueva ventana:", selectedNode.id);
+                  
+                  // Obtener URL del comentario
+                  const commentUrl = `${window.location.origin}/posts/${postId}?comment=${selectedNode.id}`;
+                  
+                  // Abrir en una nueva ventana/pestaña
+                  window.open(commentUrl, '_blank');
                 }
               }}
             >
@@ -1186,8 +1238,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               Ir al comentario
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Controls */}
       <div className="absolute top-16 left-4 z-10 flex flex-col gap-2">
@@ -1299,27 +1351,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               className="bg-green-500 hover:bg-green-600 text-white font-bold border-2 border-green-700 shadow-md"
               onClick={() => {
                 if (onCommentSelect) {
-                  console.log("Navegando al comentario mediante botón:", selectedNode.id);
+                  console.log("Abriendo comentario en una nueva ventana:", selectedNode.id);
                   
-                  // Guardar el ID para referencia futura
+                  // Obtener URL del comentario
+                  const commentUrl = `${window.location.origin}/posts/${postId}?comment=${selectedNode.id}`;
+                  
+                  // Abrir en una nueva ventana/pestaña
+                  window.open(commentUrl, '_blank');
+                  
+                  // También guardar el ID para efectos visuales
                   setSelectedNodeId(selectedNode.id);
                   
-                  // Cerrar el modal
+                  // Cerrar el modal flotante
                   setInfoModalOpen(false);
-                  setSelectedNode(null);
-                  
-                  // Navegación hacia el comentario con un pequeño delay
-                  setTimeout(() => {
-                    // Llamada a la función de navegación que pasa el ID de comentario
-                    onCommentSelect(selectedNode.id);
-                    
-                    // Cerrar la visualización del árbol después de navegar (si aplica)
-                    if (onClose) {
-                      setTimeout(() => {
-                        onClose();
-                      }, 100);
-                    }
-                  }, 100);
                 }
               }}
             >
