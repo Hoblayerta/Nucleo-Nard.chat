@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { CommentWithUser } from '@shared/schema';
-import { X, Minimize2, Maximize2, ZoomIn, ZoomOut, RotateCcw, Share2, MessageSquare } from 'lucide-react';
+import { X, Minimize2, Maximize2, ZoomIn, ZoomOut, RotateCcw, Share2, MessageSquare, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +62,9 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
   const [tree, setTree] = useState<CommentNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<CommentNode | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  // Estado para el panel de información fijo
+  const [fixedPanelOpen, setFixedPanelOpen] = useState(false);
+  // Mantenemos el modal pero lo usaremos solo en situaciones específicas
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [offsetX, setOffsetX] = useState(0);
@@ -593,7 +596,11 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     
     console.log("Mostrando info del nodo:", node.id, node.username, node.content.substring(0, 20));
     
-    // Configuración para ventana emergente anclada al cursor
+    // Usar preferentemente el panel fijo para mostrar la información
+    setFixedPanelOpen(true);
+    
+    // También configurar el modal flotante como respaldo/alternativa
+    // Solo para casos específicos donde necesitemos ambos (por ejemplo, en modo compacto)
     const modalWidth = 450; // Ancho fijo para mejor legibilidad
     const modalHeight = 400; // Altura estimada para el modal
     
@@ -611,8 +618,14 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         // Fallback si no encontramos el elemento
         setModalPosition({ x: 20, y: 50 });
       }
+      
+      // En vista compacta, usar el modal flotante
+      setInfoModalOpen(true);
     } else {
-      // Para la vista de pantalla completa, posicionamos junto al cursor
+      // En vista completa, priorizar el panel fijo y NO mostrar el flotante
+      setInfoModalOpen(false);
+      
+      // Guardar la posición del modal por si necesitamos mostrarla en algún momento
       const canvasRect = canvas.getBoundingClientRect();
       
       // Convertir coordenadas del canvas a coordenadas de la ventana
@@ -624,26 +637,20 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       let posY = windowY - 20; // Ligeramente por encima del cursor
       
       // Ajustes de posición basados en los límites de la pantalla
-      // Si no cabe a la derecha, colocar a la izquierda del cursor
       if (posX + modalWidth > window.innerWidth - 20) {
         posX = windowX - modalWidth - 25;
       }
       
-      // Si no cabe abajo, colocar más arriba
       if (posY + modalHeight > window.innerHeight - 20) {
         posY = Math.max(20, windowY - modalHeight + 20);
       }
       
-      // Asegurar que no se salga de la pantalla por arriba o izquierda
+      // Asegurar que no se salga de la pantalla
       posX = Math.max(20, posX);
       posY = Math.max(20, posY);
       
-      console.log("Posicionando modal en:", posX, posY);
       setModalPosition({ x: posX, y: posY });
     }
-    
-    // Mostrar el modal con efecto de aparición
-    setInfoModalOpen(true);
   };
 
   // Handle click on canvas
@@ -1094,6 +1101,93 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           </Button>
         </div>
       </div>
+
+      {/* Panel de información fijo en la parte superior */}
+      {fixedPanelOpen && selectedNode && (
+        <div 
+          className="border rounded-md bg-card shadow-lg mx-auto my-2 p-4 max-w-3xl relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-primary">{selectedNode.username}</span>
+                
+                {selectedNode.role === 'admin' && (
+                  <Badge variant="destructive" className="text-xs">Admin</Badge>
+                )}
+                
+                {selectedNode.role === 'moderator' && (
+                  <Badge variant="default" className="text-xs">Mod</Badge>
+                )}
+                
+                {selectedNode.badges.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedNode.badges.map(badge => (
+                      <TooltipProvider key={badge}>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <BadgeIcon badge={badge} size={16} />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{badge}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-sm text-muted-foreground mt-1">
+                {selectedNode.index && <span className="mr-2">Comentario #{selectedNode.index}</span>}
+                <span className="flex items-center gap-1">
+                  <ArrowUp className="h-3 w-3 text-green-500" /> {selectedNode.upvotes} 
+                  <ArrowDown className="h-3 w-3 text-red-500 ml-2" /> {selectedNode.downvotes}
+                  <span className="ml-2">= {selectedNode.voteScore}</span>
+                </span>
+              </div>
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                setFixedPanelOpen(false);
+                setSelectedNode(null);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="border-t border-b py-2 my-2">
+            <p className="text-sm max-h-24 overflow-y-auto">{selectedNode.content}</p>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-white font-semibold border border-primary/50 shadow-sm"
+              onClick={() => {
+                if (onCommentSelect && selectedNode.id !== postData?.id) {
+                  console.log("Navegando al comentario desde el panel fijo:", selectedNode.id);
+                  // Cerrar el panel antes de navegar
+                  setFixedPanelOpen(false);
+                  // Navegar al comentario
+                  onCommentSelect(selectedNode.id);
+                  // Si es necesario, cerrar el modal completo
+                  if (onClose) onClose();
+                }
+              }}
+            >
+              <Share2 className="h-4 w-4 mr-1" />
+              Ir al comentario
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="absolute top-16 left-4 z-10 flex flex-col gap-2">
