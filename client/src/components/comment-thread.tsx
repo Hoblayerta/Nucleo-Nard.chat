@@ -64,6 +64,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
       
       // Expandir este comentario si está colapsado
       if (!expanded) {
+        console.log("Expandiendo comentario actual que estaba colapsado:", comment.id);
         setExpanded(true);
       }
       
@@ -76,15 +77,21 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
         
         if (parentElements.length) {
           parentElements.forEach(parent => {
-            // Buscar botones de expansión
-            const expandButtons = parent.querySelectorAll('button');
-            
-            expandButtons.forEach(button => {
-              if (button.textContent?.includes('Mostrar')) {
-                console.log("Expandiendo comentario padre:", parentId);
-                button.click();
-              }
-            });
+            // Verificar si el comentario está colapsado
+            const isCollapsed = parent.querySelector('.comment-replies.hidden');
+            if (isCollapsed) {
+              console.log("Detectado padre colapsado:", parentId);
+              
+              // Buscar botones de expansión
+              const expandButtons = parent.querySelectorAll('button');
+              
+              expandButtons.forEach(button => {
+                if (button.textContent?.includes('Mostrar')) {
+                  console.log("Expandiendo comentario padre:", parentId);
+                  button.click();
+                }
+              });
+            }
             
             // Buscar el padreId de este padre para continuar la recursión
             const parentIdAttr = parent.getAttribute('data-parent-id');
@@ -97,6 +104,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
       
       // Iniciar la expansión recursiva si este comentario tiene un padre
       if ('parentId' in comment && comment.parentId) {
+        console.log("Iniciando expansión recursiva para padres del comentario:", comment.id);
         expandParentComments(comment.parentId);
       }
       

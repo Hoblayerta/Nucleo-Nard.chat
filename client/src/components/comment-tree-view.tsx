@@ -874,7 +874,8 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
     // Check if click is within this node (área ampliada para mayor facilidad de clic)
     const distanceSquared = Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2);
-    const hitRadius = radius * 1.5; // Área de clic ampliada en un 50% para facilitar la interacción
+    // Ampliamos significativamente el área de detección, especialmente en móviles
+    const hitRadius = radius * (isMobile ? 2.2 : 1.8); // Área de clic mucho más amplia para facilitar la interacción
     
     // Mostrar información en consola para depurar
     if (distanceSquared <= Math.pow(hitRadius, 2)) {
@@ -1038,7 +1039,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
                   <Button 
                     variant="default"
                     size="sm" 
-                    className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white font-medium"
+                    className="text-xs h-7 bg-green-500 hover:bg-green-600 text-white font-bold border-2 border-green-700 shadow-md"
                     onClick={() => {
                       if (onCommentSelect && selectedNode) {
                         console.log("Navegando al comentario mediante botón compacto:", selectedNode.id);
@@ -1240,20 +1241,28 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         <div className="text-xs font-medium mb-2 text-white">Leyenda:</div>
         <div className="grid grid-cols-1 gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-xs text-white">Ruta canónica (más votos)</span>
+            <div className="w-3 h-3 rounded-full bg-black border border-white"></div>
+            <span className="text-xs text-white">Nodo de comentario</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500 opacity-20 border border-blue-500"></div>
-            <span className="text-xs text-white">Comentario normal</span>
+            <div className="w-3 h-3 rounded-full bg-black opacity-100 border border-white flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+            </div>
+            <span className="text-xs text-white">Nodo seleccionado</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500 opacity-20 border border-blue-500"></div>
+            <div className="w-2 h-2 rounded-full bg-black opacity-100 border border-white"></div>
             <span className="text-xs text-white">Comentario negativo</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full border-2 border-green-500 border-r-transparent"></div>
+            <div className="w-4 h-4 rounded-full bg-black border border-white relative">
+              <div className="absolute inset-0 border-2 border-[#37c6ee] rounded-full border-r-transparent border-b-transparent"></div>
+            </div>
             <span className="text-xs text-white">Progreso de votos positivos</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-0.5 w-8 bg-[#37c6ee]"></div>
+            <span className="text-xs text-white">Conexión entre comentarios</span>
           </div>
         </div>
       </div>
