@@ -381,15 +381,15 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
         ctx.beginPath();
         ctx.arc(x, y, postRadius, 0, Math.PI * 2);
 
-        // Estilo especial para el post - usar el color turquesa de la imagen
-        ctx.fillStyle = '#1dd1c7'; // Color turquesa brillante
-        ctx.globalAlpha = 0.4; // Más opaco para mejor visibilidad
+        // Estilo especial para el post - usar negro como en la imagen de referencia
+        ctx.fillStyle = '#000000'; // Negro sólido para el nodo raíz
+        ctx.globalAlpha = 1.0; // Completamente opaco para mejor visibilidad
         ctx.fill();
         ctx.globalAlpha = 1;
 
         // Borde para el post
-        ctx.strokeStyle = '#1dd1c7';
-        ctx.lineWidth = LINE_WIDTH + 1; // Línea más gruesa para el post
+        ctx.strokeStyle = '#ffffff'; // Borde blanco para el nodo raíz
+        ctx.lineWidth = 2; // Línea precisa como en la imagen
         ctx.stroke();
 
         // Guarda las coordenadas reales para poder detectar clics
@@ -426,7 +426,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           const isOnBestPath = child.highlighted;
 
           // Línea recta (como en la imagen de referencia)
-          ctx.strokeStyle = '#1dd1c7'; // Siempre usar el mismo color turquesa para las líneas desde el post
+          ctx.strokeStyle = '#37c6ee'; // Color azul cian exactamente como en la imagen de referencia
           ctx.lineWidth = LINE_WIDTH;
 
           // Dibujar líneas curvas (Bezier) para conexiones más armoniosas
@@ -511,30 +511,15 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
 
-    // Fill style based on path status
-    if (node.highlighted) {
-      // Green for highlighted/canonical path
-      ctx.fillStyle = '#2ecc71';
-      ctx.strokeStyle = '#27ae60';
-    } else {
-      // Use color from palette based on level
-      const color = COLOR_PALETTE[node.level % COLOR_PALETTE.length];
-      ctx.fillStyle = color;
-      ctx.strokeStyle = color;
-    }
-
-    // Fill with more visible background
-    ctx.globalAlpha = 0.6; // Mayor opacidad para mejorar la visibilidad
+    // Estilo de relleno negro sólido como en la imagen de referencia
+    ctx.fillStyle = '#000000'; // Negro para todos los nodos
+    ctx.globalAlpha = 1.0; // Completamente opaco
     ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1.0;
 
-    // Draw outline with black border for better visibility and contrast
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-    
-    // Second outline with black color for better contrast
-    ctx.strokeStyle = "rgba(0,0,0,0.5)";
-    ctx.lineWidth = 1;
+    // Borde blanco fino como en la imagen de referencia
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     // Draw progress circle showing upvote percentage if any votes exist
@@ -1216,7 +1201,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
             <Button 
               variant="default" 
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white font-medium"
+              className="bg-green-500 hover:bg-green-600 text-white font-bold border-2 border-green-700 shadow-md"
               onClick={() => {
                 if (onCommentSelect) {
                   console.log("Navegando al comentario mediante botón:", selectedNode.id);
