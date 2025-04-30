@@ -211,6 +211,7 @@ function CommentItem({ comment, postId, level = 0, index = "", highlightedCommen
       id={`comment-${comment.id}`} 
       ref={commentRef} 
       data-comment-id={comment.id}
+      data-parent-id={comment.parentId || ''}
       className={`relative ${nestingClass} comment-item ${shouldHighlight ? 'highlight-comment' : ''}`}>
       {isMobile && level > 0 && (
         <div className="flex items-center text-xs text-muted-foreground mb-1 ml-1">
