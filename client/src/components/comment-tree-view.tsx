@@ -1111,7 +1111,7 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
 
       {/* Panel de información fijo siempre visible en la parte inferior derecha */}
       <div 
-        className="fixed bottom-36 right-6 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-20 border-primary/30"
+        className="fixed bottom-64 right-6 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-20 border-primary/30"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start">
@@ -1222,15 +1222,18 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               variant="default" 
               size="sm"
               className="bg-primary hover:bg-primary/90 text-white font-semibold border border-primary/50 shadow-sm"
-              onClick={() => {
-                if (onCommentSelect) {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (selectedNode) {
                   console.log("Abriendo comentario en una nueva ventana:", selectedNode.id);
                   
                   // Obtener URL del comentario
                   const commentUrl = `${window.location.origin}/posts/${postId}?comment=${selectedNode.id}`;
                   
-                  // Abrir en una nueva ventana/pestaña
-                  window.open(commentUrl, '_blank');
+                  // Abrir en una nueva ventana sin usar hooks dentro de este evento
+                  const newWindow = window.open(commentUrl, '_blank');
+                  if (newWindow) newWindow.opener = null;
                 }
               }}
             >
@@ -1349,21 +1352,23 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
               variant="default" 
               size="sm"
               className="bg-green-500 hover:bg-green-600 text-white font-bold border-2 border-green-700 shadow-md"
-              onClick={() => {
-                if (onCommentSelect) {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (selectedNode) {
                   console.log("Abriendo comentario en una nueva ventana:", selectedNode.id);
                   
                   // Obtener URL del comentario
                   const commentUrl = `${window.location.origin}/posts/${postId}?comment=${selectedNode.id}`;
                   
-                  // Abrir en una nueva ventana/pestaña
-                  window.open(commentUrl, '_blank');
-                  
-                  // También guardar el ID para efectos visuales
-                  setSelectedNodeId(selectedNode.id);
+                  // Abrir en una nueva ventana sin usar hooks dentro de este evento
+                  const newWindow = window.open(commentUrl, '_blank');
+                  if (newWindow) newWindow.opener = null;
                   
                   // Cerrar el modal flotante
-                  setInfoModalOpen(false);
+                  setTimeout(() => {
+                    setInfoModalOpen(false);
+                  }, 100);
                 }
               }}
             >
