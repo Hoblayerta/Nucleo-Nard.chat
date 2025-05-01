@@ -886,7 +886,7 @@ export default function CommentVisualizer() {
                 
                 {/* Panel de información del nodo o comentario seleccionado */}
                 {selectedNode && (
-                  <div className="absolute bottom-8 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
+                  <div className="absolute bottom-24 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
                     <div className="flex items-center gap-2 mb-2">
                       {selectedNode.role === 'admin' && (
                         <span className="bg-red-900 text-red-100 text-xs px-2 py-0.5 rounded">Admin</span>
