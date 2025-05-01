@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CommentTreeView from '@/components/comment-tree-view';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, getQueryFn } from '@/lib/queryClient';
 import { PostWithDetails } from '@shared/schema';
 
 export default function TreeViewPage() {
@@ -21,12 +21,8 @@ export default function TreeViewPage() {
 
   // Obtener información del post
   const { data: post, isLoading, error } = useQuery<PostWithDetails>({
-    queryKey: [`/api/posts/${postId}`],
-    queryFn: async () => {
-      if (postId === null) return null;
-      const response = await apiRequest(`/api/posts/${postId}`);
-      return response.json();
-    },
+    queryKey: postId ? [`/api/posts/${postId}`] : [],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: postId !== null,
   });
 

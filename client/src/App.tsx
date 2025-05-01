@@ -10,6 +10,7 @@ import Home from "@/pages/home";
 import Leaderboard from "@/pages/leaderboard";
 import Profile from "@/pages/profile";
 import Post from "@/pages/post";
+import TreeView from "@/pages/tree-view";
 import Header from "@/components/header";
 
 // AuthRoute component to protect routes
@@ -39,13 +40,20 @@ function AuthRoute({ component: Component, adminOnly = false, ...rest }: any) {
 function Router() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header />
       <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/leaderboard" component={Leaderboard} />
-        <Route path="/profile/:id" component={Profile} />
-        <Route path="/posts/:id" component={Post} />
-        <Route component={NotFound} />
+        <Route path="/tree/:id">
+          <TreeView />
+        </Route>
+        <Route>
+          <Header />
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/leaderboard" component={Leaderboard} />
+            <Route path="/profile/:id" component={Profile} />
+            <Route path="/posts/:id" component={Post} />
+            <Route component={NotFound} />
+          </Switch>
+        </Route>
       </Switch>
     </div>
   );
