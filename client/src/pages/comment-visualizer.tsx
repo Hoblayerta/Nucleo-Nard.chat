@@ -203,7 +203,7 @@ export default function CommentVisualizer() {
       calculateNodePositions(postRoot);
 
       setTree(postRoot);
-      // Resetear vista al cambiar el post
+      // Centrar la vista en el árbol (el punto de partida en el centro del canvas)
       setOffsetX(0);
       setOffsetY(0);
       setScale(1.0);
@@ -311,46 +311,13 @@ export default function CommentVisualizer() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Calcular el tamaño necesario para mostrar todo el árbol
-    let maxWidth = 1200; // Tamaño mínimo
-    let maxHeight = 800; // Tamaño mínimo
+    // Establecer un tamaño fijo amplio para el canvas, para asegurar que los nodos mantengan su tamaño original
+    const CANVAS_WIDTH = 3000; // Ancho fijo grande
+    const CANVAS_HEIGHT = 2000; // Alto fijo grande
     
-    // Encontrar la posición más extrema para ajustar el tamaño del canvas
-    const findExtremeDimensions = (node: CommentNode) => {
-      if (!node) return;
-      
-      if (node.isPost) {
-        // Para el nodo post, usar una posición fija
-        const postX = canvas.width / 2;
-        const postY = CANVAS_PADDING * 2 - 40;
-        
-        maxWidth = Math.max(maxWidth, postX + 200);
-        maxHeight = Math.max(maxHeight, postY + 200);
-      } else if (node.x !== undefined && node.y !== undefined) {
-        // Para comentarios normales, calcular la posición con escala y offset
-        const nodeX = (node.x || 0) * scale + offsetX + canvas.width / 2;
-        const nodeY = (node.y || 0) * scale + offsetY + CANVAS_PADDING * 2;
-        
-        maxWidth = Math.max(maxWidth, nodeX + 300); // 300px de margen adicional
-        maxHeight = Math.max(maxHeight, nodeY + 300); // 300px de margen adicional
-      }
-      
-      // Revisar recursivamente todos los hijos
-      node.children.forEach(findExtremeDimensions);
-    };
-    
-    // Buscar dimensiones máximas
-    findExtremeDimensions(tree);
-    
-    // Usar el tamaño del contenedor o el tamaño necesario para mostrar todo el árbol
-    // el que sea mayor
-    if (containerRef.current) {
-      const containerWidth = containerRef.current.clientWidth;
-      const containerHeight = containerRef.current.clientHeight;
-      
-      canvas.width = Math.max(containerWidth, maxWidth);
-      canvas.height = Math.max(containerHeight, maxHeight);
-    }
+    // Asignar tamaño al canvas
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
     
     // Limpiar canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -592,8 +559,11 @@ export default function CommentVisualizer() {
     const legendWidth = 200;
     const legendHeight = 165;
     const padding = 10;
-    const x = canvas.width - legendWidth - padding;
-    const y = Math.min(canvas.height - legendHeight - padding, 600 - legendHeight - padding); // Mantener visible incluso con scroll
+    
+    // Posición fija en la esquina inferior derecha del viewport visible
+    // Usar valores relativamente pequeños para que siempre esté en el área visible inicial
+    const x = 1000;
+    const y = 600 - legendHeight - padding;
     
     // Fondo semitransparente oscuro
     ctx.fillStyle = 'rgba(20, 20, 20, 0.8)';
@@ -657,13 +627,15 @@ export default function CommentVisualizer() {
     ctx.fillText('Conexión entre comentarios', x + padding * 4 - 2, y + yOffset - 5);
     
     // Instrucciones en la parte inferior (en el canvas, no en la leyenda)
+    // Posición fija cerca de la posición inicial del centro
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.font = '11px Arial';
     ctx.textAlign = 'center';
-    const textY = Math.min(canvas.height - 25, 600 - 25);
-    const textY2 = Math.min(canvas.height - 10, 600 - 10);
-    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', canvas.width / 2, textY);
-    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', canvas.width / 2, textY2);
+    const instructionsX = 1500;
+    const textY = 600 - 25;
+    const textY2 = 600 - 10;
+    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', instructionsX, textY);
+    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', instructionsX, textY2);
   }
   
   // Encontrar nodo en la posición del clic
