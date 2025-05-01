@@ -311,14 +311,49 @@ export default function CommentVisualizer() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Calcular el tamaño necesario para mostrar todo el árbol
+    let maxWidth = 1200; // Tamaño mínimo
+    let maxHeight = 800; // Tamaño mínimo
+    
+    // Encontrar la posición más extrema para ajustar el tamaño del canvas
+    const findExtremeDimensions = (node: CommentNode) => {
+      if (!node) return;
+      
+      if (node.isPost) {
+        // Para el nodo post, usar una posición fija
+        const postX = canvas.width / 2;
+        const postY = CANVAS_PADDING * 2 - 40;
+        
+        maxWidth = Math.max(maxWidth, postX + 200);
+        maxHeight = Math.max(maxHeight, postY + 200);
+      } else if (node.x !== undefined && node.y !== undefined) {
+        // Para comentarios normales, calcular la posición con escala y offset
+        const nodeX = (node.x || 0) * scale + offsetX + canvas.width / 2;
+        const nodeY = (node.y || 0) * scale + offsetY + CANVAS_PADDING * 2;
+        
+        maxWidth = Math.max(maxWidth, nodeX + 300); // 300px de margen adicional
+        maxHeight = Math.max(maxHeight, nodeY + 300); // 300px de margen adicional
+      }
+      
+      // Revisar recursivamente todos los hijos
+      node.children.forEach(findExtremeDimensions);
+    };
+    
+    // Buscar dimensiones máximas
+    findExtremeDimensions(tree);
+    
+    // Usar el tamaño del contenedor o el tamaño necesario para mostrar todo el árbol
+    // el que sea mayor
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth;
+      const containerHeight = containerRef.current.clientHeight;
+      
+      canvas.width = Math.max(containerWidth, maxWidth);
+      canvas.height = Math.max(containerHeight, maxHeight);
+    }
+    
     // Limpiar canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Actualizar tamaño del canvas
-    if (containerRef.current) {
-      canvas.width = containerRef.current.clientWidth;
-      canvas.height = containerRef.current.clientHeight;
-    }
 
     // Calcular offset del centro
     const centerX = canvas.width / 2;
@@ -558,7 +593,7 @@ export default function CommentVisualizer() {
     const legendHeight = 165;
     const padding = 10;
     const x = canvas.width - legendWidth - padding;
-    const y = canvas.height - legendHeight - padding;
+    const y = Math.min(canvas.height - legendHeight - padding, 600 - legendHeight - padding); // Mantener visible incluso con scroll
     
     // Fondo semitransparente oscuro
     ctx.fillStyle = 'rgba(20, 20, 20, 0.8)';
@@ -625,8 +660,10 @@ export default function CommentVisualizer() {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.font = '11px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', canvas.width / 2, canvas.height - 25);
-    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', canvas.width / 2, canvas.height - 10);
+    const textY = Math.min(canvas.height - 25, 600 - 25);
+    const textY2 = Math.min(canvas.height - 10, 600 - 10);
+    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', canvas.width / 2, textY);
+    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', canvas.width / 2, textY2);
   }
   
   // Encontrar nodo en la posición del clic
@@ -863,7 +900,7 @@ export default function CommentVisualizer() {
             <CardContent className="p-0 relative">
               <div 
                 ref={containerRef} 
-                className="w-full h-[600px] overflow-hidden relative"
+                className="w-full h-[600px] overflow-auto relative"
                 style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
               >
                 {isLoadingComments ? (
@@ -886,7 +923,7 @@ export default function CommentVisualizer() {
                 
                 {/* Panel de información del nodo o comentario seleccionado */}
                 {selectedNode && (
-                  <div className="absolute bottom-8 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
+                  <div className="absolute top-8 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
                     <div className="flex items-center gap-2 mb-2">
                       {selectedNode.role === 'admin' && (
                         <span className="bg-red-900 text-red-100 text-xs px-2 py-0.5 rounded">Admin</span>
