@@ -208,18 +208,34 @@ export default function Post() {
                 Ver árbol interactivo
               </Button>
             ) : (
-              <Button 
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-white gap-2"
-                onClick={() => setShowCommentTree(true)}
-              >
-                <div className="w-5 h-5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
-                  </svg>
-                </div>
-                Ver árbol interactivo
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-white gap-2"
+                  onClick={() => setShowCommentTree(true)}
+                >
+                  <div className="w-5 h-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
+                    </svg>
+                  </div>
+                  Ver árbol interactivo
+                </Button>
+
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className="gap-2 border-primary text-primary hover:bg-primary/10"
+                  onClick={() => window.open(`/tree/${post.id}`, '_blank')}
+                >
+                  <div className="w-5 h-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </div>
+                  Abrir en nueva pestaña
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -312,21 +328,37 @@ export default function Post() {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">Comentarios</h3>
             
-            {/* En escritorio, mostramos el botón para abrir la visualización del árbol */}
+            {/* En escritorio, mostramos los botones para abrir la visualización del árbol */}
             {!isMobile && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1"
-                onClick={() => setShowCommentTree(true)}
-              >
-                <div className="w-4 h-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
-                  </svg>
-                </div>
-                Ver árbol de comentarios
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => setShowCommentTree(true)}
+                >
+                  <div className="w-4 h-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 2h6"></path><path d="M5 7v12a3 3 0 0 0 3 3v0"></path><path d="M19 7v12a3 3 0 0 1-3 3v0"></path><path d="M12 22v-5"></path><path d="M5 7H2a10 10 0 0 0 10 10"></path><path d="M19 7h3a10 10 0 0 1-10 10"></path>
+                    </svg>
+                  </div>
+                  Ver árbol modal
+                </Button>
+
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex items-center gap-1 text-primary"
+                  onClick={() => window.open(`/tree/${post.id}`, '_blank')}
+                >
+                  <div className="w-4 h-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </div>
+                  Abrir árbol
+                </Button>
+              </div>
             )}
           </div>
           

@@ -34,6 +34,7 @@ interface CommentTreeViewProps {
   postId: number;
   onClose: () => void;
   isStandalone?: boolean; // Indica si está en modo de página independiente
+  onCommentSelect?: (commentId: number) => void; // Callback para seleccionar un comentario (opcional)
 }
 
 const CANVAS_PADDING = 50;
@@ -56,7 +57,7 @@ const COLOR_PALETTE = [
   '#3498db', // azul
 ];
 
-export default function CommentTreeView({ postId, onClose, isStandalone = false }: CommentTreeViewProps) {
+export default function CommentTreeView({ postId, onClose, isStandalone = false, onCommentSelect }: CommentTreeViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [tree, setTree] = useState<CommentNode | null>(null);
