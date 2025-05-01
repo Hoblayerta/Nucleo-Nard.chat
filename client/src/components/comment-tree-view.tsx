@@ -657,18 +657,10 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!tree || !canvasRef.current) return;
 
-    // Si estamos arrastrando, no considerar como clic en nodo
-    if (isDragging) {
-      console.log("Ignorando clic porque estamos arrastrando el canvas");
-      return;
-    }
-
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-
-    console.log("Clic en el canvas en posición:", clickX, clickY);
 
     // Calculate center offset (considerando scroll del área)
     const centerX = canvas.width / 2;
@@ -683,19 +675,14 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
     
       // Cerrar cualquier modal abierto inmediatamente
       setInfoModalOpen(false);
+      setSelectedNode(null);
       
-      // Mostrar info de inmediato para mejor respuesta
-      showNodeInfo(clickedNode, clickX, clickY, canvas);
-      
-      // Redibujar el canvas para reflejar la selección inmediatamente
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawNode(ctx, tree, centerX, centerY);
-      }
+      // Pequeña pausa para que se note el efecto de cierre y apertura
+      setTimeout(() => {
+        showNodeInfo(clickedNode, clickX, clickY, canvas);
+      }, 50);
     } else {
       // Click on empty space - close info modal
-      console.log("Clic en espacio vacío - cerrando información");
       setInfoModalOpen(false);
       setSelectedNode(null);
     }
@@ -712,54 +699,27 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    console.log("Doble clic en el canvas en posición:", clickX, clickY);
-
     // Calculate center offset
     const centerX = canvas.width / 2;
     const centerY = CANVAS_PADDING * 2;
 
-    // Find clicked node con radio de detección ampliado
+    // Find clicked node
     const clickedNode = findNodeAtPosition(tree, clickX, clickY, centerX, centerY);
 
     if (clickedNode && clickedNode.id !== postData?.id) {
-      console.log("Doble clic en nodo:", clickedNode.id, clickedNode.username);
+      console.log("Doble clic en nodo:", clickedNode.id);
       
-      // Efecto visual
+      // Guardar el ID del nodo seleccionado para aplicar efecto visual
       setSelectedNodeId(clickedNode.id);
-      setSelectedNode(clickedNode);  // Siempre seleccionamos el nodo, para ver la info
       
-      // Efecto visual de destello 
-      const flashElement = (ctx: CanvasRenderingContext2D) => {
-        // Dibujar un destello alrededor del nodo para indicar la selección
-        const nodeX = centerX + (clickedNode.x || 0) * scale + offsetX;
-        const nodeY = centerY + (clickedNode.y || 0) * scale + offsetY;
-        const radius = (clickedNode.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS) * 1.5;
-        
-        ctx.beginPath();
-        ctx.arc(nodeX, nodeY, radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.6)'; // Destello dorado
-        ctx.fill();
-      };
-      
-      // Aplicar efecto visual
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        flashElement(ctx);
-        // Redibujar después de un momento para quitar el destello
-        setTimeout(() => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          drawNode(ctx, tree, centerX, centerY);
-        }, 300); // Destello breve
-      }
-      
-      // Si estamos en modo independiente, solo mostramos la info
+      // Si estamos en modo independiente, no abrir una nueva pestaña
       if (isStandalone) {
-        // Ya está seleccionado el nodo, mostramos el panel de info también
-        showNodeInfo(clickedNode, clickX, clickY, canvas);
+        // Solo marcamos el nodo como seleccionado y mostramos el panel de info
+        setSelectedNode(clickedNode);
         return;
       }
       
-      // Si tenemos un callback, lo usamos (para integración personalizada)
+      // Si tenemos un callback, lo usamos
       if (onCommentSelect) {
         onCommentSelect(clickedNode.id);
         return;
@@ -879,16 +839,12 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
             console.log("Toque en nodo:", touchedNode.id);
             // Cerrar cualquier modal abierto inmediatamente
             setInfoModalOpen(false);
+            setSelectedNode(null);
             
-            // Mostrar info de inmediato para mejor respuesta en móviles
-            showNodeInfo(touchedNode, touchX, touchY, canvas);
-            
-            // Redibujar el canvas para reflejar la selección inmediatamente
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              drawNode(ctx, tree, centerX, centerY);
-            }
+            // Abrir el nuevo modal después de una pausa
+            setTimeout(() => {
+              showNodeInfo(touchedNode, touchX, touchY, canvas);
+            }, 50);
           }
         }
       }
@@ -937,19 +893,17 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
         // Calcular posición del nodo del post (debe coincidir con la posición en drawNode)
         const postX = centerX;
         const postY = centerY - 40; // Misma posición que en el drawNode del post
-        const postRadius = NODE_RADIUS * 1.8; // Radius aumentado para facilitar clic
+        const postRadius = NODE_RADIUS * 1.3; // Mismo radio que en el drawNode del post
 
         // Comprobar si el clic está dentro del nodo del post
         const distanceSquared = Math.pow(clickX - postX, 2) + Math.pow(clickY - postY, 2);
         if (distanceSquared <= Math.pow(postRadius, 2)) {
-          console.log("¡Clic en el nodo raíz (POST)!", node.id);
           return node;
         }
       }
 
-      // Verificar clics en los comentarios hijos en orden inverso (primero los de arriba)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        const child = node.children[i];
+      // Verificar clics en los comentarios hijos
+      for (const child of node.children) {
         const foundNode = findNodeAtPosition(child, clickX, clickY, centerX, centerY);
         if (foundNode) return foundNode;
       }
@@ -961,23 +915,21 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
     const y = centerY + (node.y || 0) * scale + offsetY;
     const radius = node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS;
 
-    // Ampliar el área de detección significativamente
-    const hitRadius = radius * (isMobile ? 3.5 : 2.5); // Mucho más grande para facilitar el clic
-
     // Check if click is within this node (área ampliada para mayor facilidad de clic)
     const distanceSquared = Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2);
+    // Ampliamos significativamente el área de detección, especialmente en móviles
+    const hitRadius = radius * (isMobile ? 2.2 : 1.8); // Área de clic mucho más amplia para facilitar la interacción
     
-    // Depurar cada verificación para localizar el problema
+    // Mostrar información en consola para depurar
     if (distanceSquared <= Math.pow(hitRadius, 2)) {
       console.log("¡Nodo detectado!", node.id, node.username, "en posición", x, y);
       console.log("Distancia al clic:", Math.sqrt(distanceSquared), "vs radio de detección:", hitRadius);
       return node;
     }
 
-    // Check all children recursively (primero los de arriba/delante)
+    // Check all children
     if (!node.collapsed) {
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        const child = node.children[i];
+      for (const child of node.children) {
         const foundNode = findNodeAtPosition(child, clickX, clickY, centerX, centerY);
         if (foundNode) return foundNode;
       }
@@ -1190,7 +1142,7 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
 
       {/* Panel de información fijo siempre visible en la parte inferior derecha */}
       <div 
-        className="fixed bottom-44 right-8 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-50 border-primary/30"
+        className="fixed bottom-96 right-6 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-20 border-primary/30"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start">
@@ -1344,7 +1296,7 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
         </div>
       ) : (
         <div className={`h-[calc(100vh-${fullscreen ? '4rem' : '5rem'})] w-full overflow-auto`}>
-          <div className="min-h-full min-w-[4000px] h-[4000px] relative" style={{ backgroundColor: '#121212' }}>
+          <div className="min-h-full min-w-[2000px] h-[3000px] relative">
             <canvas
               ref={canvasRef}
               className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0"
@@ -1459,7 +1411,7 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
       )}
 
       {/* Legend */}
-      <div className="fixed bottom-4 right-8 z-50 bg-card/90 backdrop-blur-sm border border-primary/20 rounded-lg p-3 shadow-lg">
+      <div className="absolute bottom-4 right-4 bg-card/90 backdrop-blur-sm border border-primary/20 rounded-lg p-3 shadow-lg">
         <div className="text-xs font-medium mb-2 text-white">Leyenda:</div>
         <div className="grid grid-cols-1 gap-2">
           <div className="flex items-center gap-2">

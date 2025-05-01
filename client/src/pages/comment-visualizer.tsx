@@ -4,6 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
 import type { Post, CommentWithUser } from '@shared/schema';
@@ -44,6 +45,7 @@ export default function CommentVisualizer() {
   const [isDragging, setIsDragging] = useState(false);
   const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
   const [currentDragPosition, setCurrentDragPosition] = useState({ x: 0, y: 0 });
+  const [fullscreen, setFullscreen] = useState(false);
   
   const { toast } = useToast();
 
@@ -336,7 +338,7 @@ export default function CommentVisualizer() {
 
     // Dibujar leyenda
     drawLegend(ctx, canvas);
-  }, [tree, offsetX, offsetY, scale]);
+  }, [tree, offsetX, offsetY, scale, fullscreen]);
 
   // Asignar índices a los nodos de manera jerárquica (1, 1.1, 1.1.1, etc.)
   function assignNodeIndices(node: CommentNode, parentIndex: string = "") {
@@ -774,6 +776,21 @@ export default function CommentVisualizer() {
     setScale(newScale);
   };
   
+  // Formato para mostrar votos
+  const formatVotes = (upvotes: number, downvotes: number, score: number) => {
+    return (
+      <div className="flex flex-col items-center gap-1 text-sm">
+        <div className="flex gap-2">
+          <span className="text-green-500">+{upvotes}</span>
+          <span className="text-red-500">-{downvotes}</span>
+        </div>
+        <span className={`font-medium ${score >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {score}
+        </span>
+      </div>
+    );
+  };
+
   // Guardar el canvas como imagen
   const handleSaveCanvas = () => {
     if (!canvasRef.current) return;
@@ -844,37 +861,32 @@ export default function CommentVisualizer() {
               </div>
             </CardHeader>
             <CardContent className="p-0 relative">
-              {/* Área de visualización con scrollbars */}
               <div 
                 ref={containerRef} 
-                className="w-full h-[600px] relative"
-                style={{ overflow: 'auto' }}
+                className="w-full h-[600px] overflow-hidden relative"
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
               >
                 {isLoadingComments ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
                   </div>
                 ) : (
-                  <div style={{ width: '3000px', height: '3000px', position: 'relative', cursor: isDragging ? 'grabbing' : 'grab' }}>
-                    <canvas
-                      ref={canvasRef}
-                      className="absolute top-0 left-0 w-full h-full"
-                      onClick={handleCanvasClick}
-                      onDoubleClick={handleCanvasDoubleClick}
-                      onMouseDown={handleMouseDown}
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                      onMouseLeave={handleMouseUp}
-                      onWheel={handleWheel}
-                    />
-                  </div>
+                  <canvas
+                    ref={canvasRef}
+                    className="w-full h-full"
+                    onClick={handleCanvasClick}
+                    onDoubleClick={handleCanvasDoubleClick}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onWheel={handleWheel}
+                  />
                 )}
-              </div>
-
-              {/* Panel de información fijo (siempre visible, con post por defecto o nodo seleccionado) */}
-              <div className="fixed bottom-44 right-8 z-20 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
-                {selectedNode ? (
-                  <>
+                
+                {/* Panel de información del nodo o comentario seleccionado */}
+                {selectedNode && (
+                  <div className="absolute bottom-44 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
                     <div className="flex items-center gap-2 mb-2">
                       {selectedNode.role === 'admin' && (
                         <span className="bg-red-900 text-red-100 text-xs px-2 py-0.5 rounded">Admin</span>
@@ -884,7 +896,7 @@ export default function CommentVisualizer() {
                       )}
                       {selectedNode.badges && selectedNode.badges.length > 0 && (
                         <div className="flex gap-1">
-                          {selectedNode.badges.map((badge: string) => (
+                          {selectedNode.badges.map(badge => (
                             <BadgeIcon key={badge} badge={badge} size={14} showLabel={false} />
                           ))}
                         </div>
@@ -928,88 +940,8 @@ export default function CommentVisualizer() {
                         </Button>
                       </div>
                     )}
-                  </>
-                ) : postData ? (
-                  <>
-                    <div className="flex items-center gap-2 mb-2">
-                      {postData.user.role === 'admin' && (
-                        <span className="bg-red-900 text-red-100 text-xs px-2 py-0.5 rounded">Admin</span>
-                      )}
-                      {postData.user.role === 'moderator' && (
-                        <span className="bg-blue-900 text-blue-100 text-xs px-2 py-0.5 rounded">Mod</span>
-                      )}
-                      {postData.user.badges && postData.user.badges.length > 0 && (
-                        <div className="flex gap-1">
-                          {postData.user.badges.map((badge: string) => (
-                            <BadgeIcon key={badge} badge={badge} size={14} showLabel={false} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <h3 className="font-bold uppercase mb-2 text-[#37c6ee]">
-                      POST PRINCIPAL
-                    </h3>
-                    
-                    <div className="flex mb-2 text-xs">
-                      <div className="flex-1">
-                        <span className="text-green-500">↑ {postData.upvotes || 0}</span>
-                        {' • '}
-                        <span className="text-red-500">↓ {postData.downvotes || 0}</span>
-                      </div>
-                      <div className={`font-medium ${(postData.upvotes || 0) - (postData.downvotes || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        ={(postData.upvotes || 0) - (postData.downvotes || 0)}
-                      </div>
-                    </div>
-                    
-                    <div className="text-xs text-gray-300 max-h-28 overflow-y-auto">
-                      {postData.title || postData.content}
-                    </div>
-                    
-                    <div className="mt-3 flex justify-between">
-                      <span className="text-xs text-gray-400">Por: {postData.user.username}</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-[#37c6ee] text-[#37c6ee] hover:bg-[#37c6ee]/10"
-                        onClick={() => {
-                          if (selectedPostId) {
-                            window.open(`/posts/${selectedPostId}`, '_blank');
-                          }
-                        }}
-                      >
-                        Ver post
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-2 text-gray-400">
-                    Selecciona un post o un comentario para ver detalles
                   </div>
                 )}
-              </div>
-
-              {/* Leyenda fija */}
-              <div className="fixed bottom-4 right-8 z-20 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
-                <h4 className="text-sm font-medium mb-2">Leyenda:</h4>
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-black border border-white"></div>
-                    <span className="text-xs text-white">Nodo de comentario</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#f1c40f] border border-[#f1c40f]"></div>
-                    <span className="text-xs text-white">Nodo seleccionado</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-black border border-red-500"></div>
-                    <span className="text-xs text-white">Comentario negativo</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-black border border-[#37c6ee]"></div>
-                    <span className="text-xs text-white">Mejor camino de votos</span>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
