@@ -719,10 +719,14 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
         return;
       }
       
-      // Obtener URL del comentario
-      const commentUrl = `${window.location.origin}/posts/${postId}?comment=${clickedNode.id}`;
+      // Si tenemos un callback, lo usamos
+      if (onCommentSelect) {
+        onCommentSelect(clickedNode.id);
+        return;
+      }
       
-      // Abrir en una nueva ventana sin usar hooks dentro del evento
+      // Comportamiento por defecto: abrir en nueva pestaña
+      const commentUrl = `${window.location.origin}/posts/${postId}?comment=${clickedNode.id}`;
       const newWindow = window.open(commentUrl, '_blank');
       if (newWindow) newWindow.opener = null;
     }
@@ -793,10 +797,14 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
             return;
           }
           
-          // Obtener URL del comentario
-          const commentUrl = `${window.location.origin}/posts/${postId}?comment=${touchedNode.id}`;
+          // Si tenemos un callback, lo usamos
+          if (onCommentSelect) {
+            onCommentSelect(touchedNode.id);
+            return;
+          }
           
-          // Abrir en una nueva ventana sin usar hooks en el evento
+          // Comportamiento por defecto: abrir en nueva pestaña
+          const commentUrl = `${window.location.origin}/posts/${postId}?comment=${touchedNode.id}`;
           const newWindow = window.open(commentUrl, '_blank');
           if (newWindow) newWindow.opener = null;
           return;
