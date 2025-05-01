@@ -33,7 +33,7 @@ interface CommentNode {
 interface CommentTreeViewProps {
   postId: number;
   onClose: () => void;
-  onCommentSelect?: (commentId: number) => void;
+  isStandalone?: boolean; // Indica si está en modo de página independiente
 }
 
 const CANVAS_PADDING = 50;
@@ -56,7 +56,7 @@ const COLOR_PALETTE = [
   '#3498db', // azul
 ];
 
-export default function CommentTreeView({ postId, onClose, onCommentSelect }: CommentTreeViewProps) {
+export default function CommentTreeView({ postId, onClose, isStandalone = false }: CommentTreeViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [tree, setTree] = useState<CommentNode | null>(null);
@@ -711,15 +711,19 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
       // Guardar el ID del nodo seleccionado para aplicar efecto visual
       setSelectedNodeId(clickedNode.id);
       
+      // Si estamos en modo independiente, no abrir una nueva pestaña
+      if (isStandalone) {
+        // Solo marcamos el nodo como seleccionado y mostramos el panel de info
+        setSelectedNode(clickedNode);
+        return;
+      }
+      
       // Obtener URL del comentario
       const commentUrl = `${window.location.origin}/posts/${postId}?comment=${clickedNode.id}`;
       
       // Abrir en una nueva ventana sin usar hooks dentro del evento
       const newWindow = window.open(commentUrl, '_blank');
       if (newWindow) newWindow.opener = null;
-      
-      // Debido a que abrimos en una nueva pestana, no necesitamos usar onCommentSelect
-      // que podria causar problemas con React Hooks
     }
   };
 
@@ -780,6 +784,13 @@ export default function CommentTreeView({ postId, onClose, onCommentSelect }: Co
           
           // Añadir efecto de flash cuando se selecciona un comentario
           setSelectedNodeId(touchedNode.id);
+          
+          // Si estamos en modo independiente, solo mostrar la información
+          if (isStandalone) {
+            // Solo marcamos el nodo como seleccionado y mostramos el panel de info
+            setSelectedNode(touchedNode);
+            return;
+          }
           
           // Obtener URL del comentario
           const commentUrl = `${window.location.origin}/posts/${postId}?comment=${touchedNode.id}`;
