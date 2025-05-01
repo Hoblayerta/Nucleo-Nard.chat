@@ -1142,7 +1142,7 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
 
       {/* Panel de información fijo siempre visible en la parte inferior derecha */}
       <div 
-        className="fixed bottom-64 right-6 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-20 border-primary/30"
+        className="fixed bottom-72 right-6 border-2 rounded-md bg-card/95 backdrop-blur-sm shadow-lg p-3 max-w-md z-20 border-primary/30"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start">
@@ -1411,7 +1411,7 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-card/90 backdrop-blur-sm border border-primary/20 rounded-lg p-3 shadow-lg">
+      <div className="absolute bottom-24 right-4 bg-card/90 backdrop-blur-sm border border-primary/20 rounded-lg p-3 shadow-lg">
         <div className="text-xs font-medium mb-2 text-white">Leyenda:</div>
         <div className="grid grid-cols-1 gap-2">
           <div className="flex items-center gap-2">
