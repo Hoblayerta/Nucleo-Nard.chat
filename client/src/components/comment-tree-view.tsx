@@ -1296,7 +1296,7 @@ export default function CommentTreeView({ postId, onClose, isStandalone = false,
         </div>
       ) : (
         <div className={`h-[calc(100vh-${fullscreen ? '4rem' : '5rem'})] w-full overflow-auto`}>
-          <div className="min-h-full min-w-[2500px] h-[3000px] relative" style={{ backgroundColor: '#121212' }}>
+          <div className="min-h-full min-w-[4000px] h-[4000px] relative" style={{ backgroundColor: '#121212' }}>
             <canvas
               ref={canvasRef}
               className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0"

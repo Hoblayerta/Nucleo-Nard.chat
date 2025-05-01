@@ -855,7 +855,7 @@ export default function CommentVisualizer() {
                     <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
                   </div>
                 ) : (
-                  <div style={{ width: '2000px', height: '2000px', position: 'relative', cursor: isDragging ? 'grabbing' : 'grab' }}>
+                  <div style={{ width: '3000px', height: '3000px', position: 'relative', cursor: isDragging ? 'grabbing' : 'grab' }}>
                     <canvas
                       ref={canvasRef}
                       className="absolute top-0 left-0 w-full h-full"
