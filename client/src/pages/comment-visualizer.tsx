@@ -51,25 +51,27 @@ export default function CommentVisualizer() {
   const { toast } = useToast();
 
   // Constantes para la visualización
-  const NODE_RADIUS = 25;
-  const SMALL_NODE_RADIUS = 18;
-  const NODE_SPACING_H = 140;
-  const NODE_SPACING_V = 180;
-  const LINE_WIDTH = 2.5;
+  const NODE_RADIUS = 22;
+  const SMALL_NODE_RADIUS = 16;
+  const NODE_SPACING_H = 120;
+  const NODE_SPACING_V = 150;
+  const LINE_WIDTH = 2;
   const CANVAS_PADDING = 60;
+  // Colores para las conexiones - paleta de azules para estilo similar a la referencia
   const COLOR_PALETTE = [
-    '#37c6ee', // Azul cian
-    '#45deb7', // verde turquesa
-    '#2ecc71', // verde
-    '#a3e048', // verde lima
-    '#f1c40f', // amarillo
-    '#e67e22', // naranja
-    '#e74c3c', // rojo
-    '#e84acf', // magenta
-    '#9b59b6', // violeta
-    '#7552e0', // púrpura
-    '#3498db', // azul
+    '#37c6ee', // Azul cian (principal para conexiones)
+    '#37c6ee', // Mismo color para mantener consistencia
+    '#37c6ee', // Mismo color para mantener consistencia
+    '#37c6ee', // Mismo color para mantener consistencia
+    '#f1c40f', // amarillo (para camino destacado)
+    '#e67e22', // naranja (para selección)
+    '#e74c3c', // rojo (para votos negativos)
   ];
+  // Colores para los nodos
+  const NODE_COLOR = '#121212';
+  const NODE_BORDER_COLOR = '#37c6ee';   // Azul cian para el borde
+  const POST_NODE_COLOR = '#ffffff';      // Blanco para el post
+  const POST_BORDER_COLOR = '#3498db';    // Azul para el borde del post
 
   // Cargar lista de posts
   const { data: posts = [] } = useQuery<Post[]>({
@@ -339,8 +341,34 @@ export default function CommentVisualizer() {
     drawLegend(ctx, canvas);
   }, [tree, offsetX, offsetY, scale, fullscreen]);
 
+  // Asignar índices a los nodos de manera jerárquica (1, 1.1, 1.1.1, etc.)
+  function assignNodeIndices(node: CommentNode, parentIndex: string = "") {
+    if (node.level === -1) {
+      // El nodo raíz (post) no tiene índice
+      node.children.forEach((child, idx) => {
+        const childIndex = `${idx + 1}`;
+        child.index = childIndex;
+        assignNodeIndices(child, childIndex);
+      });
+    } else {
+      // Para nodos normales (comentarios)
+      node.children.forEach((child, idx) => {
+        const childIndex = `${parentIndex}.${idx + 1}`;
+        child.index = childIndex;
+        assignNodeIndices(child, childIndex);
+      });
+    }
+  }
+
   // Dibujar el árbol completo
   function drawTree(ctx: CanvasRenderingContext2D, node: CommentNode, centerX: number, centerY: number) {
+    // Asignar índices a los nodos primero
+    assignNodeIndices(node);
+    
+    // Fondo negro
+    ctx.fillStyle = '#121212'; // Fondo oscuro
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
     // Primero dibujamos las conexiones
     drawNodeConnections(ctx, node, centerX, centerY);
     
@@ -433,26 +461,23 @@ export default function CommentVisualizer() {
       // Dibujar nodo del post
       const postX = centerX;
       const postY = centerY - 40;
-      const postRadius = NODE_RADIUS * 1.3; // Post ligeramente más grande
+      const postRadius = NODE_RADIUS * 1.2; // Post ligeramente más grande
       
       // Círculo para el post
       ctx.beginPath();
       ctx.arc(postX, postY, postRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#3498db'; // Azul para el post
+      ctx.fillStyle = POST_NODE_COLOR; // Color para el post (blanco)
       ctx.fill();
-      ctx.strokeStyle = '#2980b9';
+      ctx.strokeStyle = POST_BORDER_COLOR; // Borde azul
       ctx.lineWidth = 2;
       ctx.stroke();
       
-      // Texto del post (título truncado)
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Arial';
+      // Texto del post ("POST")
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 13px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const title = postData?.title || "Post";
-      const maxLength = 10;
-      const displayText = title.length > maxLength ? title.substring(0, maxLength) + '...' : title;
-      ctx.fillText(displayText, postX, postY);
+      ctx.fillText("POST", postX, postY);
       
       // Dibujar todos los nodos hijos recursivamente
       node.children.forEach(child => {
@@ -468,49 +493,57 @@ export default function CommentVisualizer() {
     const y = centerY + (node.y || 0) * scale + offsetY;
     const radius = node.negativeScore ? SMALL_NODE_RADIUS : NODE_RADIUS;
     
-    // Color según nivel, con ciclo
-    const colorIndex = (node.level % COLOR_PALETTE.length);
-    const baseColor = COLOR_PALETTE[colorIndex];
-    
     // Círculo para el comentario
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     
     // Color de relleno según tipo de nodo
     if (node.selected || node.id === selectedNode?.id) {
-      // Nodo seleccionado
-      ctx.fillStyle = '#f39c12'; // Naranja para selección
+      // Nodo seleccionado - amarillo
+      ctx.fillStyle = '#f1c40f';
     } else if (node.highlighted) {
-      // Nodo en el mejor camino
-      ctx.fillStyle = '#27ae60'; // Verde para destacado
+      // Nodo en el mejor camino - mismo color que las conexiones
+      ctx.fillStyle = NODE_COLOR;
+      ctx.strokeStyle = COLOR_PALETTE[0];
+      ctx.lineWidth = 2;
     } else if (node.negativeScore) {
-      // Nodo con puntuación negativa
-      ctx.fillStyle = '#e74c3c'; // Rojo para negativo
+      // Nodo con puntuación negativa - rojo
+      ctx.fillStyle = NODE_COLOR;
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 2;
     } else {
-      // Nodo normal
-      ctx.fillStyle = baseColor;
+      // Nodo normal - negro con borde azul
+      ctx.fillStyle = NODE_COLOR;
+      ctx.strokeStyle = NODE_BORDER_COLOR;
+      ctx.lineWidth = 2;
     }
     
+    // Rellenar el nodo
     ctx.fill();
     
-    // Borde
+    // Aplicar borde (ya configurado arriba)
     if (node.id === selectedNode?.id) {
       // Borde más grueso para el nodo seleccionado actualmente
-      ctx.strokeStyle = '#f39c12';
+      ctx.strokeStyle = '#f1c40f'; // Amarillo para selección
       ctx.lineWidth = 3;
-    } else {
-      // Borde normal
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
     }
     ctx.stroke();
     
-    // Texto del comentario (solo número incremental para simplicidad)
+    // Texto del comentario con numeración jerárquica (1.1.1, etc.)
     ctx.fillStyle = '#fff';
-    ctx.font = node.negativeScore ? '10px Arial' : '12px Arial';
+    ctx.font = node.negativeScore ? '9px Arial' : '11px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(node.id.toString(), x, y);
+    // Mostrar índice jerárquico en lugar del ID
+    const displayText = node.index || node.id.toString();
+    ctx.fillText(displayText, x, y + (node.negativeScore ? 0 : 1));
+    
+    // Dibujar el índice también debajo del nodo
+    if (!node.isPost && node.index) {
+      ctx.font = '10px Arial';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillText(node.index, x, y + radius + 14);
+    }
     
     // Dibujar recursivamente todos los nodos hijos
     if (!node.collapsed) {
@@ -522,62 +555,79 @@ export default function CommentVisualizer() {
 
   // Dibujar leyenda
   function drawLegend(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-    const legendWidth = 220;
-    const legendHeight = 180;
+    const legendWidth = 200;
+    const legendHeight = 165;
     const padding = 10;
     const x = canvas.width - legendWidth - padding;
     const y = canvas.height - legendHeight - padding;
     
-    // Fondo semitransparente
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    // Fondo semitransparente oscuro
+    ctx.fillStyle = 'rgba(20, 20, 20, 0.8)';
     ctx.fillRect(x, y, legendWidth, legendHeight);
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.strokeStyle = 'rgba(55, 198, 238, 0.6)'; // Borde azul semitransparente
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, legendWidth, legendHeight);
     
     // Título
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 14px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('Leyenda', x + padding, y + padding);
+    ctx.fillText('Leyenda:', x + padding, y + padding);
     
     // Elementos de la leyenda
-    const items = [
-      { color: '#3498db', label: 'Post principal' },
-      { color: COLOR_PALETTE[0], label: 'Comentario nivel 1' },
-      { color: COLOR_PALETTE[1], label: 'Comentario nivel 2' },
-      { color: COLOR_PALETTE[2], label: 'Comentario nivel 3' },
-      { color: '#27ae60', label: 'Mejor camino (más votos)' },
-      { color: '#e74c3c', label: 'Comentario con votos negativos' },
-      { color: '#f39c12', label: 'Comentario seleccionado' }
-    ];
-    
-    ctx.font = '12px Arial';
-    items.forEach((item, index) => {
-      const itemY = y + padding * 3 + index * 20;
-      
-      // Círculo de color
+    const drawNodeExample = (xPos: number, yPos: number, fillColor: string, borderColor: string, label: string) => {
+      // Nodo de ejemplo
       ctx.beginPath();
-      ctx.arc(x + padding * 2, itemY, 8, 0, Math.PI * 2);
-      ctx.fillStyle = item.color;
+      ctx.arc(xPos, yPos, 8, 0, Math.PI * 2);
+      ctx.fillStyle = fillColor;
       ctx.fill();
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
       
-      // Texto descriptivo
-      ctx.fillStyle = '#000';
+      // Etiqueta
+      ctx.fillStyle = '#fff';
       ctx.textAlign = 'left';
-      ctx.fillText(item.label, x + padding * 4, itemY - 6);
-    });
+      ctx.font = '11px Arial';
+      ctx.fillText(label, xPos + 14, yPos - 5);
+    };
     
-    // Instrucciones en la parte inferior
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.font = '12px Arial';
+    let yOffset = padding * 3;
+    
+    // Nodo de comentario
+    drawNodeExample(x + padding * 2, y + yOffset, NODE_COLOR, NODE_BORDER_COLOR, 'Nodo de comentario');
+    yOffset += 22;
+    
+    // Nodo seleccionado
+    drawNodeExample(x + padding * 2, y + yOffset, '#f1c40f', '#f1c40f', 'Nodo seleccionado');
+    yOffset += 22;
+    
+    // Comentario negativo
+    drawNodeExample(x + padding * 2, y + yOffset, NODE_COLOR, '#e74c3c', 'Comentario negativo');
+    yOffset += 22;
+    
+    // Progreso de votos positivos
+    drawNodeExample(x + padding * 2, y + yOffset, NODE_COLOR, COLOR_PALETTE[0], 'Progreso de votos positivos');
+    yOffset += 22;
+    
+    // Conexión entre comentarios
+    ctx.beginPath();
+    ctx.moveTo(x + padding - 2, y + yOffset);
+    ctx.lineTo(x + padding * 3, y + yOffset);
+    ctx.strokeStyle = COLOR_PALETTE[0];
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText('Conexión entre comentarios', x + padding * 4 - 2, y + yOffset - 5);
+    
+    // Instrucciones en la parte inferior (en el canvas, no en la leyenda)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.font = '11px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', canvas.width / 2, canvas.height - 30);
-    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', canvas.width / 2, canvas.height - 12);
+    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', canvas.width / 2, canvas.height - 25);
+    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', canvas.width / 2, canvas.height - 10);
   }
   
   // Encontrar nodo en la posición del clic
@@ -763,8 +813,8 @@ export default function CommentVisualizer() {
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex flex-col space-y-6">
+    <div className="min-h-screen bg-[#121212] text-white">
+      <div className="container mx-auto py-6 px-4 flex flex-col space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Visualizador de Árbol de Comentarios</h1>
         
         <Card>

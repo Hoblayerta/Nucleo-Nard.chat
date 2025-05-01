@@ -46,9 +46,9 @@ export default function TreeViewPage() {
   };
   
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#121212] text-white flex flex-col">
       {/* Barra superior con botones para cerrar y volver */}
-      <div className="bg-card shadow-sm border-b sticky top-0 z-10">
+      <div className="bg-black/40 shadow-md border-b border-[#37c6ee]/30 sticky top-0 z-10">
         <div className="container mx-auto py-2 px-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Button 
