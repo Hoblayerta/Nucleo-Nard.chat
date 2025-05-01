@@ -884,7 +884,7 @@ export default function CommentVisualizer() {
                       )}
                       {selectedNode.badges && selectedNode.badges.length > 0 && (
                         <div className="flex gap-1">
-                          {selectedNode.badges.map((badge: string) => (
+                          {selectedNode.badges.map(badge => (
                             <BadgeIcon key={badge} badge={badge} size={14} showLabel={false} />
                           ))}
                         </div>
@@ -940,7 +940,7 @@ export default function CommentVisualizer() {
                       )}
                       {postData.user.badges && postData.user.badges.length > 0 && (
                         <div className="flex gap-1">
-                          {postData.user.badges.map((badge: string) => (
+                          {postData.user.badges.map(badge => (
                             <BadgeIcon key={badge} badge={badge} size={14} showLabel={false} />
                           ))}
                         </div>
