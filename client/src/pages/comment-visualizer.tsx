@@ -863,7 +863,7 @@ export default function CommentVisualizer() {
             <CardContent className="p-0 relative">
               <div 
                 ref={containerRef} 
-                className="w-full h-[600px] overflow-auto relative"
+                className="w-full h-[600px] overflow-hidden relative"
                 style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
               >
                 {isLoadingComments ? (
@@ -871,19 +871,17 @@ export default function CommentVisualizer() {
                     <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
                   </div>
                 ) : (
-                  <div className="min-w-[2000px] min-h-[2000px] relative">
-                    <canvas
-                      ref={canvasRef}
-                      className="w-full h-full absolute top-0 left-0"
-                      onClick={handleCanvasClick}
-                      onDoubleClick={handleCanvasDoubleClick}
-                      onMouseDown={handleMouseDown}
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                      onMouseLeave={handleMouseUp}
-                      onWheel={handleWheel}
-                    />
-                  </div>
+                  <canvas
+                    ref={canvasRef}
+                    className="w-full h-full"
+                    onClick={handleCanvasClick}
+                    onDoubleClick={handleCanvasDoubleClick}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onWheel={handleWheel}
+                  />
                 )}
                 
                 {/* Panel de información del nodo o comentario seleccionado */}
