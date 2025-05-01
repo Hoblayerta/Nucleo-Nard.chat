@@ -50,12 +50,12 @@ export default function CommentVisualizer() {
   const { toast } = useToast();
 
   // Constantes para la visualización
-  const NODE_RADIUS = 66; // 3 veces más grande que antes (22 * 3 = 66)
-  const SMALL_NODE_RADIUS = 48; // 3 veces más grande que antes (16 * 3 = 48)
-  const NODE_SPACING_H = 240; // Ampliar el espaciado horizontal
-  const NODE_SPACING_V = 300; // Ampliar el espaciado vertical
-  const LINE_WIDTH = 6; // Líneas más gruesas para que combinen con nodos más grandes
-  const CANVAS_PADDING = 120; // Mayor espacio para los nodos más grandes
+  const NODE_RADIUS = 22;
+  const SMALL_NODE_RADIUS = 16;
+  const NODE_SPACING_H = 120;
+  const NODE_SPACING_V = 150;
+  const LINE_WIDTH = 2;
+  const CANVAS_PADDING = 60;
   // Colores para las conexiones - paleta de azules para estilo similar a la referencia
   const COLOR_PALETTE = [
     '#37c6ee', // Azul cian (principal para conexiones)
@@ -203,7 +203,7 @@ export default function CommentVisualizer() {
       calculateNodePositions(postRoot);
 
       setTree(postRoot);
-      // Centrar la vista en el árbol (el punto de partida en el centro del canvas)
+      // Resetear vista al cambiar el post
       setOffsetX(0);
       setOffsetY(0);
       setScale(1.0);
@@ -311,16 +311,14 @@ export default function CommentVisualizer() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Establecer un tamaño fijo amplio para el canvas, para asegurar que los nodos mantengan su tamaño original
-    const CANVAS_WIDTH = 3000; // Ancho fijo grande
-    const CANVAS_HEIGHT = 2000; // Alto fijo grande
-    
-    // Asignar tamaño al canvas
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = CANVAS_HEIGHT;
-    
     // Limpiar canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Actualizar tamaño del canvas
+    if (containerRef.current) {
+      canvas.width = containerRef.current.clientWidth;
+      canvas.height = containerRef.current.clientHeight;
+    }
 
     // Calcular offset del centro
     const centerX = canvas.width / 2;
@@ -383,7 +381,7 @@ export default function CommentVisualizer() {
     if (node.level === -1) {
       // Dibujar líneas desde el post a cada comentario de primer nivel
       const postX = centerX; 
-      const postY = centerY - 80; // Posición Y ajustada para el post
+      const postY = centerY - 40; // Posición Y ajustada para el post
       
       node.children.forEach(child => {
         // Posición del hijo con escala y offset
@@ -399,7 +397,7 @@ export default function CommentVisualizer() {
         const controlPointX = (postX + childX) / 2;
         const controlPointY = postY + (childY - postY) / 3;
         
-        ctx.moveTo(postX, postY + NODE_RADIUS * 1.2); // Empezar desde abajo del nodo del post, ajustado para el tamaño más grande
+        ctx.moveTo(postX, postY + 40); // Empezar desde abajo del nodo del post
         ctx.bezierCurveTo(
           controlPointX, controlPointY,
           controlPointX, childY - 30,
@@ -461,7 +459,7 @@ export default function CommentVisualizer() {
     if (node.level === -1) {
       // Dibujar nodo del post
       const postX = centerX;
-      const postY = centerY - 80; // Ajustar posición Y para el nodo más grande
+      const postY = centerY - 40;
       const postRadius = NODE_RADIUS * 1.2; // Post ligeramente más grande
       
       // Círculo para el post
@@ -470,12 +468,12 @@ export default function CommentVisualizer() {
       ctx.fillStyle = POST_NODE_COLOR; // Color para el post (blanco)
       ctx.fill();
       ctx.strokeStyle = POST_BORDER_COLOR; // Borde azul
-      ctx.lineWidth = 6; // Borde más grueso
+      ctx.lineWidth = 2;
       ctx.stroke();
       
       // Texto del post ("POST")
       ctx.fillStyle = '#000';
-      ctx.font = 'bold 32px Arial'; // Texto más grande
+      ctx.font = 'bold 13px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText("POST", postX, postY);
@@ -506,17 +504,17 @@ export default function CommentVisualizer() {
       // Nodo en el mejor camino - mismo color que las conexiones
       ctx.fillStyle = NODE_COLOR;
       ctx.strokeStyle = COLOR_PALETTE[0];
-      ctx.lineWidth = 6; // Borde más grueso
+      ctx.lineWidth = 2;
     } else if (node.negativeScore) {
       // Nodo con puntuación negativa - rojo
       ctx.fillStyle = NODE_COLOR;
       ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 6; // Borde más grueso
+      ctx.lineWidth = 2;
     } else {
       // Nodo normal - negro con borde azul
       ctx.fillStyle = NODE_COLOR;
       ctx.strokeStyle = NODE_BORDER_COLOR;
-      ctx.lineWidth = 6; // Borde más grueso
+      ctx.lineWidth = 2;
     }
     
     // Rellenar el nodo
@@ -532,7 +530,7 @@ export default function CommentVisualizer() {
     
     // Texto del comentario con numeración jerárquica (1.1.1, etc.)
     ctx.fillStyle = '#fff';
-    ctx.font = node.negativeScore ? '24px Arial' : '30px Arial'; // Texto más grande
+    ctx.font = node.negativeScore ? '9px Arial' : '11px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     // Mostrar índice jerárquico en lugar del ID
@@ -541,9 +539,9 @@ export default function CommentVisualizer() {
     
     // Dibujar el índice también debajo del nodo
     if (!node.isPost && node.index) {
-      ctx.font = '28px Arial'; // Texto más grande
+      ctx.font = '10px Arial';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.fillText(node.index, x, y + radius + 42); // Ajustar posición Y para mayor separación
+      ctx.fillText(node.index, x, y + radius + 14);
     }
     
     // Dibujar recursivamente todos los nodos hijos
@@ -559,11 +557,8 @@ export default function CommentVisualizer() {
     const legendWidth = 200;
     const legendHeight = 165;
     const padding = 10;
-    
-    // Posición fija en la esquina inferior derecha del viewport visible
-    // Usar valores relativamente pequeños para que siempre esté en el área visible inicial
-    const x = 1000;
-    const y = 600 - legendHeight - padding;
+    const x = canvas.width - legendWidth - padding;
+    const y = canvas.height - legendHeight - padding;
     
     // Fondo semitransparente oscuro
     ctx.fillStyle = 'rgba(20, 20, 20, 0.8)';
@@ -627,15 +622,11 @@ export default function CommentVisualizer() {
     ctx.fillText('Conexión entre comentarios', x + padding * 4 - 2, y + yOffset - 5);
     
     // Instrucciones en la parte inferior (en el canvas, no en la leyenda)
-    // Posición fija cerca de la posición inicial del centro
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.font = '11px Arial';
     ctx.textAlign = 'center';
-    const instructionsX = 1500;
-    const textY = 600 - 25;
-    const textY2 = 600 - 10;
-    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', instructionsX, textY);
-    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', instructionsX, textY2);
+    ctx.fillText('Clic: Seleccionar | Doble clic: Ir al comentario', canvas.width / 2, canvas.height - 25);
+    ctx.fillText('Arrastrar: Mover vista | Rueda: Zoom', canvas.width / 2, canvas.height - 10);
   }
   
   // Encontrar nodo en la posición del clic
@@ -645,8 +636,8 @@ export default function CommentVisualizer() {
       // Comprobar si se hizo clic en el post
       if (node.isPost) {
         const postX = centerX;
-        const postY = centerY - 80; // Usar la misma posición Y que en drawNodes
-        const postRadius = NODE_RADIUS * 1.2; // Mismo radio que en drawNodes
+        const postY = centerY - 40;
+        const postRadius = NODE_RADIUS * 1.3;
         
         const distanceSquared = Math.pow(x - postX, 2) + Math.pow(y - postY, 2);
         if (distanceSquared <= Math.pow(postRadius, 2)) {
@@ -872,7 +863,7 @@ export default function CommentVisualizer() {
             <CardContent className="p-0 relative">
               <div 
                 ref={containerRef} 
-                className="w-full h-[600px] overflow-auto relative"
+                className="w-full h-[600px] overflow-hidden relative"
                 style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
               >
                 {isLoadingComments ? (
@@ -895,7 +886,7 @@ export default function CommentVisualizer() {
                 
                 {/* Panel de información del nodo o comentario seleccionado */}
                 {selectedNode && (
-                  <div className="absolute top-8 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
+                  <div className="absolute bottom-8 right-8 z-10 w-72 rounded-lg border border-[#37c6ee]/50 bg-[#0a0a0a] text-white p-4 shadow-lg overflow-hidden">
                     <div className="flex items-center gap-2 mb-2">
                       {selectedNode.role === 'admin' && (
                         <span className="bg-red-900 text-red-100 text-xs px-2 py-0.5 rounded">Admin</span>
