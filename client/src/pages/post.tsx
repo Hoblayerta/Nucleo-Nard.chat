@@ -22,12 +22,12 @@ export default function Post() {
   const { user, isAdmin, isModerator } = useAuth();
   const [showCommentTree, setShowCommentTree] = useState(false);
   const [splitView, setSplitView] = useState(false); // Para la visualización dividida en móvil
-  
+
   // Analizamos los parámetros de consulta para obtener el ID del comentario
   const searchParams = new URLSearchParams(window.location.search);
   const commentIdFromURL = searchParams.get('comment');
   const [commentId, setCommentId] = useState<string | null>(commentIdFromURL);
-  
+
   // Efecto para mostrar un toast cuando hay un comentario en la URL
   useEffect(() => {
     if (commentIdFromURL) {
@@ -36,29 +36,29 @@ export default function Post() {
         description: "Te estamos llevando al comentario compartido...",
         duration: 3000,
       });
-      
+
       // Hacer que el resaltado se quite después de un tiempo
       const timer = setTimeout(() => {
         setCommentId(null);
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [commentIdFromURL, toast]);
-  
+
   const postId = parseInt(params.id || "0", 10);
-  
+
   const { data: post, isLoading, isError } = useQuery<PostWithDetails>({
     queryKey: [`/api/posts/${postId}`],
     enabled: postId > 0,
   });
-  
+
   // Obtener los comentarios del post para pasarlos al botón Put On-Chain
   const { data: comments = [] } = useQuery<CommentWithUser[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     enabled: postId > 0,
   });
-  
+
   useEffect(() => {
     if (isError) {
       toast({
@@ -66,12 +66,12 @@ export default function Post() {
         description: "No se pudo cargar el post solicitado.",
         variant: "destructive",
       });
-      
+
       // Redirigir a home si hay error
       setLocation("/");
     }
   }, [isError, setLocation, toast]);
-  
+
   if (isLoading || !post) {
     return (
       <div className="container max-w-4xl mx-auto p-4 mt-8">
@@ -85,7 +85,7 @@ export default function Post() {
 
   // Actualizar el contexto de SlowMode cuando cambie el intervalo
   const { updateSlowModeInterval } = useSlowMode();
-  
+
   useEffect(() => {
     if (post?.slowModeInterval >= 0) {
       updateSlowModeInterval(post.slowModeInterval);
@@ -97,7 +97,7 @@ export default function Post() {
       <article className="bg-card rounded-lg shadow-sm p-6 mb-6">
         <div className="mb-4">
           <h1 className="text-2xl font-bold mb-2">{post.title}</h1>
-          
+
           <div className="flex items-center mb-4">
             <div>
               <span className="font-medium text-primary">
@@ -108,36 +108,26 @@ export default function Post() {
               </span>
             </div>
           </div>
-          
+
           <div className="prose max-w-none">
             <div dangerouslySetInnerHTML={{ __html: post.content }} />
           </div>
         </div>
-        
+
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-6 pt-4 border-t">
           <div className="flex">
             <div className="mr-4 flex items-center">
               <span className="font-medium text-foreground">{post.voteScore || 0}</span>
               <span className="ml-1">votos</span>
             </div>
-            
-            <div className="flex items-center">
-              <span className="font-medium text-foreground">{post.comments}</span>
-              <span className="ml-1">comentarios</span>
-            </div>
-            
-            {post.slowModeInterval > 0 && (
-              <div className="ml-4 flex items-center text-yellow-600">
-                <Clock className="h-4 w-4 mr-1" />
-                <span className="font-medium">Modo lento: {post.slowModeInterval}s</span>
-              </div>
-            )}
+
+            {/* Botón Put On Chain */}
+            {(isAdmin || isModerator) && <PutOnChainButton post={post} comments={comments} />}
+
           </div>
-          
+
           <div className="flex items-center gap-3">
-            {/* Botón Put On-Chain */}
-            <PutOnChainButton post={post} comments={comments} />
-            
+
             {/* Botón Compartir */}
             <button 
               className="flex items-center text-primary hover:text-primary/80 transition"
@@ -158,7 +148,7 @@ export default function Post() {
           </div>
         </div>
       </article>
-      
+
       {/* Mostrar un aviso si el post está congelado */}
       {post.frozen && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
@@ -169,7 +159,7 @@ export default function Post() {
           <p className="text-sm mt-1">No se pueden añadir nuevos comentarios ni votar en este post.</p>
         </div>
       )}
-      
+
       {/* Barra de estado para el modo lento global si está activo */}
       {post.slowModeInterval > 0 && (
         <div className="mt-4 mb-6 p-3 bg-yellow-50/30 border border-yellow-200/50 rounded-md">
@@ -181,7 +171,7 @@ export default function Post() {
           </div>
         </div>
       )}
-      
+
       {/* Sección de formulario de comentario principal - solo si no está congelado */}
       {!post.frozen && (
         <section className="bg-card rounded-lg shadow-sm p-6 mb-6">
@@ -193,7 +183,7 @@ export default function Post() {
           />
         </section>
       )}
-      
+
       {/* Botón de Árbol de Comentarios (versión destacada) */}
       <div className="bg-card p-4 rounded-lg border-2 border-primary/20 mb-6 shadow-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
@@ -253,7 +243,7 @@ export default function Post() {
           </div>
         </div>
       </div>
-      
+
       {/* Interfaz móvil: botones para vista normal o vista dividida */}
       {isMobile && splitView && (
         <div className="flex items-center gap-2 mb-4">
@@ -284,14 +274,14 @@ export default function Post() {
                 onClose={() => {}}
                 onCommentSelect={(commentId) => {
                   console.log("Móvil: Navegando al comentario:", commentId);
-                  
+
                   // Notificar al usuario
                   toast({
                     title: "Navegando al comentario",
                     description: "Buscando el comentario seleccionado...",
                     duration: 2000,
                   });
-                  
+
                   // Desplazarse al comentario seleccionado con reintento
                   const findAndScrollToComment = (retryCount = 0) => {
                     const commentElement = document.getElementById(`comment-${commentId}`);
@@ -299,7 +289,7 @@ export default function Post() {
                       // Elemento encontrado, desplazarse y resaltar
                       commentElement.scrollIntoView({ behavior: 'smooth' });
                       commentElement.classList.add('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
-                      
+
                       // Quitar el resaltado después de unos segundos
                       setTimeout(() => {
                         commentElement.classList.remove('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
@@ -316,14 +306,14 @@ export default function Post() {
                       });
                     }
                   };
-                  
+
                   // Iniciar búsqueda con un pequeño retraso inicial
                   setTimeout(() => findAndScrollToComment(), 200);
                 }}
               />
             </div>
           </div>
-          
+
           {/* Lista de comentarios (lado derecho en vista dividida) */}
           <div className="bg-card rounded-lg shadow-sm p-4 max-h-[50vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-2">Comentarios</h3>
@@ -340,7 +330,7 @@ export default function Post() {
         <section className="bg-card rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">Comentarios</h3>
-            
+
             {/* En escritorio, mostramos los botones para abrir la visualización del árbol */}
             {!isMobile && (
               <div className="flex items-center gap-2">
@@ -374,14 +364,14 @@ export default function Post() {
               </div>
             )}
           </div>
-          
+
           <CommentThread 
             postId={post.id} 
             highlightedCommentId={commentId} 
             isFrozen={post.frozen}
             slowModeInterval={post.slowModeInterval}
           />
-          
+
           {/* Visualización modal del árbol de comentarios (solo en escritorio) */}
           {!isMobile && showCommentTree && (
             <CommentTreeView 
@@ -390,14 +380,14 @@ export default function Post() {
               onCommentSelect={(commentId) => {
                 console.log("Navegando al comentario:", commentId);
                 setShowCommentTree(false);
-                
+
                 // Notificar al usuario
                 toast({
                   title: "Navegando al comentario",
                   description: "Buscando el comentario seleccionado...",
                   duration: 3000,
                 });
-                
+
                 // Desplazarse al comentario seleccionado con reintento
                 const findAndScrollToComment = (retryCount = 0) => {
                   const commentElement = document.getElementById(`comment-${commentId}`);
@@ -405,7 +395,7 @@ export default function Post() {
                     // Elemento encontrado, desplazarse y resaltar
                     commentElement.scrollIntoView({ behavior: 'smooth' });
                     commentElement.classList.add('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
-                    
+
                     // Quitar el resaltado después de unos segundos
                     setTimeout(() => {
                       commentElement.classList.remove('bg-primary/20', 'border-l-4', 'border-primary', 'pl-4');
@@ -422,7 +412,7 @@ export default function Post() {
                     });
                   }
                 };
-                
+
                 // Iniciar búsqueda con un pequeño retraso inicial
                 setTimeout(() => findAndScrollToComment(), 200);
               }}
