@@ -40,11 +40,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, PlusCircle, Eye, Lock, Unlock, Clock, AlarmClock } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, PlusCircle, Eye, Lock, Unlock, Clock, AlarmClock, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { PostWithDetails } from "@shared/schema";
 import CreatePostModal from "./create-post-modal";
+import { WriteContractButton } from "@/components/write-contract-button";
 
 export default function PostManagement() {
   const { toast } = useToast();
@@ -202,13 +203,21 @@ export default function PostManagement() {
               }}
             />
           </div>
-          <Button 
-            className="whitespace-nowrap"
-            onClick={() => setCreatePostOpen(true)}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Post
-          </Button>
+          <div className="flex gap-2">
+            <WriteContractButton 
+              showTopComments={true}
+              variant="outline"
+              size="sm"
+              className="bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100 hover:text-purple-900"
+            />
+            <Button 
+              className="whitespace-nowrap"
+              onClick={() => setCreatePostOpen(true)}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Post
+            </Button>
+          </div>
         </div>
       </div>
       
