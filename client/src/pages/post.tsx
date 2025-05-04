@@ -122,8 +122,9 @@ export default function Post() {
             </div>
 
             {/* Botón Put On Chain */}
-            {(isAdmin || isModerator) && <PutOnChainButton post={post} comments={comments} />}
-
+            <div className="flex gap-2">
+              {(isAdmin || isModerator) && <PutOnChainButton post={post} comments={comments} />}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
