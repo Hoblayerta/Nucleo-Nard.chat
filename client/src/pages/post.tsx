@@ -11,7 +11,7 @@ import CommentTreeView from "@/components/comment-tree-view";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
-import { PutOnChainButton } from "@/components/put-on-chain-button";
+import { EthereumButton } from "@/components/ethereum-button";
 import type { PostWithDetails, CommentWithUser } from "@shared/schema";
 
 export default function Post() {
@@ -123,7 +123,7 @@ export default function Post() {
 
             {/* Botón Put On Chain */}
             <div className="flex gap-2">
-              {(isAdmin || isModerator) && <PutOnChainButton post={post} comments={comments} />}
+              {(isAdmin || isModerator) && <EthereumButton post={post} comments={comments} />}
             </div>
           </div>
 
