@@ -17,11 +17,6 @@ const contractABI = [
         },
         {
                 "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-        },
-        {
-                "inputs": [],
                 "name": "get",
                 "outputs": [
                         {
@@ -32,24 +27,11 @@ const contractABI = [
                 ],
                 "stateMutability": "view",
                 "type": "function"
-        },
-        {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                        {
-                                "internalType": "address",
-                                "name": "",
-                                "type": "address"
-                        }
-                ],
-                "stateMutability": "view",
-                "type": "function"
         }
 ];
 
 // La dirección del contrato en Arbitrum Sepolia
-const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199";
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0xe074123df0616FdB1fD0E5Eb3efefe43D59b218a";
 
 // Chain ID para Arbitrum Sepolia
 const ARBITRUM_SEPOLIA_CHAIN_ID = '0x66eee'
@@ -63,7 +45,7 @@ const ARBITRUM_SEPOLIA_PARAMS = {
     symbol: 'ETH',
     decimals: 18
   },
-  rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
+  rpcUrls: ['https://api.zan.top/arb-sepolia', 'https://sepolia-rollup.arbitrum.io/rpc'],
   blockExplorerUrls: ['https://sepolia.arbiscan.io/']
 };
 
