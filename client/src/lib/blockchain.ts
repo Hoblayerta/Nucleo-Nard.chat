@@ -2,54 +2,54 @@ import { ethers } from 'ethers';
 
 // ABI del contrato
 const contractABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "x",
-				"type": "string"
-			}
-		],
-		"name": "set",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [],
-		"name": "get",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
+        {
+                "inputs": [
+                        {
+                                "internalType": "string",
+                                "name": "x",
+                                "type": "string"
+                        }
+                ],
+                "name": "set",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+        },
+        {
+                "inputs": [],
+                "name": "get",
+                "outputs": [
+                        {
+                                "internalType": "string",
+                                "name": "",
+                                "type": "string"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                        {
+                                "internalType": "address",
+                                "name": "",
+                                "type": "address"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        }
 ];
 
-// La dirección del contrato necesitará ser configurada según la red y el despliegue específico
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Reemplazar con la dirección real del contrato
+// La dirección del contrato se puede configurar aquí o mediante una variable de entorno
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 
 // Función para conectar al proveedor de Ethereum (MetaMask)
 export async function connectToBlockchain() {
