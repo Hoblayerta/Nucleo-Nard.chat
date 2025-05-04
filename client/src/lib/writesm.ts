@@ -20,7 +20,7 @@ const contractAddress = "0xe074123df0616FdB1fD0E5Eb3efefe43D59b218a";
  */
 export async function writeToContractBackend(
   value: string,
-  privateKey: string,
+  privateKey: `0x${string}`,
 ) {
   try {
     // Crea un cliente público para interactuar con la blockchain
@@ -33,7 +33,7 @@ export async function writeToContractBackend(
     const walletClient = createWalletClient({
       chain: arbitrumSepolia,
       transport: http("https://sepolia-rollup.arbitrum.io/rpc"),
-      account: privateKey, // La clave privada o una instancia de cuenta
+      account: privateKey as `0x${string}`, // La clave privada o una instancia de cuenta
     });
 
     // Obtiene la dirección de la cuenta desde la clave privada
