@@ -85,9 +85,9 @@ export default function Header() {
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/assets/nerd-chat-logo.png" alt="Nerd.chat Logo" className="h-9" />
+              <img src="/assets/nard-chat-logo.png" alt="Nard.chat Logo" className="h-9" />
               <div className="flex flex-col">
-                <span className="text-xl font-bold leading-tight">Nerd.chat</span>
+                <span className="text-xl font-bold leading-tight">Nard.chat</span>
                 <span className="text-xs font-medium leading-tight text-blue-400">NARRATIVAS DESCENTRALIZADAS</span>
               </div>
             </Link>
