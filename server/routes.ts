@@ -453,6 +453,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get comments" });
     }
   });
+
+  // Obtener los comentarios más votados de toda la plataforma
+  app.get("/api/comments/top", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 5;
+      const currentUserId = req.session.userId || 0;
+      const topComments = await storage.getTopComments(limit, currentUserId);
+      res.status(200).json(topComments);
+    } catch (error) {
+      console.error("Error obteniendo top comentarios:", error);
+      res.status(500).json({ message: "Error obteniendo top comentarios" });
+    }
+  });
+
+  // Obtener los comentarios más recientes de toda la plataforma
+  app.get("/api/comments/recent", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 5;
+      const currentUserId = req.session.userId || 0;
+      
+      // Obtener todos los comentarios y ordenarlos por fecha
+      const comments = await storage.getTopComments(100, currentUserId); // Traemos más para poder ordenarlos
+      const recentComments = [...comments]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit);
+        
+      res.status(200).json(recentComments);
+    } catch (error) {
+      console.error("Error obteniendo comentarios recientes:", error);
+      res.status(500).json({ message: "Error obteniendo comentarios recientes" });
+    }
+  });
   
   // Función auxiliar para formatear comentarios para exportación
   function formatCommentsForExport(comments: any[], postTitle: string): string {
