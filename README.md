@@ -32,7 +32,7 @@ The platform uses various smart contracts on the Arbitrum Sepolia network along 
 #### SimpleStorage (Main Storage)
 - **Address:** [0xe074123df0616fdb1fd0e5eb3efefe43d59b218a](https://sepolia.arbiscan.io/address/0xe074123df0616fdb1fd0e5eb3efefe43d59b218a#code)
 - **Function:** Contract on Arbitrum Sepolia that stores information about stories and comments to create decentralized narratives on the blockchain
-
+-**I.e:** https://sepolia.arbiscan.io/tx/0x44fbbd7608b98c54d18a20b56a1db8f4755d3b154d0d467ee7706fdc67b3799e
 #### Emitter Contract (Hyperlane)
 - **Address:** [0x6aF5E39339296E8F22D510E5F9071cD369aE6db3](https://sepolia.arbiscan.io/address/0x6aF5E39339296E8F22D510E5F9071cD369aE6db3)
 - **Function:** Part of the Hyperlane infrastructure that verifies the ownership of NFTs representing attributions to the project
