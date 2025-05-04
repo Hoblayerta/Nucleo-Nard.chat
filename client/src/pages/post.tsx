@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import { BlockchainButton } from "@/components/blockchain-button";
+import { WriteContractButton } from "@/components/write-contract-button";
 import type { PostWithDetails, CommentWithUser } from "@shared/schema";
 
 export default function Post() {
@@ -159,7 +160,10 @@ export default function Post() {
               Guarda el post y el comentario más votado en Arbitrum Sepolia de forma permanente.
             </p>
           </div>
-          <BlockchainButton postId={post.id} />
+          <div className="flex gap-2">
+            <BlockchainButton postId={post.id} />
+            <WriteContractButton />
+          </div>
         </div>
       </div>
 
@@ -388,8 +392,9 @@ export default function Post() {
             />
             
             {/* Botón blockchain al final de los comentarios */}
-            <div className="mt-8 pt-4 border-t flex justify-center">
+            <div className="mt-8 pt-4 border-t flex justify-center gap-2">
               <BlockchainButton postId={post.id} />
+              <WriteContractButton />
             </div>
           </div>
 
