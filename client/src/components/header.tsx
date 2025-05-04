@@ -93,7 +93,6 @@ export default function Header() {
               <Link href="/" className={`px-3 py-1 rounded-md ${location === '/' ? 'bg-primary/10 text-primary' : 'hover:bg-card/80'}`}>Home</Link>
               <Link href="/leaderboard" className={`px-3 py-1 rounded-md ${location === '/leaderboard' ? 'bg-primary/10 text-primary' : 'hover:bg-card/80'}`}>Leaderboard</Link>
               <Link href="/visualizer" className={`px-3 py-1 rounded-md ${location === '/visualizer' ? 'bg-primary/10 text-primary' : 'hover:bg-card/80'}`}>Visualizador</Link>
-              <Link href="/story" className={`px-3 py-1 rounded-md ${location === '/story' ? 'bg-primary/10 text-primary' : 'hover:bg-card/80'}`}>Story Protocol</Link>
             </div>
           </div>
           
@@ -198,14 +197,6 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Visualizador
-              </Link>
-              
-              <Link 
-                href="/story" 
-                className={`block px-3 py-2 rounded-md ${location === '/story' ? 'bg-primary/10 text-primary' : 'hover:bg-card/80'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Story Protocol
               </Link>
               
               <div className="relative my-3">

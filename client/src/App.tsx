@@ -12,8 +12,6 @@ import Profile from "@/pages/profile";
 import Post from "@/pages/post";
 import TreeView from "@/pages/tree-view";
 import CommentVisualizer from "@/pages/comment-visualizer";
-import DecentralizedStory from "@/pages/decentralized-story";
-import StoryContributions from "@/pages/story-contributions";
 import Header from "@/components/header";
 
 // AuthRoute component to protect routes
@@ -55,8 +53,6 @@ function Router() {
             <Route path="/profile/:id" component={Profile} />
             <Route path="/posts/:id" component={Post} />
             <Route path="/visualizer" component={CommentVisualizer} />
-            <Route path="/story" component={DecentralizedStory} />
-            <Route path="/story/contributions" component={StoryContributions} />
             <Route component={NotFound} />
           </Switch>
         </Route>
