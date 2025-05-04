@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "./lib/auth";
 import { useAuth } from "./lib/auth";
 import { SlowModeProvider } from "@/hooks/use-slow-mode";
+import { Web3ModalProvider } from "@/lib/web3modal";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Leaderboard from "@/pages/leaderboard";

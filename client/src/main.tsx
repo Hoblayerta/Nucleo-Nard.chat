@@ -2,6 +2,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+// Importamos los polyfills necesarios para Web3
+import "./lib/polyfills";
+
 // Add FontAwesome for icons
 const fontAwesomeLink = document.createElement("link");
 fontAwesomeLink.rel = "stylesheet";

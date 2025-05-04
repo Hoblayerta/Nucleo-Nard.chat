@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { connectToBlockchain, saveToBlockchain } from '@/lib/blockchain';
+import { connectWallet, disconnectWallet, saveToBlockchain, checkConnection, isMetaMaskAvailable } from '@/lib/wallet';
 import { CommentWithUser, Post } from '@shared/schema';
 import { useAuth } from '@/lib/auth';
 import { Loader2, Wallet } from 'lucide-react';
@@ -22,43 +22,52 @@ export function PutOnChainButton({ post, comments }: PutOnChainButtonProps) {
   // Verificamos si el usuario tiene permisos para usar esta función
   const hasPermission = isAdmin || isModerator;
 
-  // Escuchar cambios en la conexión de MetaMask
+  // Verificar si hay una wallet conectada al cargar el componente
   useEffect(() => {
-    // Verificar si MetaMask está disponible
-    const checkConnection = async () => {
-      if (typeof window.ethereum !== 'undefined') {
-        // Verificar si ya hay cuentas conectadas
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            setIsWalletConnected(true);
-            setWalletAddress(accounts[0]);
-          }
-        } catch (error) {
-          console.error("Error checking MetaMask connection:", error);
+    // Función para verificar la conexión de wallet
+    const verifyWalletConnection = async () => {
+      try {
+        if (!isMetaMaskAvailable()) {
+          return; // No hay MetaMask disponible
         }
-
-        // Escuchar cambios en las cuentas
-        window.ethereum.on('accountsChanged', (accounts: string[]) => {
-          if (accounts.length > 0) {
-            setIsWalletConnected(true);
-            setWalletAddress(accounts[0]);
-          } else {
-            setIsWalletConnected(false);
-            setWalletAddress("");
-          }
-        });
+        
+        // Comprobar si ya está conectado a MetaMask
+        const connectionResult = await checkConnection();
+        
+        if (connectionResult.connected && connectionResult.address) {
+          setIsWalletConnected(true);
+          setWalletAddress(connectionResult.address);
+        }
+      } catch (error) {
+        console.error("Error al verificar conexión de wallet:", error);
+        // No mostramos error al usuario porque este es un chequeo silencioso
       }
     };
 
     if (hasPermission) {
-      checkConnection();
+      verifyWalletConnection();
     }
 
-    // Limpieza del efecto
+    // Función para escuchar cambios en las cuentas de MetaMask
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length > 0) {
+        setIsWalletConnected(true);
+        setWalletAddress(accounts[0]);
+      } else {
+        setIsWalletConnected(false);
+        setWalletAddress("");
+      }
+    };
+
+    // Agregar event listener para cambios de cuenta
+    if (isMetaMaskAvailable() && hasPermission) {
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+    }
+
+    // Cleanup al desmontar el componente
     return () => {
-      if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', () => {});
+      if (isMetaMaskAvailable()) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
       }
     };
   }, [hasPermission]);
@@ -71,23 +80,21 @@ export function PutOnChainButton({ post, comments }: PutOnChainButtonProps) {
     return [...comments].sort((a, b) => b.voteScore - a.voteScore)[0];
   };
 
-  // Función para conectar wallet
+  // Función para conectar wallet usando Web3Modal
   const handleConnectWallet = async () => {
     setIsConnecting(true);
     try {
-      // Intenta conectarse a MetaMask y cambiar a Arbitrum Sepolia
-      await connectToBlockchain();
+      // Conectar usando Web3Modal que soporta múltiples wallets
+      const { address, web3 } = await connectWallet();
       
-      // Obtener la cuenta conectada
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts && accounts.length > 0) {
+      if (address) {
         setIsWalletConnected(true);
-        setWalletAddress(accounts[0]);
+        setWalletAddress(address);
         
         // Mostrar notificación de éxito
         toast({
           title: "Wallet conectada en Arbitrum Sepolia",
-          description: `Conectado con ${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`,
+          description: `Conectado con ${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
           duration: 5000,
         });
       } else {
@@ -97,12 +104,12 @@ export function PutOnChainButton({ post, comments }: PutOnChainButtonProps) {
       console.error("Error al conectar wallet:", error);
       
       // Personalizar mensaje de error
-      let errorMessage = "No se pudo conectar a MetaMask";
+      let errorMessage = "No se pudo conectar la wallet";
       if (error instanceof Error) {
         // Si el error contiene información sobre Arbitrum Sepolia, es un error de red
         if (error.message.includes("Arbitrum Sepolia")) {
           errorMessage = error.message;
-        } else if (error.message.includes("user rejected")) {
+        } else if (error.message.includes("user rejected") || error.message.includes("rechazada")) {
           errorMessage = "La conexión fue rechazada por el usuario";
         } else {
           errorMessage = error.message;
