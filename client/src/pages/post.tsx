@@ -11,7 +11,8 @@ import CommentTreeView from "@/components/comment-tree-view";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
-import type { PostWithDetails } from "@shared/schema";
+import { PutOnChainButton } from "@/components/put-on-chain-button";
+import type { PostWithDetails, CommentWithUser } from "@shared/schema";
 
 export default function Post() {
   const params = useParams();
