@@ -11,7 +11,7 @@ import CommentTreeView from "@/components/comment-tree-view";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
-import { EthereumButton } from "@/components/ethereum-button";
+import { BlockchainButton } from "@/components/blockchain-button";
 import type { PostWithDetails, CommentWithUser } from "@shared/schema";
 
 export default function Post() {
@@ -114,11 +114,9 @@ export default function Post() {
           </div>
           
           {/* Botón destacado para guardar en blockchain */}
-          {(isAdmin || isModerator) && (
-            <div className="mt-6 flex justify-center">
-              <EthereumButton post={post} comments={comments} />
-            </div>
-          )}
+          <div className="mt-6 flex justify-center">
+            <BlockchainButton postId={post.id} />
+          </div>
         </div>
 
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-6 pt-4 border-t">
@@ -153,19 +151,17 @@ export default function Post() {
       </article>
 
       {/* Sección especial para blockchain */}
-      {(isAdmin || isModerator) && (
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-6 mb-6 shadow-sm">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-purple-800 mb-2">Preserva este contenido en la blockchain</h3>
-              <p className="text-sm text-purple-700 mb-0">
-                Guarda el post y el comentario más votado en Arbitrum Sepolia de forma permanente.
-              </p>
-            </div>
-            <EthereumButton post={post} comments={comments} />
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-6 mb-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-purple-800 mb-2">Preserva este contenido en la blockchain</h3>
+            <p className="text-sm text-purple-700 mb-0">
+              Guarda el post y el comentario más votado en Arbitrum Sepolia de forma permanente.
+            </p>
           </div>
+          <BlockchainButton postId={post.id} />
         </div>
-      )}
+      </div>
 
       {/* Mostrar un aviso si el post está congelado */}
       {post.frozen && (
@@ -383,12 +379,19 @@ export default function Post() {
             )}
           </div>
 
-          <CommentThread 
-            postId={post.id} 
-            highlightedCommentId={commentId} 
-            isFrozen={post.frozen}
-            slowModeInterval={post.slowModeInterval}
-          />
+          <div>
+            <CommentThread 
+              postId={post.id} 
+              highlightedCommentId={commentId} 
+              isFrozen={post.frozen}
+              slowModeInterval={post.slowModeInterval}
+            />
+            
+            {/* Botón blockchain al final de los comentarios */}
+            <div className="mt-8 pt-4 border-t flex justify-center">
+              <BlockchainButton postId={post.id} />
+            </div>
+          </div>
 
           {/* Visualización modal del árbol de comentarios (solo en escritorio) */}
           {!isMobile && showCommentTree && (
