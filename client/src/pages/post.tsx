@@ -112,6 +112,13 @@ export default function Post() {
           <div className="prose max-w-none">
             <div dangerouslySetInnerHTML={{ __html: post.content }} />
           </div>
+          
+          {/* Botón destacado para guardar en blockchain */}
+          {(isAdmin || isModerator) && (
+            <div className="mt-6 flex justify-center">
+              <EthereumButton post={post} comments={comments} />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-6 pt-4 border-t">
@@ -119,11 +126,6 @@ export default function Post() {
             <div className="mr-4 flex items-center">
               <span className="font-medium text-foreground">{post.voteScore || 0}</span>
               <span className="ml-1">votos</span>
-            </div>
-
-            {/* Botón Put On Chain */}
-            <div className="flex gap-2">
-              {(isAdmin || isModerator) && <EthereumButton post={post} comments={comments} />}
             </div>
           </div>
 
@@ -149,6 +151,21 @@ export default function Post() {
           </div>
         </div>
       </article>
+
+      {/* Sección especial para blockchain */}
+      {(isAdmin || isModerator) && (
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-6 mb-6 shadow-sm">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-purple-800 mb-2">Preserva este contenido en la blockchain</h3>
+              <p className="text-sm text-purple-700 mb-0">
+                Guarda el post y el comentario más votado en Arbitrum Sepolia de forma permanente.
+              </p>
+            </div>
+            <EthereumButton post={post} comments={comments} />
+          </div>
+        </div>
+      )}
 
       {/* Mostrar un aviso si el post está congelado */}
       {post.frozen && (
