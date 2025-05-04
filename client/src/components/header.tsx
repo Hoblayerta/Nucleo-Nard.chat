@@ -84,9 +84,12 @@ export default function Header() {
       <header className="bg-card border-b border-border py-3 px-4">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/" className="text-xl font-bold flex items-center">
-              <i className="fas fa-comments text-primary mr-2"></i>
-              <span>ComentaForo</span>
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/assets/nerd-chat-logo.png" alt="Nerd.chat Logo" className="h-9" />
+              <div className="flex flex-col">
+                <span className="text-xl font-bold leading-tight">Nerd.chat</span>
+                <span className="text-xs font-medium leading-tight text-blue-400">NARRATIVAS DESCENTRALIZADAS</span>
+              </div>
             </Link>
             
             <div className="hidden md:flex space-x-2">
