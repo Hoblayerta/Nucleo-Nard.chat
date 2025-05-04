@@ -7,6 +7,28 @@ declare global {
   }
 }
 
+// Funciones auxiliares para verificar estado de conexión
+export async function checkConnection(): Promise<{connected: boolean, address?: string}> {
+  if (!isMetaMaskAvailable()) {
+    return { connected: false };
+  }
+  
+  try {
+    // Obtener cuentas sin pedir permiso al usuario
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await provider.listAccounts();
+    
+    if (accounts && accounts.length > 0) {
+      return { connected: true, address: accounts[0].address };
+    }
+    
+    return { connected: false };
+  } catch (error) {
+    console.error("Error al verificar conexión:", error);
+    return { connected: false };
+  }
+}
+
 // ABI del contrato
 const contractABI = [
   {
