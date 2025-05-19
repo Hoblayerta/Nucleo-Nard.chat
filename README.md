@@ -84,6 +84,7 @@ https://nucleo-nard-chat-7qtf.onrender.com
 User: admin
 Password: admin123
 
+https://www.canva.com/design/DAGn3cIirqk/l-nd9D4IAv3flmBjd-J1pQ/edit?utm_content=DAGn3cIirqk&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
 
 https://lablocka.lol/
 
