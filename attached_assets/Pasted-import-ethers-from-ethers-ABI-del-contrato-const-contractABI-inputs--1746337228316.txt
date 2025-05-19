@@ -30,8 +30,8 @@ const contractABI = [
   }
 ];
 
-// Dirección del contrato en Arbitrum Sepolia
-const contractAddress = '0xe074123df0616FdB1fD0E5Eb3efefe43D59b218a';
+// Dirección del contrato en Mantle Sepolia
+const contractAddress = '0x4981E0a42Fb19e569e9F6952DD814f8598FB7593';
 
 /**
  * Función para establecer un valor en el contrato inteligente
@@ -49,11 +49,11 @@ export async function setValueInContract(value: string): Promise<any> {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userAddress = accounts[0];
     
-    // Verifica que estamos en la red correcta (Arbitrum Sepolia)
+    // Verifica que estamos en la red correcta (Mantle Sepolia)
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    // Chain ID de Arbitrum Sepolia es 0x66eee (421614 en decimal)
+    // Chain ID de Mantle Sepolia es 0x66eee (421614 en decimal)
     if (chainId !== '0x66eee') {
-      throw new Error('Por favor conecta a la red Arbitrum Sepolia');
+      throw new Error('Por favor conecta a la red Mantle Sepolia');
     }
     
     // Crea un proveedor con window.ethereum

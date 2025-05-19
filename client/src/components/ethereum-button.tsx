@@ -104,20 +104,20 @@ export function EthereumButton({ post, comments }: EthereumButtonProps) {
       const txHash = receipt.transactionHash;
       
       // URL para ver la transacción en el explorador
-      const txExplorerUrl = `https://sepolia.arbiscan.io/tx/${txHash}`;
+      const txExplorerUrl = `https://explorer.sepolia.mantle.xyz/tx/${txHash}`;
       
       // Mostrar notificación de éxito
       toast({
         title: "¡Datos guardados con éxito!",
         description: (
           <div className="flex flex-col gap-1">
-            <p>Transacción enviada a Arbitrum Sepolia</p>
+            <p>Transacción enviada a Mantle Sepolia</p>
             <p className="text-xs text-primary break-all">{txHash}</p>
             <button 
               onClick={() => window.open(txExplorerUrl, '_blank')}
               className="text-xs underline text-blue-500 hover:text-blue-700 text-left mt-1"
             >
-              Ver en Arbiscan
+              Ver en Mantlescan
             </button>
           </div>
         ),
@@ -140,7 +140,7 @@ export function EthereumButton({ post, comments }: EthereumButtonProps) {
         errorMessage = "Has rechazado la transacción en MetaMask.";
       } else if (errorMessage.includes('insufficient funds')) {
         errorTitle = "Fondos insuficientes";
-        errorMessage = "Necesitas ETH en Arbitrum Sepolia para completar esta operación.";
+        errorMessage = "Necesitas ETH en Mantle Sepolia para completar esta operación.";
       }
       
       toast({
@@ -150,10 +150,10 @@ export function EthereumButton({ post, comments }: EthereumButtonProps) {
             <p>{errorMessage}</p>
             {errorMessage.includes('fondos') && (
               <button 
-                onClick={() => window.open('https://faucet.quicknode.com/arbitrum/sepolia', '_blank')}
+                onClick={() => window.open('https://faucet.quicknode.com/Mantle/sepolia', '_blank')}
                 className="text-xs underline text-blue-500 hover:text-blue-700 text-left mt-1"
               >
-                Obtener ETH de prueba para Arbitrum Sepolia
+                Obtener ETH de prueba para Mantle Sepolia
               </button>
             )}
           </div>

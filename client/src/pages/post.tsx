@@ -157,7 +157,7 @@ export default function Post() {
           <div>
             <h3 className="text-lg font-bold text-purple-800 mb-2">Preserva este contenido en la blockchain</h3>
             <p className="text-sm text-purple-700 mb-0">
-              Guarda el post y el comentario más votado en Arbitrum Sepolia de forma permanente.
+              Guarda el post y el comentario más votado en Mantle Sepolia de forma permanente.
             </p>
           </div>
           <div className="flex gap-2">

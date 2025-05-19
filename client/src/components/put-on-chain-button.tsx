@@ -45,14 +45,14 @@ export function PutOnChainButton({ post, comments }: PutOnChainButtonProps) {
       // Guardar en blockchain
       const txHash = await saveToBlockchain(onChainText);
 
-      // Crear enlace a Arbiscan
-      const txExplorerUrl = `https://sepolia.arbiscan.io/tx/${txHash}`;
+      // Crear enlace a Mantlescan
+      const txExplorerUrl = `https://explorer.sepolia.mantle.xyz/tx/${txHash}`;
 
       toast({
         title: "¡Datos guardados con éxito!",
         description: (
           <div className="flex flex-col gap-1">
-            <p>Transacción enviada a Arbitrum Sepolia</p>
+            <p>Transacción enviada a Mantle Sepolia</p>
             <p className="text-xs text-primary break-all">{txHash}</p>
             <a 
               href={txExplorerUrl}
@@ -60,7 +60,7 @@ export function PutOnChainButton({ post, comments }: PutOnChainButtonProps) {
               rel="noopener noreferrer"
               className="text-xs underline text-blue-500 hover:text-blue-700"
             >
-              Ver en Arbiscan
+              Ver en Mantlescan
             </a>
           </div>
         ),

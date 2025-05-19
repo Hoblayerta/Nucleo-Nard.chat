@@ -6,11 +6,11 @@ import {
   parseAbi,
   encodeFunctionData,
 } from "viem";
-import { arbitrumSepolia } from "viem/chains";
+import { mantaSepoliaTestnet } from "viem/chains";
 import { abi } from "./abi.ts";
 
 // Dirección del contrato inteligente
-const contractAddress = "0xe074123df0616FdB1fD0E5Eb3efefe43D59b218a";
+const contractAddress = "0x4981E0a42Fb19e569e9F6952DD814f8598FB7593";
 
 /**
  * Función para escribir en el contrato inteligente usando viem
@@ -25,14 +25,14 @@ export async function writeToContractBackend(
   try {
     // Crea un cliente público para interactuar con la blockchain
     const publicClient = createPublicClient({
-      chain: arbitrumSepolia,
-      transport: http("https://sepolia-rollup.arbitrum.io/rpc"),
+      chain: mantaSepoliaTestnet,
+      transport: http("https://rpc.sepolia.mantle.xyz"),
     });
 
     // Crea un cliente wallet con la clave privada
     const walletClient = createWalletClient({
-      chain: arbitrumSepolia,
-      transport: http("https://sepolia-rollup.arbitrum.io/rpc"),
+      chain: mantaSepoliaTestnet,
+      transport: http("https://rpc.sepolia.mantle.xyz"),
       account: privateKey as `0x${string}`, // La clave privada o una instancia de cuenta
     });
 
@@ -74,8 +74,8 @@ export async function readFromContract() {
   try {
     // Crea un cliente público
     const publicClient = createPublicClient({
-      chain: arbitrumSepolia,
-      transport: http("https://sepolia-rollup.arbitrum.io/rpc"),
+      chain: mantaSepoliaTestnet,
+      transport: http("https://rpc.sepolia.mantle.xyz"),
     });
 
     // Lee datos del contrato (no requiere firma)
@@ -107,9 +107,49 @@ export async function writeToContractFrontend(value: string) {
       );
     }
 
+    // Configuración correcta para Mantle Sepolia Testnet
+    const mantleSepoliaConfig = {
+      chainId: "0x138B",  // Hexadecimal de 5003 (el ID correcto de Mantle Sepolia)
+      chainName: "Mantle Sepolia Testnet",
+      rpcUrls: ["https://rpc.sepolia.mantle.xyz"],
+      nativeCurrency: {
+        name: "MNT",
+        symbol: "MNT",
+        decimals: 18,
+      },
+      blockExplorerUrls: ["https://explorer.sepolia.mantle.xyz"],
+    };
+
+    // Cambia la red de MetaMask si es necesario
+    const desiredChainId = parseInt(mantleSepoliaConfig.chainId, 16);
+    
+    try {
+      // Intenta cambiar a la red si ya existe
+      const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (currentChainId !== mantleSepoliaConfig.chainId) {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: mantleSepoliaConfig.chainId }],
+        });
+      }
+    } catch (switchError: any) {
+      // Si la red no está agregada, intenta agregarla
+      if (switchError.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [mantleSepoliaConfig],
+        });
+      } else {
+        throw switchError;
+      }
+    }
+
     // Crea un cliente usando el proveedor de ventana
     const walletClient = createWalletClient({
-      chain: arbitrumSepolia,
+      chain: {
+        ...mantaSepoliaTestnet,
+        id: desiredChainId,
+      },
       transport: custom(window.ethereum),
     });
 
@@ -118,8 +158,11 @@ export async function writeToContractFrontend(value: string) {
 
     // Crea un cliente público
     const publicClient = createPublicClient({
-      chain: arbitrumSepolia,
-      transport: http("https://sepolia-rollup.arbitrum.io/rpc"),
+      chain: {
+        ...mantaSepoliaTestnet,
+        id: desiredChainId,
+      },
+      transport: http("https://rpc.sepolia.mantle.xyz"),
     });
 
     // Prepara la transacción

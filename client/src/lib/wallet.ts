@@ -1,20 +1,21 @@
 import Web3 from 'web3';
+import { switchToMantleSepoliaTestnet as switchToMantleSepoliaTestnetFromEthereum } from './ethereum';
 
-// Configuración de la red Arbitrum Sepolia
-const ARBITRUM_SEPOLIA_CONFIG = {
-  chainId: '0x66eee', // 421614 en hexadecimal
-  chainName: 'Arbitrum Sepolia',
+// Configuración de la red Mantle Sepolia
+const Mantle_SEPOLIA_CONFIG = {
+  chainId: '0x138b', //  en hexadecimal
+  chainName: 'Mantle Sepolia Testnet',
   nativeCurrency: {
     name: 'ETH',
     symbol: 'ETH',
     decimals: 18
   },
-  rpcUrls: ['https://api.zan.top/arb-sepolia', 'https://sepolia-rollup.arbitrum.io/rpc'],
-  blockExplorerUrls: ['https://sepolia.arbiscan.io/']
+  rpcUrls: ['https://mantle-sepolia.drpc.org', 'https://rpc.sepolia.mantle.xyz'],
+  blockExplorerUrls: ['https://explorer.sepolia.mantle.xyz/']
 };
 
 // Dirección del contrato y ABI
-export const CONTRACT_ADDRESS = '0xe074123df0616FdB1fD0E5Eb3efefe43D59b218a';
+export const CONTRACT_ADDRESS = '0x4981E0a42Fb19e569e9F6952DD814f8598FB7593';
 export const CONTRACT_ABI = [
   {
     inputs: [
@@ -76,8 +77,8 @@ export const connectWallet = async () => {
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
     const address = accounts[0];
 
-    // Cambiar a Arbitrum Sepolia si es necesario
-    await switchToArbitrumSepolia();
+    // Cambiar a Mantle Sepolia si es necesario
+    await switchToMantleSepoliaTestnetFromEthereum();
 
     return { address, web3 };
   } catch (error) {
@@ -108,25 +109,25 @@ export const checkConnection = async () => {
   }
 };
 
-// Función para cambiar a la red Arbitrum Sepolia
-export const switchToArbitrumSepolia = async () => {
+// Función para cambiar a la red Mantle Sepolia
+export const switchToMantleSepoliaTestnet = async () => {
   if (!web3 || !provider) return false;
 
   try {
     // Verificar si estamos en la red correcta
     const chainId = await web3.eth.getChainId();
-    const targetChainId = parseInt('0x66eee', 16); // 421614
+    const targetChainId = parseInt('0x138b', 16); // 5003
     
     if (Number(chainId) === targetChainId) {
-      console.log('Ya estamos en Arbitrum Sepolia');
+      console.log('Ya estamos en Mantle Sepolia');
       return true;
     }
 
-    // Intentar cambiar a Arbitrum Sepolia
+    // Intentar cambiar a Mantle Sepolia
     try {
       await provider.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x66eee' }] // chainId de Arbitrum Sepolia
+        params: [{ chainId: '0x138b' }] // chainId de Mantle Sepolia
       });
       return true;
     } catch (switchError: any) {
@@ -134,14 +135,14 @@ export const switchToArbitrumSepolia = async () => {
       if (switchError.code === 4902) {
         await provider.request({
           method: 'wallet_addEthereumChain',
-          params: [ARBITRUM_SEPOLIA_CONFIG],
+          params: [Mantle_SEPOLIA_CONFIG],
         });
         return true;
       }
       throw switchError;
     }
   } catch (error) {
-    console.error('Error al cambiar a Arbitrum Sepolia:', error);
+    console.error('Error al cambiar a Mantle Sepolia:', error);
     throw error;
   }
 };
@@ -160,8 +161,8 @@ export const saveToBlockchain = async (data: string) => {
     throw new Error('No hay conexión a la blockchain. Conecta tu wallet primero.');
   }
 
-  // Verificar que estamos en Arbitrum Sepolia
-  await switchToArbitrumSepolia();
+  // Verificar que estamos en Mantle Sepolia
+  await switchToMantleSepoliaTestnet();
 
   // Crear una instancia del contrato
   const contract = new web3.eth.Contract(CONTRACT_ABI as any, CONTRACT_ADDRESS);
@@ -172,14 +173,14 @@ export const saveToBlockchain = async (data: string) => {
   }
 
   try {
-    console.log('Enviando transacción a Arbitrum Sepolia...');
+    console.log('Enviando transacción a Mantle Sepolia...');
     const accounts = await web3.eth.getAccounts();
     
     // Llamar a la función set del contrato
     const tx = await contract.methods.set(data).send({ from: accounts[0] });
     
     console.log('Transacción confirmada:', tx.transactionHash);
-    console.log(`Ver en Arbiscan: https://sepolia.arbiscan.io/tx/${tx.transactionHash}`);
+    console.log(`Ver en Mantlescan: https://explorer.sepolia.mantle.xyz/tx/${tx.transactionHash}`);
     
     return tx.transactionHash;
   } catch (error: any) {
@@ -189,7 +190,7 @@ export const saveToBlockchain = async (data: string) => {
     if (error.code === 4001) {
       throw new Error('Transacción rechazada por el usuario');
     } else if (error.message.includes('insufficient funds')) {
-      throw new Error('Fondos insuficientes para completar la transacción. Necesitas ETH en Arbitrum Sepolia.');
+      throw new Error('Fondos insuficientes para completar la transacción. Necesitas ETH en Mantle Sepolia.');
     }
     
     throw error;

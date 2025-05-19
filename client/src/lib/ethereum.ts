@@ -59,8 +59,8 @@ const contractABI = [
   }
 ];
 
-// Dirección del contrato en Arbitrum Sepolia
-const contractAddress = '0xe074123df0616FdB1fD0E5Eb3efefe43D59b218a';
+// Dirección del contrato en Mantle Sepolia
+const contractAddress = '0x4981E0a42Fb19e569e9F6952DD814f8598FB7593';
 
 /**
  * Verificar si MetaMask está disponible
@@ -77,24 +77,24 @@ export function getChainIdHex(chainId: number): string {
 }
 
 /**
- * Configuración de la red Arbitrum Sepolia
+ * Configuración de la red Mantle Sepolia
  */
-const ARBITRUM_SEPOLIA_CONFIG = {
-  chainId: '0x66eee', // 421614 en hexadecimal
-  chainName: 'Arbitrum Sepolia',
+const Mantle_SEPOLIA_CONFIG = {
+  chainId: '0x138b', // 5003 en hexadecimal
+  chainName: 'Mantle Sepolia Testnet',
   nativeCurrency: {
-    name: 'ETH',
-    symbol: 'ETH',
+    name: 'MNT',
+    symbol: 'MNT',
     decimals: 18
   },
-  rpcUrls: ['https://api.zan.top/arb-sepolia', 'https://sepolia-rollup.arbitrum.io/rpc'],
-  blockExplorerUrls: ['https://sepolia.arbiscan.io/']
+  rpcUrls: ['https://rpc.sepolia.mantle.xyz'],
+  blockExplorerUrls: ['https://explorer.sepolia.mantle.xyz/']
 };
 
 /**
- * Cambiar a la red Arbitrum Sepolia
+ * Cambiar a la red Mantle Sepolia
  */
-export async function switchToArbitrumSepolia(): Promise<boolean> {
+export async function switchToMantleSepoliaTestnet(): Promise<boolean> {
   if (!isMetaMaskAvailable()) {
     throw new Error('MetaMask no está instalado');
   }
@@ -103,7 +103,7 @@ export async function switchToArbitrumSepolia(): Promise<boolean> {
     // Primero intentamos cambiar a la red si ya está agregada
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: ARBITRUM_SEPOLIA_CONFIG.chainId }]
+      params: [{ chainId: Mantle_SEPOLIA_CONFIG.chainId }]
     });
     return true;
   } catch (error: any) {
@@ -112,15 +112,15 @@ export async function switchToArbitrumSepolia(): Promise<boolean> {
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [ARBITRUM_SEPOLIA_CONFIG]
+          params: [Mantle_SEPOLIA_CONFIG]
         });
         return true;
       } catch (addError) {
-        console.error('Error al agregar la red Arbitrum Sepolia:', addError);
+        console.error('Error al agregar la red Mantle Sepolia:', addError);
         throw addError;
       }
     } else {
-      console.error('Error al cambiar a la red Arbitrum Sepolia:', error);
+      console.error('Error al cambiar a la red Mantle Sepolia:', error);
       throw error;
     }
   }
@@ -159,12 +159,12 @@ export async function setValueInContract(value: string): Promise<any> {
     const accounts = await requestAccounts();
     const userAddress = accounts[0];
     
-    // Verifica que estamos en la red correcta (Arbitrum Sepolia)
+    // Verifica que estamos en la red correcta (Mantle Sepolia)
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    // Chain ID de Arbitrum Sepolia es 0x66eee (421614 en decimal)
-    if (chainId !== ARBITRUM_SEPOLIA_CONFIG.chainId) {
-      // Intentar cambiar a Arbitrum Sepolia
-      await switchToArbitrumSepolia();
+    // Chain ID de Mantle Sepolia es 0x66eee (421614 en decimal)
+    if (chainId !== Mantle_SEPOLIA_CONFIG.chainId) {
+      // Intentar cambiar a Mantle Sepolia
+      await switchToMantleSepoliaTestnet();
     }
     
     // Crea un proveedor con window.ethereum

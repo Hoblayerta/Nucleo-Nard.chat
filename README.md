@@ -2,7 +2,7 @@
 
 ## Description
 
-A participatory creation protocol that enables collaborative development of stories and content with decentralized storage on the Arbitrum Sepolia chain. The platform uses Hyperlane infrastructure to grant reputation in the form of badges to holders of NFTs that represent attributions to the project.
+A participatory creation protocol that enables collaborative development of stories and content with decentralized storage on the Mantle Sepolia chain. The platform uses infrastructure to grant reputation in the form of badges to legitimize users that represent attributions to the project.
 
 ## Key Features
 
@@ -11,7 +11,7 @@ A participatory creation protocol that enables collaborative development of stor
 - **Public Leaderboard:** Displays the most active users and those with the highest scores
 - **Administrative Controls:** Complete management of users, posts, and comments
 - **Comment Visualization:** Clear hierarchical representation with color-coded guides
-- **Blockchain Integration:** Content preservation on the Arbitrum Sepolia network
+- **Blockchain Integration:** Content preservation on the Mantle Sepolia network
 - **User Verification:** System to mark users as "IRL" (in real life) and "Handmade" (original content)
 - **Badge System:** Includes director, screenwriter, rookie, spammer, artist, animator, hacker, superfan, fan, master-animator
 - **Slow Mode:** Configurable time intervals between comments
@@ -20,44 +20,28 @@ A participatory creation protocol that enables collaborative development of stor
 
 - **Frontend:** React with TanStack Query and Tailwind CSS
 - **Backend:** Express.js with in-memory storage
-- **Blockchain:** Integration with Arbitrum Sepolia using ethers.js v6
+- **Blockchain:** Integration with Mantle Sepolia using ethers.js v6
 - **Wallets:** Support for multiple wallets through WalletConnect
 
 ## Blockchain Integration
 
-The platform uses various smart contracts on the Arbitrum Sepolia network along with Hyperlane infrastructure to enable participatory creation and decentralized storage of stories:
+The platform uses smart contract on the Mantle Sepolia network along infrastructure to enable participatory creation and decentralized storage of stories:
 
 ### Smart Contracts
 
 #### SimpleStorage (Main Storage)
-- **Address:** [0xe074123df0616fdb1fd0e5eb3efefe43d59b218a](https://sepolia.arbiscan.io/address/0xe074123df0616fdb1fd0e5eb3efefe43d59b218a#code)
-- **Function:** Contract on Arbitrum Sepolia that stores information about stories and comments to create decentralized narratives on the blockchain
--**I.e:** https://sepolia.arbiscan.io/tx/0x44fbbd7608b98c54d18a20b56a1db8f4755d3b154d0d467ee7706fdc67b3799e
-#### Emitter Contract (Hyperlane)
-- **Address:** [0x6aF5E39339296E8F22D510E5F9071cD369aE6db3](https://sepolia.arbiscan.io/address/0x6aF5E39339296E8F22D510E5F9071cD369aE6db3)
-- **Function:** Part of the Hyperlane infrastructure that verifies the ownership of NFTs representing attributions to the project
-- **Story Protocol Reference:** [Aeneid IPA 0xDC39364746fE32b0Cc383628c01A2f50a390FB6b](https://aeneid.explorer.story.foundation/ipa/0xDC39364746fE32b0Cc383628c01A2f50a390FB6b)
-
-#### Receiver Contract (Hyperlane)
-- **Address:** [0xa38d18d7Ec91ED8543970040cdC8b7a98a63603B](https://sepolia.arbiscan.io/address/0xa38d18d7Ec91ED8543970040cdC8b7a98a63603B)
-- **Function:** Part of the Hyperlane infrastructure that receives cross-chain confirmation and grants reputation badges such as "superfan" to participants
+- **Address:** [0x4981E0a42Fb19e569e9F6952DD814f8598FB7593](https://explorer.sepolia.mantle.xyz/address/0x4981E0a42Fb19e569e9F6952DD814f8598FB7593)
+- **Function:** Contract on Mantle Sepolia that stores information about stories and comments to create decentralized narratives on the blockchain
+-**I.e:** https://explorer.sepolia.mantle.xyz/tx/0xf11948f85cb505188b1be3fe2f229c18398d3ae7364830e63c3e11910442247f
 
 ## Blockchain Architecture
 
-The system uses Hyperlane infrastructure for cross-chain communication and data storage:
+1. **SimpleStorage:** Main contract on Mantle Sepolia that stores stories and comments to preserve them in a decentralized manner
 
-1. **SimpleStorage:** Main contract on Arbitrum Sepolia that stores stories and comments to preserve them in a decentralized manner
-2. **Emitter -> Receiver:** Contracts from the Hyperlane infrastructure that enable cross-chain communication, verify NFT ownership, and grant reputation in the form of badges to project participants
 
 ## How to Use the Blockchain Integration
 
-### For Users
-1. Connect your wallet using the "Connect" button in the navigation bar
-2. Navigate to any post to see the "Preserve this content on the blockchain" section
-3. Use the "Save to Blockchain" button to preserve the post and its most important comments
-4. If you own the required NFT in Story Protocol, the "superfan" badge will automatically appear on your profile
-
-### For Administrators
+### For Administrators and Mods
 1. In the admin panel, use the "Write to Contract" button next to "New Post"
 2. Select between showing "Most voted" or "Most recent" comments
 3. Configure the number of comments to include
@@ -67,8 +51,8 @@ The system uses Hyperlane infrastructure for cross-chain communication and data 
 
 ### Prerequisites
 - Node.js v18 or higher
-- Metamask or another wallet compatible with Arbitrum Sepolia
-- Access to Arbitrum Sepolia RPC
+- Metamask or another wallet compatible with Mantle Sepolia
+- Access to Mantle Sepolia RPC
 
 ### Installation
 
@@ -93,6 +77,16 @@ npm run dev
 ### Default Admin Access
 - Username: `admin`
 - Password: `admin123`
+  
+## Usefull links
+https://nard-chat.onrender.com/
+
+User: admin
+Password: admin123
+
+
+https://lablocka.lol/
+
 
 ## License
 

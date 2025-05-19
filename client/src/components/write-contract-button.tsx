@@ -124,7 +124,7 @@ export function WriteContractButton({
     });
     
     content += `Saved on: ${new Date().toISOString()}\n`;
-    content += `Arbitrum Sepolia Network`;
+    content += `Mantle Sepolia Testnet`;
     
     setText(content);
   };
@@ -148,7 +148,7 @@ export function WriteContractButton({
           <DialogHeader>
             <DialogTitle>Escribir en Contrato de Blockchain</DialogTitle>
             <DialogDescription>
-              Escribe texto para guardar permanentemente en la blockchain de Arbitrum Sepolia.
+              Escribe texto para guardar permanentemente en la blockchain de Mantle Sepolia.
             </DialogDescription>
           </DialogHeader>
 
