@@ -79,7 +79,7 @@ npm run dev
 - Password: `admin123`
   
 ## Usefull links
-https://nard-chat.onrender.com/
+https://nucleo-nard-chat-7qtf.onrender.com
 
 User: admin
 Password: admin123
